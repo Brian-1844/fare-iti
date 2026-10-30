@@ -154,9 +154,14 @@ function load(){
   return null;
 }
 const SKIP={holder:1,obj:1,stump:1,mesh:1,sprout:1,anim:1,tx:1,tz:1,wait:1,bubble:1,body:1};
+/* deep copy without three.js objects (their toJSON is very slow) */
+var pendingSave=false;
+function saveClean(v){if(Array.isArray(v))return v.map(saveClean);
+  if(v&&typeof v==='object'){if(v.isObject3D||v.isMaterial||v.isBufferGeometry||v.isTexture)return undefined;const o={};for(const k in v){if(SKIP[k])continue;const c=saveClean(v[k]);if(c!==undefined&&typeof c!=='function')o[k]=c;}return o;}
+  return v;}
 function save(){
   try{S.player.x=player.position.x;S.player.z=player.position.z;S.player.yaw=cam.yaw;
-    localStorage.setItem(SAVE_KEY,JSON.stringify(S,(k,v)=>SKIP[k]?undefined:v));}catch(e){}
+    localStorage.setItem(SAVE_KEY,JSON.stringify(saveClean(S)));}catch(e){}
 }
 const saved=load();
 const S=saved||newWorld();
@@ -959,7 +964,7 @@ function doCraft(id){
     stat(id);if(/^hei(pupu|poreho|parau)$/.test(id))stat('shellhei');if(id==='uke')S.owned.ukulele=true;}
   refresh();
 }
-function refresh(){renderTop();renderGoal();if(sheetMode)renderSheet();actSig='';checkLevel();save();}
+function refresh(){renderTop();renderGoal();if(sheetMode)renderSheet();actSig='';checkLevel();pendingSave=true;}
 
 /* ----- menu, overlays ----- */
 function openMenu(){const m=Math.round((Date.now()-S.startedAt)/60000);
@@ -2710,7 +2715,7 @@ const ridgeGeo=new THREE.CylinderGeometry(0.2,0.2,2.0,7,1);ridgeGeo.rotateZ(Math
 const kLeafGeo=new THREE.CircleGeometry(0.11,7);kLeafGeo.rotateX(-Math.PI/2+0.35);
 const mLeafGeo=new THREE.PlaneGeometry(0.07,0.34);mLeafGeo.translate(0,0.17,0);
 function v9Sign(text,bg,fg,w,h){const c=document.createElement('canvas');c.width=512;c.height=Math.round(512*h/w);const g=c.getContext('2d');
-  g.fillStyle=bg;g.fillRect(0,0,c.width,c.height);g.fillStyle=fg;g.font=`bold ${Math.round(c.height*0.5)}px "Lilita One","Trebuchet MS",sans-serif`;g.textAlign='center';g.textBaseline='middle';g.fillText(text,c.width/2,c.height*0.54);
+  g.fillStyle=bg;g.fillRect(0,0,c.width,c.height);g.fillStyle=fg;g.font=`bold ${Math.round(c.height*0.5)}px "Lilita One","Trebuchet MS",sans-serif`;g.textAlign='center';g.textBaseline='middle';if(window.FARE_T)text=window.FARE_T(text);g.fillText(text,c.width/2,c.height*0.54,c.width*0.94);
   const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;return new THREE.MeshStandardMaterial({map:t,roughness:0.8});}
 
 /* ----- tilled beds ----- */
@@ -3349,7 +3354,7 @@ function tick(){
   /* ui */
   uiT+=dt;if(uiT>0.12){uiT=0;actions=computeActions();renderActions();renderWx();if(Math.round(S.hunger)!==lastHungerShown)renderTop();}
   levelT+=dt;if(levelT>1){levelT=0;if(!paused)checkLevel();}
-  saveT+=dt;if(saveT>4){saveT=0;save();}
+  saveT+=dt;if(saveT>4||(pendingSave&&saveT>1)){saveT=0;pendingSave=false;save();}
   renderer.render(scene,camera);requestAnimationFrame(tick);
 }
 lastWxLabel=wxLabel()[1];

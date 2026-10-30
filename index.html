@@ -10,6 +10,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Fare Iti">
 </head>
 <body>
 <!--MARKUP-START-->
@@ -56,6 +62,20 @@
   </div>
 </div>
 
+<div class="overlay welcome" id="welcome" hidden data-notr>
+  <div class="card">
+    <div class="kicker">Ia ora na · Bienvenue · Welcome</div>
+    <h1>Fare Iti</h1>
+    <p class="wsub">Construis ton fare sur un motu de Polynésie.<br><span class="en">Build your own fare on a Polynesian motu.</span></p>
+    <div class="sec">Choisis ta langue · Choose your language</div>
+    <div class="row langs"><button class="big" data-lang="fr">Français</button><button class="big" data-lang="en">English</button></div>
+    <div class="sec">Sur ton téléphone · On your phone</div>
+    <button class="big ghost install" id="installBtn">📲 Installer le jeu · Install the game</button>
+    <p class="small-note" id="installNote" hidden></p>
+    <p class="small-note">Le jeu marche aussi hors ligne une fois installé. · Once installed, the game also works offline.</p>
+  </div>
+</div>
+
 <div class="overlay" id="intro">
   <div class="card">
     <div class="kicker">A motu off Tahiti</div>
@@ -94,6 +114,8 @@
       <button class="big" id="resumeBtn">Resume</button>
       <button class="big ghost" id="lookBtn">Change your look</button>
       <button class="big ghost" id="howBtn">How to play</button>
+      <button class="big ghost" id="langBtn">Langue · Language</button>
+      <button class="big ghost" id="menuInstallBtn">Install on my phone</button>
       <button class="big ghost" id="resetBtn">New island</button>
     </div>
   </div>
@@ -114,6 +136,8 @@
 <!--MARKUP-END-->
 <script src="lib/three.min.js"></script>
 <script src="data.js"></script>
+<script src="fr.js"></script>
+<script src="lang.js"></script>
 <script src="game.js"></script>
 </body>
 </html>

@@ -347,6 +347,15 @@ Progress saves automatically in the browser. Saves from earlier versions carry o
 - Thousands of grass blades and flowers sway with the wind, and the mountain is covered in jungle.
 - Tahiti and Moorea stand on the horizon, and the sun is visible in the sky.
 
+## Languages and installing
+
+- **Français / English.** The first time the game opens, a welcome screen asks for the language. You can change it later in the pause menu (☰ → *Langue · Language*). The game reloads in the new language, and your island is kept.
+- **Install on a phone.** The welcome screen and the pause menu have an *Install* button.
+  - **Android** (Chrome, Opera, Samsung Internet): the browser asks whether to install Fare Iti. It then has its own icon and opens full screen.
+  - **iPhone / iPad** (Safari): tap Share ⬆︎, then *Add to Home Screen*.
+- Once installed, the game also works **offline**. This needs the HTTPS address of GitHub Pages; it doesn't work when you open the file from your computer.
+- **When you upload a new version**, change `VERSION` at the top of `sw.js` (for example `fare-iti-v12`). Installed phones then fetch the new files.
+
 ## Run it
 
 No build step: plain HTML, CSS and JavaScript.
@@ -367,6 +376,9 @@ No build step: plain HTML, CSS and JavaScript.
 index.html          page and interface
 style.css           interface styles
 data.js             items, recipes, crops, animals, shop, prices and the nineteen levels (easy to edit)
+fr.js               French text: game data by path, interface strings
+lang.js             language choice, welcome screen, live translation, install button
+manifest.webmanifest, sw.js, icons/   the installable app (PWA) and offline cache
 game.js             the 3D world and game logic
 lib/three.min.js    three.js r128 (MIT licence, see lib/three-LICENSE)
 ```
