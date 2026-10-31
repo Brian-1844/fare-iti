@@ -30,7 +30,7 @@ From level 5, a wing button appears at the top. Tap it and you become Manu, flyi
 - **Land** sends Manu straight back to your shoulder.
 - Six golden rings mark Manu’s viewpoints: the summit, the waterfall, the reef pass, the wharf, your fare from above, and the whale waters. Each one pays 800 XPF the first time you fly through it.
 
-## The nineteen levels
+## The twenty levels
 
 Each level has 3 or 4 goals, shown in the card at the top left. Tap the card to fold it. Finishing a level opens new crafts, new animals, and sometimes a reward plant.
 
@@ -314,6 +314,42 @@ Tap a food chip, use the bag, or press `Q` to eat. Fei, taro and ʻuru must be c
   - **Flower beds**: for the garden (Craft · Home).
 - Their flowers help your bees make honey faster.
 
+**Potager, vegetables and the mango tree**
+- From level 6, build a **potager** in Craft · Building (4 planks, 4 stones, 1 log). Your first one comes with lettuce and tomato seeds. You can build 6.
+- Sow seeds in a potager (or in a tilled bed): lettuce, tomato, cucumber, pota, eggplant, cabbage, carrot. Each harvest gives vegetables and a new packet of seeds.
+- The goélette sells seed packets. Gifts bring cucumber and carrot seeds, pineapple tops, papaya seeds and a mango seedling.
+- **Recipes**:
+  - In Craft · Food: garden salad, carrot and coconut salad, poisson cru complet, mango jam.
+  - At the fire: chao men, vegetable soup, grilled eggplant.
+- Level 20 (Kitchen garden): grow 4 kinds of vegetables, make a poisson cru complet, cook a chao men, harvest a mango tree.
+
+**Fare pōteʻe and secret songs**
+- From level 5, build a fare pōteʻe (Craft · Building): the big oval house of music. Papa Teve, an old musician, lives in it.
+- Play the vivo or the ukulele near it and he teaches you one song a day. Your songs are written on the music page; play their notes in a row to use their power:
+  - Calm sea: wind and storm calm down, fish gather near you.
+  - Rain: brings rain to the garden.
+  - Sun: clears the sky.
+  - Plants: everything around you grows at once.
+  - Animals: animals run to you; wild ones trust you a little more (once a day).
+  - Dolphins: by the water or in your vaʻa, the dolphins come to play next to you.
+- There is one more song that no one writes down… (spoiler: once you know all six, ask Papa Teve again. Then play it at night, under a clear sky, by the lagoon.)
+
+**Island wildlife**
+- Butterflies fly around your flowers in the daytime: the blue moon butterfly (black with blue and white spots), an orange butterfly and a small yellow one. Plant more flowers and you see more of them.
+- At night, moths circle your lamps, street lamps and fire.
+- Moʻo geckos sit on lamp posts, palm trunks, rocks and the walls of your fare, waiting for insects. They run off if you come too close.
+- Bees from your hive fly to the flowers nearby and back.
+- There is a secret song for the butterflies too, only on the vivo, in daylight… (spoiler: Papa Teve gives a hint once you know 3 songs and have seen a butterfly). The butterflies dance around you and leave a gift; the first one is the hei pēpē, a butterfly necklace you can wear.
+
+**Cooking in bamboo, ipo and poʻe**
+- At the fire:
+  - iʻa ʻofe (fish and coconut milk in a bamboo tube)
+  - taro ʻofe
+  - ipo (flour, grated coconut and sugar; makes 3)
+  - poʻe ʻiʻita (papaya, manioc, coconut)
+  - poʻe vī (mango, manioc, coconut)
+- The goélette sells manioc roots for poʻe.
+
 **Weather and time**
 - One day lasts 12 minutes.
 - The weather changes gradually: clear, cloudy, rain, and sometimes a storm.
@@ -375,7 +411,7 @@ No build step: plain HTML, CSS and JavaScript.
 ```
 index.html          page and interface
 style.css           interface styles
-data.js             items, recipes, crops, animals, shop, prices and the nineteen levels (easy to edit)
+data.js             items, recipes, crops, animals, shop, prices and the twenty levels (easy to edit)
 fr.js               French text: game data by path, interface strings
 lang.js             language choice, welcome screen, live translation, install button
 manifest.webmanifest, sw.js, icons/   the installable app (PWA) and offline cache
@@ -384,3 +420,52 @@ lib/three.min.js    three.js r128 (MIT licence, see lib/three-LICENSE)
 ```
 
 To add a recipe or change a level, edit `data.js`. Every recipe has a `lv` (the level that opens it), and every level lists its goals.
+
+---
+
+## Spoilers: the very secret quest
+
+<details><summary>Only open this if you are stuck</summary>
+
+1. Meet the mermaid (the moon song: C D E G A G E D C, at night, under a clear sky, by the lagoon). She whispers: “Crown the mountain with flowers, all the way around…”
+2. Plant flowering plants (tiare, bougainvillea, taina, pua…) or flower beds all around the mountain, 9–22 m from the summit, in at least 6 of 8 directions. Flowers can be planted higher than usual on the slopes. Let them grow.
+3. When the crown is complete, Manu tells you Papa Teve’s riddle. At night, next to the waterfall, play A G E D C C.
+4. The rock behind the waterfall opens. It can only be entered at night. Inside are peridot, obsidian, zeolite and pumice; each crystal grows back after a day.
+5. Secret creations appear in Craft:
+   - peridot pendant
+   - obsidian toʻi (+2 logs per palm, +1 stone per hit)
+   - monoʻi and pumice scrub
+   - the hei of the mountain
+   - peridot and crystal lamp shades
+
+**The secret of the sea**
+
+1. Respect and help the sea:
+   - watch the honu, dolphins and whales without disturbing them
+   - pick up plastic litter on the beach
+   - free the honu caught in old fishing nets (they wash up now and then)
+   - later, replant coral on the reef
+2. When the sea trusts you, a very old honu (honu rahi) surfaces next to your vaʻa. Manu repeats what the elders say.
+3. At night, in your vaʻa near the reef pass, play the dolphin song (A C D E G A). The dolphins all dive at the same spot, and a circle of light appears.
+4. Dive with the dolphins into the blue cave under the reef. You take nothing living there; you only gather what the sea gives:
+   - red coral fragments broken by the waves
+   - mother of pearl
+   - the rare golden cowrie
+   - wild pearls from the giant pahua clam (you need an écrin)
+   - coral cuttings to replant on the reef
+5. Replanted coral grows on the reef, and the fish come back to it.
+6. Secret creations: the hei moana, a golden cowrie pendant, and coral and deep-sea lamp shades.
+
+**The legend of Hina and Pere**
+
+1. Once you know both secrets (the crystal cave and the sea cave), Manu shares the elders’ riddle on a night with a big moon.
+2. Far out at sea, past the reef, in your sailing vaʻa, at night under a clear sky, play A G E D C D E G A (“bring the fire down from A to C, then climb back to the moon”).
+3. The sea boils, the ground shakes, Hina’s moonlight shines on the water, and Pere’s fire rises: a little undersea volcano throws out lava bombs and a new black lava motu is born. Hina gives you a moon-white pearl.
+4. The motu cools slowly; its crater glows at night and steams. On its black beach you can gather tears of Pere (volcanic glass) and lava stones, once a day, from your vaʻa.
+5. Secret creations:
+   - the hei of Hina and Pere, the rarest crown of all
+   - a tear of Pere pendant
+   - lava and Hina’s moon lamp shades
+6. The legend is told the way people tell it: Pere, goddess of fire, left Tahiti to find a land for her fire, and Hina, in the moon, watches over night travellers.
+
+</details>

@@ -1,6 +1,6 @@
 /* Fare Iti service worker: keeps the game playable offline.
    Change VERSION whenever you upload new game files, so phones fetch the update. */
-const VERSION='fare-iti-v11';
+const VERSION='fare-iti-v19';
 const FILES=['./','index.html','style.css','data.js','fr.js','lang.js','game.js','lib/three.min.js','manifest.webmanifest',
   'icons/icon-192.png','icons/icon-512.png','icons/icon-maskable-512.png','icons/apple-touch-icon.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(VERSION).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()));});

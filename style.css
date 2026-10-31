@@ -295,3 +295,5 @@ body.flying #actions,body.flying .goal,body.flying .exc,body.flying .inv,body.fl
 .overlay.welcome .langs .big.on{outline:3px solid #ffc83d;outline-offset:2px}
 .overlay.welcome .install{width:100%}
 #installNote{background:var(--paper-2);border:2px solid var(--ink);border-radius:12px;padding:8px 10px;margin-top:10px;font-weight:700}
+.songnotes{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.songnotes b{min-width:24px;padding:2px 6px;border-radius:7px;border:2px solid var(--ink);background:var(--lagoon);color:#fff;font:800 13px var(--body);text-align:center}

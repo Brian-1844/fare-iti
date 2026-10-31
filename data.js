@@ -792,3 +792,210 @@ D.HINTS.push(
 );
 Object.assign(D.MANU_LINES,{gift:['A gift for your garden!','Someone noticed your hard work!'],lamps:['The lamps are lovely tonight.']});
 })();
+
+/* ===== v11: mark the "tame all five animals" goal so Manu can guide you to each animal ===== */
+window.FARE_DATA.LEVELS[5].goals[0].animals=true;
+
+/* ===== v12: mango tree, kitchen garden (potager) with 7 vegetables, garden recipes ===== */
+(function(){
+const D=window.FARE_DATA,SK='stroke="#14313a" stroke-width="1.6" stroke-linejoin="round"',sv=b=>`<svg viewBox="0 0 24 24" aria-hidden="true">${b}</svg>`;
+const FRL=(()=>{try{return localStorage.getItem('fare-iti-lang')==='fr';}catch(e){return false;}})();
+const B=(en,fr)=>FRL?fr:en;
+const packet=(c1,c2)=>sv(`<path d="M5 4h14v16H5Z" fill="#f6efd8" ${SK}/><path d="M5 4h14v4H5Z" fill="${c2}" ${SK}/><circle cx="12" cy="14" r="3.6" fill="${c1}" ${SK}/><path d="M9 20h6" stroke="#a37d34" stroke-width="1.2"/>`);
+Object.assign(D.ICON,{
+ mango:sv(`<path d="M6 15c-2-5 2-11 8-11 4 0 6 3 5 7-1 5-5 9-9 9-2 0-3-2-4-5Z" fill="#f2a33a" ${SK}/><path d="M14 5c1 3 4 4 5 6" fill="none" stroke="#de4634" stroke-width="2"/><path d="M13 4c1-2 3-2 4-2" stroke="#3f7d34" stroke-width="2" fill="none"/>`),
+ mangoseed:sv(`<path d="M5 17h14l-2 5H7Z" fill="#a8743f" ${SK}/><path d="M12 17V8" stroke="#3f7d34" stroke-width="2"/><path d="M12 10c-5-1-7-3-7-6 5 0 7 3 7 6ZM12 9c4-1 7-4 7-7-5 0-7 4-7 7Z" fill="#2e6a2e" ${SK}/>`),
+ potager:sv(`<rect x="2" y="12" width="20" height="8" rx="1" fill="#7a4a28" ${SK}/><path d="M2 14h20" stroke="#c9a061" stroke-width="2"/>${[5,9,13,17].map((x,i)=>`<circle cx="${x+1}" cy="10" r="2.6" fill="${['#5fa64a','#de4634','#3f8a34','#f2a33a'][i]}" ${SK}/>`).join('')}`),
+ salade:sv(`<path d="M3 15c0-5 4-9 9-9s9 4 9 9c-3 3-15 3-18 0Z" fill="#8fd05e" ${SK}/><path d="M7 14c1-3 3-5 5-5M17 14c-1-3-3-5-5-5M12 9v6" stroke="#4f9a3a" stroke-width="1.4" fill="none"/>`),
+ tomate:sv(`<circle cx="12" cy="13.5" r="7.5" fill="#de4634" ${SK}/><path d="M12 6l-3-2 2 3-4 0 4 1-1 3 2-2 2 2-1-3 4-1-4 0 2-3Z" fill="#3f8a34" ${SK}/><circle cx="9" cy="11" r="1.6" fill="#ff8a7a"/>`),
+ concombre:sv(`<path d="M4 17C3 12 9 5 15 4c4 0 6 2 5 5-1 6-8 12-13 11-2 0-3-1-3-3Z" fill="#3f8a34" ${SK}/><path d="M8 15l1-1M11 12l1-1M14 9l1-1" stroke="#b8e08a" stroke-width="1.6" stroke-linecap="round"/>`),
+ pota:sv(`<path d="M12 21c-4 0-6-3-6-8s2-9 6-11c4 2 6 6 6 11s-2 8-6 8Z" fill="#2e6a2e" ${SK}/><path d="M12 21V7M12 12l-3-2M12 15l3-2" stroke="#d9f0c0" stroke-width="1.6"/>`),
+ aubergine:sv(`<path d="M8 9c4-2 9 1 11 6 1 4-1 6-4 6-5 0-9-4-9-8 0-2 1-3 2-4Z" fill="#5a2a6a" ${SK}/><path d="M8 9 5 5l5 2 1-3 1 4" fill="#3f8a34" ${SK}/><path d="M11 12c1-1 3-1 4 0" stroke="#9a6aaa" stroke-width="1.4" fill="none"/>`),
+ chou:sv(`<circle cx="12" cy="13" r="8" fill="#b8e08a" ${SK}/><path d="M12 5c-3 3-3 13 0 16M12 5c3 3 3 13 0 16M5 11c4 1 10 1 14 0" stroke="#6aa04a" stroke-width="1.3" fill="none"/>`),
+ carotte:sv(`<path d="M15 9 5 21c-1 0-1-1-1-1L12 7Z" fill="#f2862a" ${SK}/><path d="M7 16l2 1M9 13l2 1" stroke="#c9601a" stroke-width="1.3"/><path d="M14 8c1-3 3-5 6-5M14 8c0-3-1-5-3-6M14 8c2-1 5-1 7 1" stroke="#3f8a34" stroke-width="2" fill="none" stroke-linecap="round"/>`),
+ saladeseed:packet('#8fd05e','#4f9a3a'),tomateseed:packet('#de4634','#de4634'),concombreseed:packet('#3f8a34','#2c7fb8'),potaseed:packet('#2e6a2e','#f2c94c'),
+ aubergineseed:packet('#5a2a6a','#7b4fb0'),chouseed:packet('#b8e08a','#2fb3b0'),carotteseed:packet('#f2862a','#f2a33a'),
+ iaota3:sv(`<path d="M3 11h18c0 5-4 9-9 9s-9-4-9-9Z" fill="#f3ead2" ${SK}/><rect x="6" y="8" width="3.4" height="3.4" rx=".6" fill="#f0a07e" ${SK}/><circle cx="12.5" cy="9" r="1.8" fill="#de4634" ${SK}/><circle cx="16.5" cy="9.5" r="1.6" fill="#3f8a34" ${SK}/><rect x="9" y="12" width="5" height="1.6" fill="#f2862a"/>`),
+ chaomen:sv(`<path d="M3 11h18c0 5-4 9-9 9s-9-4-9-9Z" fill="#f6efd8" ${SK}/><path d="M5 10c3-2 4 1 7-1s4 1 7-1" stroke="#e8c27a" stroke-width="2" fill="none"/><circle cx="9" cy="8" r="1.5" fill="#f2862a"/><circle cx="15" cy="8" r="1.5" fill="#3f8a34"/><path d="M15 3l4 7M17 3l3 7" stroke="#a8743f" stroke-width="1.4"/>`),
+ soupe:sv(`<path d="M3 11h18c0 5-4 9-9 9s-9-4-9-9Z" fill="#f2a33a" ${SK}/><circle cx="9" cy="12" r="1.4" fill="#3f8a34"/><circle cx="14" cy="13" r="1.4" fill="#de4634"/><path d="M9 4c0 2 2 2 2 4M14 4c0 2 2 2 2 4" stroke="#9aa4a7" stroke-width="1.4" fill="none"/>`),
+ aubgrill:sv(`<path d="M3 15c3-6 15-6 18 0-3 3-15 3-18 0Z" fill="#3a1a4a" ${SK}/><path d="M7 13l2 2M11 12l2 2M15 12l2 2" stroke="#e8c27a" stroke-width="1.4"/>`),
+ saladec:sv(`<path d="M3 11h18c0 5-4 9-9 9s-9-4-9-9Z" fill="#f6efd8" ${SK}/><circle cx="8" cy="9" r="2.4" fill="#8fd05e" ${SK}/><circle cx="12.5" cy="8.5" r="2" fill="#de4634" ${SK}/><circle cx="16.5" cy="9.5" r="2" fill="#3f8a34" ${SK}/>`),
+ carococo:sv(`<path d="M3 11h18c0 5-4 9-9 9s-9-4-9-9Z" fill="#f6efd8" ${SK}/><path d="M6 9h12M7 7h10" stroke="#f2862a" stroke-width="1.6"/><circle cx="12" cy="9" r="1.3" fill="#fff"/>`),
+ confmangue:sv(`<path d="M7 7h10v12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2Z" fill="#f2a33a" ${SK}/><rect x="6" y="4" width="12" height="3.4" rx="1" fill="#2fb3b0" ${SK}/><circle cx="12" cy="14" r="2.4" fill="#ffd27a"/>`)
+});
+const VEG={salade:[B('Lettuce','Salade'),B('crisp leaves','feuilles croquantes'),70,3],tomate:[B('Tomato','Tomate'),B('ripe and red','bien rouge'),90,4],concombre:[B('Cucumber','Concombre'),B('fresh and crunchy','frais et croquant'),85,3],
+ pota:[B('Pota','Pota'),B('Chinese cabbage · for chao men','chou chinois · pour le chao men'),75,3],aubergine:[B('Eggplant','Aubergine'),B('grill it at the fire','à griller au feu'),95,3],
+ chou:[B('Cabbage','Chou'),B('a big round head','une belle pomme'),110,1],carotte:[B('Carrot','Carotte'),B('sweet and orange','douce et orange'),80,4]};
+const NEW={mango:{n:B('Mango','Mangue'),t:B('vī · sweet and juicy','vī · sucrée et juteuse'),food:16,cat:'food'},
+ mangoseed:{n:B('Mango seedling','Jeune manguier'),cat:'plant'},
+ iaota3:{n:B('Poisson cru complet','Poisson cru complet'),t:B('with tomato, cucumber and carrot','avec tomate, concombre et carotte'),food:75,cat:'food'},
+ chaomen:{n:B('Chao men','Chao men'),t:B('noodles with pota, carrot and cabbage','nouilles au pota, carotte et chou'),food:65,cat:'food'},
+ soupe:{n:B('Vegetable soup','Soupe de légumes'),food:45,cat:'food'},aubgrill:{n:B('Grilled eggplant','Aubergine grillée'),food:28,cat:'food'},
+ saladec:{n:B('Garden salad','Salade composée'),t:B('lettuce, tomato, cucumber','salade, tomate, concombre'),food:38,cat:'food'},
+ carococo:{n:B('Carrot and coconut salad','Salade de carottes au coco'),food:32,cat:'food'},
+ confmangue:{n:B('Mango jam','Confiture de mangue'),t:B('sells well to visitors','se vend bien aux visiteurs'),cat:'goods'}};
+for(const k in VEG){NEW[k]={n:VEG[k][0],t:VEG[k][1],food:k==='salade'||k==='tomate'||k==='concombre'||k==='carotte'?8:undefined,cat:'food'};if(NEW[k].food===undefined)delete NEW[k].food;
+  NEW[k+'seed']={n:B(`${VEG[k][0]} seeds`,`Graines : ${VEG[k][0].toLowerCase()}`),t:B('plant them in a potager or a tilled bed','à semer dans un potager ou une planche'),cat:'plant'};}
+Object.assign(D.ITEMS,NEW);D.ORDER.push(...Object.keys(NEW));
+D.VEG=Object.keys(VEG);
+for(const k in VEG)D.CROPS2[k]={n:VEG[k][0].toLowerCase(),grow:VEG[k][2],yield:{[k]:VEG[k][3],[k+'seed']:1},slip:k+'seed',verb:B(`Harvest ${VEG[k][0].toLowerCase()}`,`Récolter : ${VEG[k][0].toLowerCase()}`),veg:true};
+D.CROPS.mango={n:B('mango tree','manguier'),grow:160,regrow:70,yield:{mango:4},shoot:'mangoseed',shootCd:220,place:'low',verb:B('Pick mangoes','Cueillir des mangues'),big:true,flowers:0.6};
+D.SEEDS.mangoseed='mango';
+D.RECIPES.push(
+ {id:'potager',lv:6,n:B('Build a potager','Construire un potager'),t:B('raised vegetable garden · comes with lettuce and tomato seeds','jardin surélevé · avec des graines de salade et de tomate'),in:{plank:4,stone:4,log:1},place:'potager',cat:'build'},
+ {id:'saladec',lv:6,n:B('Make a garden salad','Préparer une salade composée'),in:{salade:1,tomate:1,concombre:1},out:{saladec:1},cat:'food'},
+ {id:'carococo',lv:6,n:B('Make carrot and coconut salad','Préparer une salade de carottes au coco'),in:{carotte:2,coconut:1},out:{carococo:1},cat:'food'},
+ {id:'iaota3',lv:6,n:B('Make poisson cru complet','Préparer un poisson cru complet'),t:B('the full recipe: fish, coconut milk, lime, tomato, cucumber, carrot','la vraie recette : poisson, lait de coco, citron, tomate, concombre, carotte'),in:{fish:1,coconut:1,lime:1,tomate:1,concombre:1,carotte:1},out:{iaota3:1},cat:'food'},
+ {id:'confmangue',lv:6,n:B('Make mango jam','Faire de la confiture de mangue'),in:{mango:3,sugar:1},out:{confmangue:1},cat:'food'}
+);
+D.COOK.push(
+ {id:'chaomen',lv:6,n:B('Cook chao men','Cuire un chao men'),t:B('noodles from flour, with pota, carrot and cabbage','nouilles à la farine, pota, carotte et chou'),in:{flour:1,pota:1,carotte:1,chou:1},out:{chaomen:2}},
+ {id:'soupe',lv:6,n:B('Make vegetable soup','Faire une soupe de légumes'),in:{chou:1,carotte:1,tomate:1,water:1},out:{soupe:2}},
+ {id:'aubgrill',lv:6,n:B('Grill eggplant','Griller une aubergine'),in:{aubergine:1},out:{aubgrill:1}}
+);
+D.SHOP.push(
+ {id:'vegA',n:B('Seeds: lettuce and tomato','Graines : salade et tomate'),t:B('3 packets of each','3 sachets de chaque'),price:500,give:{saladeseed:3,tomateseed:3}},
+ {id:'vegB',n:B('Seeds: cucumber and carrot','Graines : concombre et carotte'),t:B('3 packets of each','3 sachets de chaque'),price:600,give:{concombreseed:3,carotteseed:3}},
+ {id:'vegC',n:B('Seeds: pota, eggplant, cabbage','Graines : pota, aubergine, chou'),t:B('2 packets of each','2 sachets de chaque'),price:800,give:{potaseed:2,aubergineseed:2,chouseed:2}},
+ {id:'mangoseed',n:B('Mango seedling','Jeune manguier'),t:B('a big shady tree with sweet mangoes','un grand arbre d’ombre aux mangues sucrées'),price:1500,give:{mangoseed:1}}
+);
+Object.assign(D.PRICES,{mango:150,salade:120,tomate:90,concombre:100,pota:110,aubergine:120,chou:200,carotte:80,iaota3:1500,chaomen:900,soupe:600,aubgrill:350,saladec:550,carococo:450,confmangue:900});
+D.MILESTONES.push(
+ {k:'m_pine',t:B('Reach level 4','Atteindre le niveau 4'),chk:S=>S.level>=4,give:{pinetop:2},from:B('Your neighbour Mere','Ta voisine Mere')},
+ {k:'m_papaya',t:B('Plant 5 plants','Planter 5 plantes'),chk:S=>(S.planted||0)>=5,give:{papseed:2},from:B('A cousin from Taravao','Un cousin de Taravao')},
+ {k:'m_mango',t:B('Reach level 6','Atteindre le niveau 6'),chk:S=>S.level>=6,give:{mangoseed:1},from:B('The old fisherman','Le vieux pêcheur')},
+ {k:'m_veg',t:B('Build a potager','Construire un potager'),chk:S=>(S.fields||[]).some(f=>f.kind==='potager'),give:{concombreseed:2,carotteseed:2},from:B('A gardener from Papara','Une jardinière de Papara')}
+);
+D.LEVELS.push({n:B('Kitchen garden','Le potager'),d:B('Vegetables and recipes','Légumes et recettes'),goals:[
+  {t:B('Grow 4 kinds of vegetables','Faire pousser 4 sortes de légumes'),prog:S=>`${(S.vegKinds||[]).length}/4`,chk:S=>(S.vegKinds||[]).length>=4},
+  {t:B('Make a poisson cru complet','Préparer un poisson cru complet'),k:'iaota3',need:1},
+  {t:B('Cook a chao men','Cuire un chao men'),k:'cooked_chaomen',need:1},
+  {t:B('Harvest a mango tree','Récolter un manguier'),k:'mango',need:1}]});
+D.LEVELS[18].text=B('The last garden: vegetables. Fill your potager and cook real island dishes.','Dernier jardin : les légumes. Remplis ton potager et cuisine de vrais plats des îles.');
+D.HINTS.push([['none',B('Build a potager (Craft · Building) and sow seeds. The goélette sells more seeds.','Construis un potager (Fabriquer · Construction) et sème des graines. La goélette vend d’autres graines.')],
+  ['none',B('Poisson cru complet: fish, coconut, lime, tomato, cucumber and carrot (Craft · Food).','Poisson cru complet : poisson, coco, citron, tomate, concombre et carotte (Fabriquer · Nourriture).')],
+  ['none',B('Chao men cooks at the fire: flour, pota, carrot and cabbage.','Le chao men se cuit au feu : farine, pota, carotte et chou.')],
+  ['none',B('Plant a mango seedling and wait for the mangoes.','Plante un jeune manguier et attends les mangues.')]]);
+})();
+
+/* ===== v13: fare pōteʻe (songs with secret powers) ===== */
+(function(){
+const D=window.FARE_DATA,SK='stroke="#14313a" stroke-width="1.6" stroke-linejoin="round"',sv=b=>`<svg viewBox="0 0 24 24" aria-hidden="true">${b}</svg>`;
+const FRL=(()=>{try{return localStorage.getItem('fare-iti-lang')==='fr';}catch(e){return false;}})(),B=(en,fr)=>FRL?fr:en;
+D.ICON.pote=sv(`<path d="M2 14C2 7 7 4 12 4s10 3 10 10Z" fill="#d6b062" ${SK}/><path d="M5 10h14M4 12.5h16" stroke="#a37d34" stroke-width="1.1"/><path d="M4 14v6M8 14v6M12 14v6M16 14v6M20 14v6" stroke="#14313a" stroke-width="1.6"/><path d="M2 20h20" stroke="#14313a" stroke-width="2"/><path d="M15 6.5l1.5-2 1.5 2" stroke="#de4634" stroke-width="1.3" fill="none"/>`);
+D.RECIPES.push({id:'pote',lv:5,n:B('Build a fare pōteʻe','Construire un fare pōteʻe'),t:B('a big oval house for music · Papa Teve teaches you songs with secret powers','grande maison ovale de la musique · Papa Teve t’apprend des chants aux pouvoirs secrets'),in:{log:8,plank:6,thatch:10,rope:6},place:'pote',cat:'build'});
+})();
+
+/* ===== v14: cooking in bamboo (ʻofe), ipo, more poʻe ===== */
+(function(){
+const D=window.FARE_DATA,SK='stroke="#14313a" stroke-width="1.6" stroke-linejoin="round"',sv=b=>`<svg viewBox="0 0 24 24" aria-hidden="true">${b}</svg>`;
+const FRL=(()=>{try{return localStorage.getItem('fare-iti-lang')==='fr';}catch(e){return false;}})(),B=(en,fr)=>FRL?fr:en;
+const tube=(fill)=>sv(`<rect x="3" y="8" width="18" height="8" rx="2" fill="#9cc23f" ${SK}/><path d="M9 8v8M15 8v8" stroke="#5e7d22" stroke-width="1.4"/><ellipse cx="21" cy="12" rx="1.6" ry="4" fill="${fill}" ${SK}/><path d="M6 5c0-1.5 1.5-1.5 1.5-3M11 5c0-1.5 1.5-1.5 1.5-3" stroke="#9aa4a7" stroke-width="1.3" fill="none"/>`);
+const pudding=(c)=>sv(`<rect x="3" y="9" width="18" height="10" rx="3" fill="${c}" ${SK}/><path d="M3 12h18" stroke="#14313a" stroke-width="1.2"/><path d="M3 9c3-3 15-3 18 0" fill="#f6efd8" ${SK}/>`);
+Object.assign(D.ICON,{iaofe:tube('#f0a07e'),taroofe:tube('#cbb7d8'),
+ ipo:sv(`<ellipse cx="8" cy="14" rx="5" ry="4" fill="#f2d98a" ${SK}/><ellipse cx="16" cy="13" rx="5" ry="4" fill="#e8c27a" ${SK}/><path d="M6 13h3M14 12h3" stroke="#a37d34" stroke-width="1.2"/>`),
+ poepapaya:pudding('#f2862a'),poemango:pudding('#f2a33a')});
+const NEW={iaofe:{n:B('Iʻa ʻofe','Iʻa ʻofe'),t:B('fish steamed in a bamboo tube with coconut milk','poisson cuit dans un bambou au lait de coco'),food:55,cat:'food'},
+ taroofe:{n:B('Taro ʻofe','Taro ʻofe'),t:B('taro cooked in bamboo with coconut milk','taro cuit dans un bambou au lait de coco'),food:48,cat:'food'},
+ ipo:{n:B('Ipo','Ipo'),t:B('sweet coconut bread dumplings','petits pains sucrés au coco'),food:28,cat:'food'},
+ poepapaya:{n:B('Poʻe ʻiʻita','Poʻe ʻiʻita'),t:B('papaya poʻe with coconut cream','poʻe de papaye à la crème de coco'),food:60,cat:'food'},
+ poemango:{n:B('Poʻe vī','Poʻe vī'),t:B('mango poʻe with coconut cream','poʻe de mangue à la crème de coco'),food:60,cat:'food'}};
+Object.assign(D.ITEMS,NEW);D.ORDER.push(...Object.keys(NEW));
+D.COOK.push(
+ {id:'iaofe',lv:3,n:B('Cook iʻa ʻofe','Cuire un iʻa ʻofe'),t:B('fish and coconut milk in a bamboo tube, in the embers','poisson et lait de coco dans un tube de bambou, sur la braise'),in:{fish:1,coconut:1,bamboo:1},out:{iaofe:1}},
+ {id:'taroofe',lv:3,n:B('Cook taro ʻofe','Cuire un taro ʻofe'),t:B('taro and coconut milk in a bamboo tube','taro et lait de coco dans un tube de bambou'),in:{taro:1,coconut:1,bamboo:1},out:{taroofe:1}},
+ {id:'ipo',lv:7,n:B('Make ipo','Faire des ipo'),t:B('flour, grated coconut and sugar, cooked slowly','farine, coco râpé et sucre, cuits doucement'),in:{flour:1,coconut:1,sugar:1},out:{ipo:3}},
+ {id:'poepapaya',lv:6,n:B('Make poʻe ʻiʻita','Faire un poʻe ʻiʻita'),t:B('papaya, manioc starch and coconut cream','papaye, amidon de manioc et crème de coco'),in:{papaya:2,manioc:1,coconut:1},out:{poepapaya:1}},
+ {id:'poemango',lv:6,n:B('Make poʻe vī','Faire un poʻe vī'),t:B('mango, manioc starch and coconut cream','mangue, amidon de manioc et crème de coco'),in:{mango:2,manioc:1,coconut:1},out:{poemango:1}}
+);
+Object.assign(D.PRICES,{iaofe:900,taroofe:800,ipo:250,poepapaya:800,poemango:800});
+D.SHOP.push({id:'maniocpack',n:B('Manioc','Manioc'),t:B('3 roots · for poʻe','3 racines · pour le poʻe'),price:450,give:{manioc:3}});
+})();
+
+/* ===== v15: the butterfly song (secret, vivo only) ===== */
+(function(){
+const D=window.FARE_DATA,SK='stroke="#14313a" stroke-width="1.6" stroke-linejoin="round"',sv=b=>`<svg viewBox="0 0 24 24" aria-hidden="true">${b}</svg>`;
+const FRL=(()=>{try{return localStorage.getItem('fare-iti-lang')==='fr';}catch(e){return false;}})(),B=(en,fr)=>FRL?fr:en;
+D.ICON.heipepe=sv(`<circle cx="12" cy="12" r="7.5" fill="none" stroke="#3f7d34" stroke-width="2"/>${[0,72,144,216,288].map((a,i)=>{const x=12+Math.cos(a*Math.PI/180)*7.5,y=12+Math.sin(a*Math.PI/180)*7.5,c=['#5aa8ff','#f2862a','#f6e04a','#d6359a','#5aa8ff'][i];return`<path d="M${x} ${y}l-3-2.4v4.8ZM${x} ${y}l3-2.4v4.8Z" fill="${c}" ${SK}/>`;}).join('')}`);
+D.ITEMS.heipepe={n:B('Hei pēpē','Hei pēpē'),t:B('butterfly necklace, a gift from the butterflies · tap to wear','collier de papillons offert par les pēpē · touche pour le porter'),cat:'craft',wear:true};D.ORDER.push('heipepe');
+D.PRICES.heipepe=3000;
+})();
+
+/* ===== v16: very secret — the crown of the mountain and the crystal cave ===== */
+(function(){
+const D=window.FARE_DATA,SK='stroke="#14313a" stroke-width="1.6" stroke-linejoin="round"',sv=b=>`<svg viewBox="0 0 24 24" aria-hidden="true">${b}</svg>`;
+const FRL=(()=>{try{return localStorage.getItem('fare-iti-lang')==='fr';}catch(e){return false;}})(),B=(en,fr)=>FRL?fr:en;
+const gem=(c,h)=>sv(`<path d="M12 2 19 9 12 22 5 9Z" fill="${c}" ${SK}/><path d="M5 9h14M12 2l-3 7 3 13 3-13Z" stroke="${h}" stroke-width="1.1" fill="none"/>`);
+Object.assign(D.ICON,{peridot:gem('#7fc63a','#d9f59a'),obsidienne:gem('#22262a','#7a8a96'),zeolite:sv(`<g fill="#f4f8ff" ${SK}>${[[7,20,5,8],[12,20,12,4],[17,20,19,9]].map(([x,y,tx,ty])=>`<path d="M${x-2} ${y} L${tx} ${ty} L${x+2} ${y}Z"/>`).join('')}</g>`),
+ ponce:sv(`<path d="M4 15c0-5 4-9 9-8s7 3 7 7-4 7-9 6-7-2-7-5Z" fill="#c9c4b8" ${SK}/>${[[9,12],[13,10],[15,14],[10,16],[17,11]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="1" fill="#8a857a"/>`).join('')}`),
+ pendperidot:sv(`<path d="M5 3c2 6 12 6 14 0" fill="none" stroke="#3d2a1a" stroke-width="1.6"/><path d="M12 9l4 5-4 7-4-7Z" fill="#7fc63a" ${SK}/>`),
+ obsitoi:sv(`<path d="M5 21 15 6" stroke="#8a5a33" stroke-width="3" stroke-linecap="round"/><path d="M12 3l8 3-3 6-7-3Z" fill="#22262a" ${SK}/><path d="M13 7l5 2" stroke="#7a8a96" stroke-width="1.2"/>`),
+ gommage:sv(`<rect x="5" y="8" width="14" height="12" rx="3" fill="#e8dcc4" ${SK}/><rect x="7" y="4" width="10" height="4" rx="1" fill="#2fb3b0" ${SK}/><circle cx="10" cy="14" r="1" fill="#8a857a"/><circle cx="14" cy="15" r="1" fill="#8a857a"/>`),
+ heimauga:sv(`<path d="M3 15c3-5 15-5 18 0" fill="none" stroke="#3f7d34" stroke-width="2.4"/>${[[5,13,'#7fc63a'],[9,10,'#fbf8f0'],[12,9,'#d6359a'],[15,10,'#fbf8f0'],[19,13,'#7fc63a']].map(([x,y,c],i)=>i%2?`<circle cx="${x}" cy="${y}" r="2.4" fill="${c}" ${SK}/>`:`<path d="M${x} ${y-3}l2 3-2 3-2-3Z" fill="${c}" ${SK}/>`).join('')}`)});
+const NEW={peridot:{n:B('Peridot','Péridot'),t:B('green olivine crystal born in the volcano','cristal vert d’olivine, né du volcan'),cat:'mat'},
+ obsidienne:{n:B('Obsidian','Obsidienne'),t:B('black volcanic glass, sharp as a blade','verre volcanique noir, tranchant comme une lame'),cat:'mat'},
+ zeolite:{n:B('Zeolite','Zéolite'),t:B('white crystals from the hollows of the basalt','cristaux blancs des creux du basalte'),cat:'mat'},
+ ponce:{n:B('Pumice','Pierre ponce'),t:B('light stone full of tiny holes','pierre légère pleine de petits trous'),cat:'mat'},
+ pendperidot:{n:B('Peridot pendant','Pendentif de péridot'),t:B('it glows faintly green · tap to wear','il brille d’un vert doux · touche pour le porter'),cat:'craft',wear:true},
+ obsitoi:{n:B('Obsidian toʻi','Toʻi en obsidienne'),t:B('the sharpest adze: +2 logs per palm, +1 stone per hit','l’herminette la plus tranchante : +2 bûches par cocotier, +1 pierre par coup'),cat:'tool'},
+ gommage:{n:B('Monoʻi and pumice scrub','Gommage monoʻi et ponce'),t:B('a precious island beauty product','un précieux soin de beauté des îles'),cat:'goods'},
+ heimauga:{n:B('Hei of the mountain','Hei de la montagne'),t:B('crown of flowers and volcano crystals · tap to wear','couronne de fleurs et de cristaux du volcan · touche pour la porter'),cat:'craft',wear:true}};
+Object.assign(D.ITEMS,NEW);D.ORDER.push(...Object.keys(NEW));
+D.RECIPES.push(
+ {id:'pendperidot',lv:1,secret:true,n:B('Set a peridot pendant','Monter un pendentif de péridot'),in:{peridot:2,rope:1},out:{pendperidot:1},cat:'crafts'},
+ {id:'obsitoi',lv:1,secret:true,n:B('Knap an obsidian toʻi','Tailler un toʻi en obsidienne'),t:B('the sharpest adze on the island','l’herminette la plus tranchante de l’île'),in:{obsidienne:3,log:1,rope:1},out:{obsitoi:1},one:'obsitoi',cat:'tools'},
+ {id:'gommage',lv:1,secret:true,n:B('Make a monoʻi scrub','Faire un gommage au monoʻi'),in:{ponce:2,monoi:1},out:{gommage:1},cat:'crafts'},
+ {id:'heimauga',lv:1,secret:true,n:B('Weave the hei of the mountain','Tresser le hei de la montagne'),t:B('the rarest crown of all','la plus rare de toutes les couronnes'),in:{peridot:3,zeolite:2,obsidienne:1,tiare:6,bougain:4},out:{heimauga:1},cat:'crafts'}
+);
+Object.assign(D.PRICES,{peridot:1500,obsidienne:900,zeolite:700,ponce:300,pendperidot:6000,gommage:3500,heimauga:20000});
+Object.assign(D.LAMPCOL,{peridot:{n:B('Peridot','Péridot'),c:'#9cff5a',cost:{peridot:1,strips:1},t:B('a peridot shade','un abat-jour de péridot'),secret:true},
+ crystal:{n:B('Crystal','Cristal'),c:'#d8c8ff',cost:{zeolite:2,strips:1},t:B('a zeolite crystal shade','un abat-jour de cristaux de zéolite'),secret:true}});
+})();
+
+/* ===== v17: secret of the sea — guardian of the lagoon, the undersea cave, coral ===== */
+(function(){
+const D=window.FARE_DATA,SK='stroke="#14313a" stroke-width="1.6" stroke-linejoin="round"',sv=b=>`<svg viewBox="0 0 24 24" aria-hidden="true">${b}</svg>`;
+const FRL=(()=>{try{return localStorage.getItem('fare-iti-lang')==='fr';}catch(e){return false;}})(),B=(en,fr)=>FRL?fr:en;
+Object.assign(D.ICON,{
+ coralfrag:sv(`<path d="M12 22V12M12 14l-5-5M12 12l5-6M7 9 5 4M7 9 3 9M17 6l1-4M17 6l4 0M12 17l4 1" stroke="#14313a" stroke-width="3.4" stroke-linecap="round" fill="none"/><path d="M12 22V12M12 14l-5-5M12 12l5-6M7 9 5 4M7 9 3 9M17 6l1-4M17 6l4 0M12 17l4 1" stroke="#e0402e" stroke-width="1.8" stroke-linecap="round" fill="none"/>`),
+ cowrie:sv(`<ellipse cx="12" cy="12" rx="8" ry="6" fill="#f2a33a" ${SK}/><path d="M6 12c3 1 9 1 12 0" stroke="#7a4a28" stroke-width="1.6"/><circle cx="9" cy="9.5" r="1.4" fill="#ffd27a"/>`),
+ coralcut:sv(`<path d="M5 18h14l-2 4H7Z" fill="#c9c4b8" ${SK}/><path d="M12 18v-6M12 14l-3-3M12 13l3-4" stroke="#14313a" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M12 18v-6M12 14l-3-3M12 13l3-4" stroke="#ff7a9a" stroke-width="1.6" stroke-linecap="round" fill="none"/>`),
+ heimoana:sv(`<circle cx="12" cy="12" r="7.5" fill="none" stroke="#2c7fb8" stroke-width="2"/>${[0,60,120,180,240,300].map((a,i)=>{const x=12+Math.cos(a*Math.PI/180)*7.5,y=12+Math.sin(a*Math.PI/180)*7.5;return`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.3" fill="${['#e0402e','#f6efd8','#f2a33a'][i%3]}" ${SK}/>`;}).join('')}`),
+ pendcowrie:sv(`<path d="M5 3c2 6 12 6 14 0" fill="none" stroke="#3d2a1a" stroke-width="1.6"/><ellipse cx="12" cy="15" rx="5" ry="3.8" fill="#f2a33a" ${SK}/><path d="M8.5 15h7" stroke="#7a4a28" stroke-width="1.4"/>`)});
+const NEW={coralfrag:{n:B('Red coral fragment','Fragment de corail rouge'),t:B('a broken branch found on the cave floor · never taken from a living reef','une branche cassée trouvée au sol de la grotte · jamais prise sur un récif vivant'),cat:'mat'},
+ cowrie:{n:B('Golden cowrie','Porcelaine dorée'),t:B('the rarest shell of the Pacific','le coquillage le plus rare du Pacifique'),cat:'mat'},
+ coralcut:{n:B('Coral cutting','Bouture de corail'),t:B('replant it on the reef from your vaʻa','à replanter sur le récif depuis ton vaʻa'),cat:'plant'},
+ heimoana:{n:B('Hei moana','Hei moana'),t:B('necklace of the sea, red coral and golden cowrie · tap to wear','collier de la mer, corail rouge et porcelaine dorée · touche pour le porter'),cat:'craft',wear:true},
+ pendcowrie:{n:B('Golden cowrie pendant','Pendentif porcelaine dorée'),t:B('tap to wear','touche pour le porter'),cat:'craft',wear:true}};
+Object.assign(D.ITEMS,NEW);D.ORDER.push(...Object.keys(NEW));
+D.RECIPES.push(
+ {id:'heimoana',lv:1,secret:'sea',n:B('String the hei moana','Enfiler le hei moana'),t:B('the treasure of the guardian of the lagoon','le trésor du gardien du lagon'),in:{coralfrag:3,cowrie:1,parau:2,rope:1},out:{heimoana:1},cat:'crafts'},
+ {id:'pendcowrie',lv:1,secret:'sea',n:B('Make a golden cowrie pendant','Faire un pendentif porcelaine dorée'),in:{cowrie:1,rope:1},out:{pendcowrie:1},cat:'crafts'});
+Object.assign(D.PRICES,{coralfrag:2000,cowrie:5000,heimoana:25000,pendcowrie:8000});
+Object.assign(D.LAMPCOL,{corail:{n:B('Coral','Corail'),c:'#ff6a7a',cost:{coralfrag:1,strips:1},t:B('a coral-pink shade','un abat-jour rose corail'),secret:'sea'},
+ abysses:{n:B('Deep sea','Abysses'),c:'#3a7aff',cost:{coralfrag:1,parau:1},t:B('the blue of the deep','le bleu des profondeurs'),secret:'sea'}});
+})();
+
+/* ===== v18: the legend of Hina and Pere — a little undersea volcano ===== */
+(function(){
+const D=window.FARE_DATA,SK='stroke="#14313a" stroke-width="1.6" stroke-linejoin="round"',sv=b=>`<svg viewBox="0 0 24 24" aria-hidden="true">${b}</svg>`;
+const FRL=(()=>{try{return localStorage.getItem('fare-iti-lang')==='fr';}catch(e){return false;}})(),B=(en,fr)=>FRL?fr:en;
+Object.assign(D.ICON,{
+ peretears:sv(`${[[8,14],[14,10],[16,16]].map(([x,y])=>`<path d="M${x} ${y-5}c3 4 4 6 4 8a4 4 0 0 1-8 0c0-2 1-4 4-8Z" fill="#1d2226" ${SK}/><circle cx="${x-1}" cy="${y+1}" r="0.9" fill="#ff8a3a"/>`).join('')}`),
+ lava:sv(`<path d="M3 16c0-5 4-9 9-9s9 4 9 9c-2 3-16 3-18 0Z" fill="#2a2a2a" ${SK}/><path d="M7 13l3 2 2-3 3 2 2-2" stroke="#ff6a1a" stroke-width="1.8" fill="none"/>`),
+ moonpearl:sv(`<circle cx="12" cy="12" r="7.5" fill="#e8eef8" ${SK}/><circle cx="9.5" cy="9.5" r="2.6" fill="#ffffff"/><path d="M15 6a6 6 0 1 0 3 9 5 5 0 1 1-3-9Z" fill="#c8d4f0" opacity=".7"/>`),
+ heihina:sv(`<circle cx="12" cy="12" r="7.5" fill="none" stroke="#3f7d34" stroke-width="2"/>${[0,60,120,180,240,300].map((a,i)=>{const x=12+Math.cos(a*Math.PI/180)*7.5,y=12+Math.sin(a*Math.PI/180)*7.5;return i%2?`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.2" fill="#e8eef8" ${SK}/>`:`<path d="M${x.toFixed(1)} ${(y-2.6).toFixed(1)}l2 3-2 2.4-2-2.4Z" fill="#1d2226" ${SK}/>`;}).join('')}<circle cx="12" cy="4.5" r="2.4" fill="#ff8a3a" ${SK}/>`),
+ pendtears:sv(`<path d="M5 3c2 6 12 6 14 0" fill="none" stroke="#3d2a1a" stroke-width="1.6"/><path d="M12 9c3 4 4 6 4 8a4 4 0 0 1-8 0c0-2 1-4 4-8Z" fill="#1d2226" ${SK}/><circle cx="11" cy="17" r="1" fill="#ff8a3a"/>`)});
+const NEW={peretears:{n:B('Tears of Pere','Larmes de Pere'),t:B('drops of volcanic glass from the new motu','gouttes de verre volcanique du nouveau motu'),cat:'mat'},
+ lava:{n:B('Lava stone','Pierre de lave'),t:B('fresh black lava, still a little warm','lave noire toute neuve, encore un peu tiède'),cat:'mat'},
+ moonpearl:{n:B('Pearl of Hina','Perle de Hina'),t:B('a moon-white pearl, gift of Hina','une perle blanche comme la lune, cadeau de Hina'),cat:'craft'},
+ heihina:{n:B('Hei of Hina and Pere','Hei de Hina et Pere'),t:B('moon and fire together · tap to wear','la lune et le feu réunis · touche pour le porter'),cat:'craft',wear:true},
+ pendtears:{n:B('Tear of Pere pendant','Pendentif larme de Pere'),t:B('tap to wear','touche pour le porter'),cat:'craft',wear:true}};
+Object.assign(D.ITEMS,NEW);D.ORDER.push(...Object.keys(NEW));
+D.RECIPES.push(
+ {id:'heihina',lv:1,secret:'volcano',n:B('Weave the hei of Hina and Pere','Tresser le hei de Hina et Pere'),t:B('the legendary crown of the moon and the fire','la couronne légendaire de la lune et du feu'),in:{moonpearl:1,peretears:3,lava:2,tiare:4,rope:1},out:{heihina:1},cat:'crafts'},
+ {id:'pendtears',lv:1,secret:'volcano',n:B('Make a tear of Pere pendant','Faire un pendentif larme de Pere'),in:{peretears:1,rope:1},out:{pendtears:1},cat:'crafts'});
+Object.assign(D.PRICES,{peretears:1800,lava:400,pendtears:7000,heihina:40000});
+Object.assign(D.LAMPCOL,{lave:{n:B('Lava','Lave'),c:'#ff5a1a',cost:{lava:2,strips:1},t:B('the glow of Pere’s fire','la lueur du feu de Pere'),secret:'volcano'},
+ lune:{n:B('Hina’s moon','Lune de Hina'),c:'#cfe0ff',cost:{peretears:1,parau:1},t:B('silver moonlight','la lumière argentée de la lune'),secret:'volcano'}});
+})();
