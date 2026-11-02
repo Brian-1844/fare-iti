@@ -1380,8 +1380,8 @@ const SKY_KEYS=[
  {e:-0.30,top:'#081428',mid:'#0e1f3a',hor:'#1b2c45',glow:'#2a3560',amt:0.0,belt:0},
  {e:-0.14,top:'#141d4a',mid:'#3a3f86',hor:'#8f5c9a',glow:'#ff9a5a',amt:0.35,belt:0.25},
  {e:-0.06,top:'#2b3f86',mid:'#9a5f96',hor:'#f06a3c',glow:'#ff9a48',amt:1.0,belt:0.6},
- {e:0.01,top:'#3a6fb0',mid:'#e8847e',hor:'#ff9a46',glow:'#ffc26a',amt:1.2,belt:0.5},
- {e:0.09,top:'#3f93cf',mid:'#b9c9df',hor:'#ffd6a2',glow:'#ffe2a0',amt:0.55,belt:0.15},
+ {e:0.01,top:'#3a6fb0',mid:'#e8847e',hor:'#ff9a46',glow:'#ffc26a',amt:0.9,belt:0.5},
+ {e:0.09,top:'#3f93cf',mid:'#b9c9df',hor:'#ffd6a2',glow:'#ffe2a0',amt:0.4,belt:0.15},
  {e:0.30,top:'#3f9fd6',mid:'#8fcbe6',hor:'#d3efe9',glow:'#fff2d0',amt:0.18,belt:0},
  {e:1.00,top:'#2f8fd0',mid:'#8fcbe6',hor:'#d3efe9',glow:'#fff2d0',amt:0.14,belt:0}];
 const SKY_RISE={mid:'#f0a6b0',hor:'#ffc4b0',glow:'#ffd6a8'}; // dawns are pinker and softer
@@ -1973,7 +1973,7 @@ sky.material.fragmentShader=`uniform vec3 top,mid,bottom,sunDir,sunCol,glowCol,b
   void main(){vec3 d=normalize(vP);float h=max(d.y,0.0);
     vec3 c=mix(bottom,mid,smoothstep(0.0,0.22,h));c=mix(c,top,pow(smoothstep(0.18,1.0,h),0.75));
     float s=max(dot(d,sunDir),0.0);float horiz=1.0-smoothstep(0.0,0.45,h);
-    c+=glowCol*(pow(s,40.0)*0.8+pow(s,7.0)*0.2*horiz+pow(s,1.5)*0.03)*glowAmt;
+    c+=glowCol*(pow(s,90.0)*0.55+pow(s,12.0)*0.12*horiz+pow(s,1.5)*0.03)*glowAmt;
     float anti=max(dot(d,-sunDir),0.0);c=mix(c,beltCol,belt*pow(anti,2.0)*horiz*0.6);
     float m=max(dot(d,uMoon),0.0);float disc=smoothstep(0.99935,0.9996,m);float crater=0.92+0.08*sin(d.x*900.0)*sin(d.z*700.0);c=mix(c,vec3(0.96,0.95,0.86)*crater,disc*uNight);c+=vec3(0.55,0.62,0.75)*pow(m,160.0)*0.3*uNight;
     gl_FragColor=vec4(c,1.0);}`;
@@ -3236,7 +3236,7 @@ function lampActs(L,A){const C=LAMPCOL[L.col]||LAMPCOL.warm,lit=lampLit(L)>0;
     if(L.type!=='solar'&&S.inv.solar>0)A.push({label:'Fit the solar kit',sub:'Charges in the sun · no fuel',cls:'alt',fn:()=>{S.inv.solar--;L.type='solar';L.charge=0.5;spawnLamp(L);stat('solarfit');toast('Solar street lamp! It charges in the daytime. Cloudy days give less light.');refresh();}});
     if(L.type!=='elec'&&S.inv.bulb>0)A.push(S.gen?{label:'Wire it to the generator',sub:'1 bulb · bright electric light',cls:'alt',fn:()=>{S.inv.bulb--;L.type='elec';spawnLamp(L);toast('Electric street lamp! It lights up at night while the generator has fuel.');refresh();}}:{label:'Make it electric',sub:'Install a groupe électrogène first',off:true});}}
 function lampSheet(){$('#sheetTitle').textContent='Lamp colour';const L=lampTarget;if(!L)return'';
-  return`<p class="small-note">Choose a shade for this lamp. It shows at night.</p>`+Object.entries(LAMPCOL).filter(([k,C])=>!C.secret||(C.secret==='faarumai'?!!S.flags.faarumaiDone:C.secret==='sea'?S.flags.seaCaveFound:C.secret==='volcano'?!!S.volcano:C.secret==='pai'?!!S.flags.paiDone:C.secret==='faie'?!!S.flags.faieDone:S.flags.caveFound)).map(([k,C])=>{const cur=L.col===k||(!L.col&&k==='warm'),ok=!C.cost||hasAll(C.cost);
+  return`<p class="small-note">Choose a shade for this lamp. It shows at night.</p>`+Object.entries(LAMPCOL).filter(([k,C])=>!C.secret||(C.secret==='faarumai'?!!S.flags.faarumaiDone:C.secret==='sea'?S.flags.seaCaveFound:C.secret==='volcano'?!!S.volcano:C.secret==='pai'?!!S.flags.paiDone:C.secret==='faie'?!!S.flags.faieDone:C.secret==='fetia'?!!S.flags.magicWish:S.flags.caveFound)).map(([k,C])=>{const cur=L.col===k||(!L.col&&k==='warm'),ok=!C.cost||hasAll(C.cost);
     return`<div class="recipe"><div class="rinfo"><div class="name"><span class="swatch-dot" style="background:${C.c}"></span> ${C.n}</div><div class="tah">${C.cost?`${C.t} · ${Object.entries(C.cost).map(([i,v])=>`${v} ${nm(i)}`).join(' + ')}`:'Plain glass'}</div></div><button data-lcol="${k}" ${cur||!ok?'disabled':''}>${cur?'Now':'Use'}</button></div>`;}).join('');}
 function lampClick(b){const k=b.dataset.lcol,L=lampTarget;if(!k||!L)return;const C=LAMPCOL[k];if(C.cost){if(!hasAll(C.cost))return;take(C.cost);}
   L.col=k;spawnLamp(L);stat('lampcol');floatAtPlayer(`${C.n} shade`);openSheet(null);refresh();}
@@ -5119,13 +5119,13 @@ $('#goal').addEventListener('click',e=>{if(e.target.closest('[data-daily]')){S.f
 
 /* ----- v30: sun disc and glow in the sky ----- */
 const sunDisc=(function(){const g=new THREE.Group();const disc=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xfff6d8,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:1}));disc.scale.set(7,7,1);g.add(disc);
-  const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xffd9a0,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0.55}));glow.scale.set(56,56,1);g.add(glow);
+  const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xffd9a0,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0.55}));glow.scale.set(40,40,1);g.add(glow);
   const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xff9a5a,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0}));halo.scale.set(260,110,1);g.add(halo);
   g.userData={disc,glow,halo};scene.add(g);return g;})();
-function updateSunDisc(){const ang=(S.tod-0.25)*Math.PI*2,elev=Math.sin(ang),cl=S.weather.c,set=Math.max(0,1-Math.abs(elev-0.03)/0.25);
+function updateSunDisc(){const ang=(S.tod-0.25)*Math.PI*2,elev=Math.sin(ang),cl=S.weather.c,set=Math.max(0,1-Math.abs(elev-0.02)/0.13);
   const d=new THREE.Vector3(Math.cos(ang)*30,Math.max(elev,-0.3)*40,14).normalize();sunDisc.position.copy(camera.position).addScaledVector(d,380);
   const up=smooth(-0.08,0.06,elev),vis=up*(1-cl*0.85)*(S.inCave?0:1),u=sunDisc.userData;
-  u.disc.material.opacity=vis;u.glow.material.opacity=0.3*vis;u.halo.material.opacity=0.6*set*(1-cl*0.8)*(S.inCave?0:1);
+  u.disc.material.opacity=vis;u.glow.material.opacity=0.18*vis;u.halo.material.opacity=0.35*set*set*(1-cl*0.8)*(S.inCave?0:1);
   u.disc.material.color.copy(C.sunDay).lerp(new THREE.Color(0xff9a3a),set*set);u.glow.material.color.setHex(0xffd9a0).lerp(new THREE.Color(0xff8a4a),set);sunDisc.visible=vis>0.01||u.halo.material.opacity>0.01;}
 /* =====================================================================
    v31: tree ferns (nahe) + Huahine (lake Fauna Nui, Maeva marae and its stone
@@ -5380,6 +5380,291 @@ ACH.push(['huahine',()=>LG('Ia ora na Huahine','Ia ora na Huahine'),()=>LG('Navi
   ['faie',()=>LG('Les yeux bleus de Faie','The blue eyes of Faie'),()=>LG('Nourrir les anguilles sacrées','Feed the sacred eels'),()=>!!S.flags.faieDone]);
 LAMPCOL.faie={n:LG('Yeux de Faie','Faie eyes'),c:'#4ad8ff',cost:{pitate:1},t:LG('le bleu des yeux des anguilles sacrées','the blue of the sacred eels’ eyes'),secret:'faie'};
 
+/* =====================================================================
+   v32: golden hour (sunlit cloud undersides, high cirrus, rays, sun-rim on
+   plants and mountains, violet shadows, Tahiti & Moorea silhouettes on the
+   horizon), the giant shooting star, and the overwater bungalow (fare sur pilotis)
+   ===================================================================== */
+/* ----- sky shader: horizon warmth toward the sun, faint crepuscular rays ----- */
+skyU.uRays={value:0};skyU.uWarmH={value:0};
+sky.material.uniforms.uRays=skyU.uRays;sky.material.uniforms.uWarmH=skyU.uWarmH;
+sky.material.fragmentShader=`uniform vec3 top,mid,bottom,sunDir,sunCol,glowCol,beltCol,uMoon;uniform float uNight,glowAmt,belt,uRays,uWarmH;varying vec3 vP;
+  void main(){vec3 d=normalize(vP);float h=max(d.y,0.0);
+    vec3 c=mix(bottom,mid,smoothstep(0.0,0.22,h));c=mix(c,top,pow(smoothstep(0.18,1.0,h),0.75));
+    float s=max(dot(d,sunDir),0.0);float horiz=1.0-smoothstep(0.0,0.45,h);
+    vec2 dh=normalize(d.xz+vec2(1e-4)),sh=normalize(sunDir.xz+vec2(1e-4));float az=dot(dh,sh)*0.5+0.5;
+    c=mix(c,glowCol,uWarmH*pow(az,5.0)*(1.0-smoothstep(0.0,0.3,h))*0.55);
+    c=mix(c,c*vec3(0.82,0.78,1.05),uWarmH*(1.0-az)*horiz*0.5);
+    c+=glowCol*(pow(s,90.0)*0.55+pow(s,12.0)*0.12*horiz+pow(s,1.5)*0.03)*glowAmt;
+    if(uRays>0.001){vec3 T=normalize(cross(sunDir,vec3(0.0,1.0,0.0)));vec3 B=cross(T,sunDir);float an=atan(dot(d,T),dot(d,B));
+      float r=(sin(an*23.0)*0.5+0.5)*(sin(an*9.0+1.7)*0.5+0.5)*(sin(an*37.0+0.4)*0.25+0.75);c+=glowCol*r*pow(s,5.0)*(1.0-pow(s,120.0))*uRays*0.06*smoothstep(-0.01,0.05,d.y);}
+    float anti=max(dot(d,-sunDir),0.0);c=mix(c,beltCol,belt*pow(anti,2.0)*horiz*0.6);
+    float m=max(dot(d,uMoon),0.0);float disc=smoothstep(0.99935,0.9996,m);float crater=0.92+0.08*sin(d.x*900.0)*sin(d.z*700.0);c=mix(c,vec3(0.96,0.95,0.86)*crater,disc*uNight);c+=vec3(0.55,0.62,0.75)*pow(m,160.0)*0.3*uNight;
+    gl_FragColor=vec4(c,1.0);}`;
+sky.material.needsUpdate=true;
+/* ----- sun rim: backlit edges glow warm (palms, leaves, the mountain) ----- */
+const GHU={uSunV:{value:new THREE.Vector3(0,1,0)},uRimC:{value:new THREE.Color(0,0,0)}};
+const RIM_GLSL='{vec3 Vv=normalize(vViewPosition);float edge=pow(1.0-abs(dot(Vv,normal)),2.2);float back=pow(max(dot(-Vv,uSunV),0.0),2.0);outgoingLight+=uRimC*edge*(0.25+0.75*back)*(0.55+0.45*diffuseColor.rgb);}\n';
+function addSunRim(m){if(!m||m.__sunRim||!(m.isMeshToonMaterial||m.isMeshStandardMaterial||m.isMeshPhongMaterial))return;if(m.transparent&&m.opacity<0.6)return;m.__sunRim=1;const prev=m.onBeforeCompile,pk=m.customProgramCacheKey();m.customProgramCacheKey=()=>pk+'|rim';
+  m.onBeforeCompile=function(sh,r){if(prev)prev.call(this,sh,r);sh.uniforms.uSunV=GHU.uSunV;sh.uniforms.uRimC=GHU.uRimC;
+    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nuniform vec3 uSunV;uniform vec3 uRimC;').replace('#include <output_fragment>',RIM_GLSL+'#include <output_fragment>');};
+  m.needsUpdate=true;}
+const _toonify32=toonify;toonify=function(m,o){const r=_toonify32(m,o);addSunRim(m);return r;};
+function rimSweep(root){root.traverse(o=>{if(!o.material)return;(Array.isArray(o.material)?o.material:[o.material]).forEach(addSunRim);});}
+rimSweep(scene);for(const k in MAT)addSunRim(MAT[k]);
+/* ----- clouds lit from below by the low sun ----- */
+const CLU={uCSun:{value:new THREE.Vector3(0,1,0)},uCWarm:{value:new THREE.Color()},uCAmt:{value:0}};
+cloudMat.onBeforeCompile=sh=>{Object.assign(sh.uniforms,CLU);
+  sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vWN;').replace('#include <beginnormal_vertex>','#include <beginnormal_vertex>\nvWN=normalize(mat3(modelMatrix)*objectNormal);');
+  sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vWN;uniform vec3 uCSun,uCWarm;uniform float uCAmt;')
+    .replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
+      {vec3 n=normalize(vWN);float under=smoothstep(0.35,-0.75,n.y);float face=dot(n,uCSun)*0.5+0.5;float lit=clamp(0.1+0.75*under*(0.3+0.7*face)+0.4*face*face*face*face,0.0,1.1);
+       totalEmissiveRadiance+=uCWarm*uCAmt*lit;diffuseColor.rgb*=1.0-uCAmt*0.45*smoothstep(0.1,0.9,n.y)*(1.0-face);}`);};
+cloudMat.needsUpdate=true;
+/* ----- high cirrus streaks that catch the last light ----- */
+const cirrus=(function(){const g=new THREE.Group(),r=mulberry32(808),L=[];
+  for(let i=0;i<9;i++){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xffffff,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
+    const w=90+r()*120;sp.scale.set(w,4+r()*5,1);g.add(sp);L.push({sp,az:r()*Math.PI*2,el:0.10+r()*0.22,w});}
+  scene.add(g);g.userData.L=L;return g;})();
+/* ----- far silhouettes on the horizon, seen from the motu: Tahiti (west) and Moorea (north-west) ----- */
+function ridgeMesh(width,hmax,seed,peaks){const r=mulberry32(seed),N=64,pos=[],col=[],idx=[];
+  for(let i=0;i<=N;i++){const u=i/N,x=(u-0.5)*width;let h=0;for(const[c,s,a]of peaks)h+=a*Math.exp(-((u-c)**2)/(2*s*s));
+    h*=0.88+0.12*Math.sin(u*41+seed)*Math.sin(u*17);h+=0.035*(r()-0.5)*Math.min(1,h*3);h=Math.max(0,h*hmax)*Math.min(1,Math.min(u,1-u)*9);
+    pos.push(x,-3,0,x,h,0);col.push(1.12,1.12,1.12,0.9,0.9,0.9);if(i<N){const a=i*2;idx.push(a,a+1,a+2,a+1,a+3,a+2);}}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));g.setIndex(idx);
+  const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({vertexColors:true,fog:false,side:THREE.DoubleSide}));m.frustumCulled=false;return m;}
+const farIsl=(function(){const G=new THREE.Group();
+  const T=ridgeMesh(250,30,11,[[0.32,0.13,0.85],[0.45,0.06,1.0],[0.52,0.05,0.9],[0.6,0.1,0.7],[0.8,0.07,0.45]]);
+  const M=ridgeMesh(150,17,23,[[0.22,0.12,0.35],[0.36,0.05,0.75],[0.45,0.035,1.0],[0.53,0.05,0.7],[0.63,0.04,0.9],[0.76,0.08,0.45]]);
+  const place=(m,dx,dz,d)=>{const L=Math.hypot(dx,dz);m.position.set(dx/L*d,0,dz/L*d);m.lookAt(0,0,0);G.add(m);};
+  place(T,-0.97,-0.25,330);place(M,-0.62,0.78,400);G.userData={T,M};scene.add(G);return G;})();
+const GH_C={dusk:new THREE.Color('#2c2a4c'),night:new THREE.Color('#0b1222'),dayH:new THREE.Color('#6f8ea8'),hemiDusk:new THREE.Color('#8f88d8'),gndDusk:new THREE.Color('#7a5c4a'),pink:new THREE.Color('#ff7f9a'),
+  a:new THREE.Color(),b:new THREE.Color(),v:new THREE.Vector3()};
+let HEMI_G=null;
+function updateGolden(){const ang=(S.tod-0.25)*Math.PI*2,elev=Math.sin(ang),cl=S.weather.c,rain=S.weather.r,day=smooth(-0.12,0.18,elev);
+  const low=smooth(-0.15,-0.03,elev)*(1-smooth(0.07,0.24,elev)),clear=(1-cl*0.8)*(1-rain*0.7),inside=S.inCave;
+  const sd=skyU.sunDir.value;
+  // sky
+  skyU.uWarmH.value=low*clear;skyU.uRays.value=(elev>-0.02?smooth(-0.02,0.03,elev)*(1-smooth(0.08,0.18,elev)):0)*(0.25+0.75*smooth(0.15,0.45,cl))*(1-rain);
+  // rim light on everything lit by the low sun
+  GH_C.v.copy(sd).transformDirection(camera.matrixWorldInverse);GHU.uSunV.value.copy(GH_C.v);
+  GHU.uRimC.value.copy(sun.color).multiplyScalar((inside?0:1)*clear*(0.06+0.5*smooth(-0.04,0.02,elev)*(1-smooth(0.1,0.3,elev))));
+  // violet ambient at dusk, warm bounce from the ground
+  if(!inside){if(!HEMI_G)HEMI_G=hemi.groundColor.clone();hemi.color.copy(HEMI_C).lerp(GH_C.hemiDusk,low*0.75*clear);hemi.groundColor.copy(HEMI_G).lerp(GH_C.gndDusk,low*0.6*clear);
+    sun.color.lerp(GH_C.a.set('#ff7a3a'),(1-smooth(-0.02,0.1,elev))*0.55*clear);}
+  // clouds: undersides take the sunset, tops go grey-violet; after the sun has set, pink
+  CLU.uCSun.value.copy(sd);CLU.uCWarm.value.copy(skyU.glowCol.value).lerp(GH_C.a.set('#ff7034'),0.55).lerp(GH_C.pink,smooth(0.02,-0.1,elev)*0.85).convertSRGBToLinear();CLU.uCAmt.value=smooth(-0.17,-0.06,elev)*(1-smooth(0.05,0.22,elev))*(1-rain*0.8)*0.9;
+  cloudMat.color.lerp(GH_C.b.set('#5f5a86'),low*0.7*(1-rain)).lerp(GH_C.a.set('#4a5684'),(1-day)*(1-low)*0.7);
+  // cirrus
+  const c=camera.position,warm=smooth(-0.16,-0.04,elev)*(1-smooth(0.1,0.25,elev));cirrus.position.copy(c);
+  for(const o of cirrus.userData.L){const ce=Math.cos(o.el);o.sp.position.set(Math.cos(o.az)*ce*400,Math.sin(o.el)*400,Math.sin(o.az)*ce*400);
+    const toSun=(Math.cos(o.az)*ce*sd.x+Math.sin(o.az)*ce*sd.z+Math.sin(o.el)*sd.y)*0.5+0.5;
+    o.sp.material.color.copy(skyU.glowCol.value).lerp(GH_C.pink,(1-toSun)*0.7+smooth(0.0,-0.1,elev)*0.3);
+    o.sp.material.opacity=(inside?0:1)*(1-cl*0.9)*(1-rain)*(0.09*day*(1-warm)+0.6*warm*(0.45+0.55*toSun));o.sp.visible=o.sp.material.opacity>0.005;}
+  // far islands: hazy blue by day, dark violet silhouettes at sunset, almost black at night
+  const vis=!S.away&&!inside;farIsl.visible=vis;
+  if(vis){const hor=skyU.bottom.value;for(const[k,m]of[['T',farIsl.userData.T],['M',farIsl.userData.M]]){const haze=k==='M'?0.75:0.55;
+    GH_C.a.copy(GH_C.dayH).lerp(hor,haze);GH_C.b.copy(GH_C.night).lerp(GH_C.a,day);GH_C.b.lerp(GH_C.a.copy(GH_C.dusk).lerp(hor,haze*0.35),low*0.85);GH_C.b.lerp(hor,rain*0.6+cl*0.25);m.material.color.copy(GH_C.b).convertSRGBToLinear();}}
+  // sun disc squashed and redder right at the horizon
+  const u=sunDisc.userData;u.disc.scale.set(7,7*(0.8+0.2*smooth(-0.02,0.07,elev)),1);u.disc.material.color.lerp(GH_C.a.set('#ff5a2a'),(1-smooth(-0.03,0.05,elev))*0.6);}
+const _usd32=updateSunDisc;updateSunDisc=function(){_usd32();updateGolden();};
+
+/* =====================================================================
+   The giant shooting star (bolide): rare, on clear nights, more often in the
+   Matariʻi months and in August; you can make a wish while it fades.
+   ===================================================================== */
+const BOL={on:false,t:0,dur:3.4,a:new THREE.Vector3(),b:new THREE.Vector3(),wishT:0,next:-1,day:-1,N:28};
+(function(){const N=BOL.N,g=new THREE.BufferGeometry(),pos=new Float32Array((N+1)*2*3),col=new Float32Array((N+1)*2*3),idx=[];for(let i=0;i<N;i++){const a=i*2;idx.push(a,a+1,a+2,a+1,a+3,a+2);}
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));g.setIndex(idx);
+  BOL.trail=new THREE.Mesh(g,new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,fog:false,side:THREE.DoubleSide}));BOL.trail.frustumCulled=false;BOL.trail.visible=false;scene.add(BOL.trail);
+  const sp=(c,s)=>{const m=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:c,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));m.scale.setScalar(s);m.visible=false;scene.add(m);return m;};
+  BOL.halo=sp(0x8fffc8,30);BOL.head=sp(0xffffff,9);BOL.sparks=[];for(let i=0;i<7;i++)BOL.sparks.push({s:sp(i%2?0xffb060:0xb0ffe0,3),v:new THREE.Vector3(),p:new THREE.Vector3(),t:0});})();
+const _bv=new THREE.Vector3(),_bw=new THREE.Vector3(),_bq=new THREE.Vector3(),_bc=new THREE.Color();
+function bolDir(k,out){return out.copy(BOL.a).lerp(BOL.b,k).normalize();}
+function launchBolide(){const fw=camera.getWorldDirection(new THREE.Vector3()),sg=Math.random()<0.5?1:-1,az0=Math.atan2(fw.z,fw.x),az=az0-sg*(0.35+Math.random()*0.3),el=0.42+Math.random()*0.2;BOL.a.set(Math.cos(az)*Math.cos(el),Math.sin(el),Math.sin(az)*Math.cos(el));
+  const az2=az0+sg*(0.45+Math.random()*0.35),el2=0.06+Math.random()*0.06;BOL.b.set(Math.cos(az2)*Math.cos(el2),Math.sin(el2),Math.sin(az2)*Math.cos(el2));
+  BOL.on=true;BOL.t=0;BOL.dur=3.2+Math.random()*0.8;BOL.trail.visible=BOL.head.visible=BOL.halo.visible=true;BOL.sparks.forEach(s=>{s.t=-1;s.s.visible=false;});
+  S.flags.bolSeen=(S.flags.bolSeen||0)+1;stat('bolides');pendingSave=true;
+  setTimeout(()=>manuSay(LG('Oh ! Une énorme étoile filante ! Vite, fais un vœu !','Oh! A huge shooting star! Quick, make a wish!'),5),900);}
+function updateBolide(dt,day){const cl=S.weather.c;
+  // schedule: one roll per night
+  if(day<0.12&&cl<0.4&&!S.inCave&&!BOL.on){if(BOL.day!==S.day){BOL.day=S.day;const special=[10,11,7].includes(month());const first=!S.flags.bolSeen&&S.level>=3;
+      BOL.next=(first||Math.random()<(special?0.55:0.18))?8+Math.random()*40:-1;}
+    if(BOL.next>0){BOL.next-=dt;if(BOL.next<=0){BOL.next=-1;launchBolide();}}}
+  if(BOL.wishT>0){BOL.wishT-=dt;if(BOL.wishT<=0){actSig='';}}
+  if(!BOL.on)return;BOL.t+=dt;const k=Math.min(1,BOL.t/BOL.dur),c=camera.position,R=340;
+  const headK=Math.min(1,k/0.86),burst=smooth(0.8,0.88,k)*(1-smooth(0.9,1,k)),fade=1-smooth(0.86,1,k);
+  bolDir(headK,_bv);BOL.head.position.copy(_bv).multiplyScalar(R).add(c);BOL.halo.position.copy(BOL.head.position);
+  BOL.head.material.opacity=Math.min(1,k*8)*fade+burst;BOL.head.scale.setScalar(9+burst*18+Math.sin(BOL.t*40)*0.8);
+  BOL.halo.material.opacity=(0.7*Math.min(1,k*6)*fade+burst*0.8);BOL.halo.scale.setScalar(30+burst*50);
+  // trail ribbon facing the camera, white-green at the head, orange then dark at the tail
+  const N=BOL.N,pos=BOL.trail.geometry.attributes.position.array,col=BOL.trail.geometry.attributes.color.array,tl=0.42;
+  for(let i=0;i<=N;i++){const u=i/N,kk=Math.max(0,headK-tl*u);bolDir(kk,_bw).multiplyScalar(R);bolDir(Math.max(0,kk-0.01),_bq).multiplyScalar(R);
+    const along=_bq.sub(_bw).normalize(),side=along.cross(_bw.clone().normalize()).normalize().multiplyScalar((1-u)*(2.6+burst*2)+0.2);
+    const j=i*6;pos[j]=_bw.x+side.x+c.x;pos[j+1]=_bw.y+side.y+c.y;pos[j+2]=_bw.z+side.z+c.z;pos[j+3]=_bw.x-side.x+c.x;pos[j+4]=_bw.y-side.y+c.y;pos[j+5]=_bw.z-side.z+c.z;
+    const f=Math.pow(1-u,1.6)*(k<0.86?1:fade*(1-u*0.5))*Math.min(1,k*6);_bc.setRGB(0.75,1,0.85).lerp(GH_C.a.setRGB(1,0.55,0.2),Math.min(1,u*1.6)).multiplyScalar(f);
+    col[j]=col[j+3]=_bc.r;col[j+1]=col[j+4]=_bc.g;col[j+2]=col[j+5]=_bc.b;}
+  BOL.trail.geometry.attributes.position.needsUpdate=true;BOL.trail.geometry.attributes.color.needsUpdate=true;
+  // sparks breaking off near the end
+  BOL.sparks.forEach((s,i)=>{if(s.t<0&&k>0.6+i*0.04){s.t=0;s.p.copy(BOL.head.position).sub(c);s.v.set(Math.random()-0.5,-0.4-Math.random()*0.5,Math.random()-0.5).multiplyScalar(18);s.s.visible=true;}
+    if(s.t>=0){s.t+=dt;s.p.addScaledVector(s.v,dt);s.s.position.copy(s.p).add(c);s.s.material.opacity=Math.max(0,1-s.t/1.2);s.s.scale.setScalar(2.5*(1-s.t/1.4)+0.5);}});
+  hemi.intensity+=burst*0.25+0.05*fade;
+  if(k>=1&&BOL.sparks.every(s=>s.t<0||s.t>1.3)){BOL.on=false;BOL.trail.visible=BOL.head.visible=BOL.halo.visible=false;BOL.sparks.forEach(s=>s.s.visible=false);}
+  if(k>0.3&&BOL.wishT<=0&&!BOL.wished){BOL.wishT=12;BOL.wished=true;actSig='';}}
+const WISHES=[()=>{give({cowrie:1});return LG('Le lendemain, une porcelaine dorée t’attend sur le sable…','The next morning, a golden cowrie waits for you on the sand…');},
+  ()=>{earn(3000,null,true);return LG('Un message arrive : un voyageur a laissé un pourboire de 3 000 XPF pour la pension !','A message arrives: a traveller left a 3,000 XPF tip for the pension!');},
+  ()=>{give({tiare:6});return LG('Au matin, ton tiare est couvert de fleurs.','In the morning your tiare is covered in flowers.');},
+  ()=>{S.food=Math.min(100,(S.food||0)+40);return LG('Tu te sens léger et plein d’énergie.','You feel light and full of energy.');}];
+function makeWish(){BOL.wishT=0;const w=WISHES[Math.floor(Math.random()*WISHES.length)];S.flags.wishes=(S.flags.wishes||0)+1;stat('wishes');
+  toast(LG('Tu fermes les yeux et fais un vœu… ','You close your eyes and make a wish… ')+w());manuSay(LG('Chut, ne dis à personne ce que tu as souhaité !','Shh, don’t tell anyone what you wished for!'),4);pendingSave=true;actSig='';refresh();}
+const _islActions32b=islActions;islActions=function(A){_islActions32b(A);if(BOL.wishT>0)A.unshift({label:LG('Faire un vœu','Make a wish'),sub:LG('Pendant que l’étoile s’éteint…','While the star fades…'),cls:'alt',fn:makeWish});};
+const _launchBol0=launchBolide;launchBolide=function(){BOL.wished=false;_launchBol0();};
+ACH.push(['bolide',()=>LG('Une étoile pour moi','A star for me'),()=>LG('Voir une énorme étoile filante et faire un vœu','See a huge shooting star and make a wish'),()=>(S.flags.wishes||0)>=1]);
+
+/* =====================================================================
+   Overwater bungalow (fare sur pilotis): built in the lagoon, reached by a
+   wooden walkway. A suite for the pension, a glass floor to watch the fish,
+   a terrace with a ladder for a swim.
+   ===================================================================== */
+RECIPES.push({id:'bungalow',lv:10,n:LG('Construire un bungalow sur pilotis','Build an overwater bungalow'),t:LG('fare sur pilotis dans le lagon, avec passerelle, plancher de verre et terrasse · une suite pour la pension · place-toi sur la plage, face au lagon','fare on stilts in the lagoon, with walkway, glass floor and terrace · a suite for the pension · stand on the beach facing the lagoon'),
+  in:{log:8,plank:18,thatch:10,rope:6,stone:4},special:'bungalow',cat:'build'});
+const _specCheck32=specialCheck;specialCheck=function(sp){if(sp==='bungalow'){if(S.away)return{ok:false,why:LG('Construis-le sur ton motu','Build it on your motu')};if(S.bungalow)return{ok:false,why:LG('Tu as déjà un bungalow sur pilotis','You already have an overwater bungalow')};
+    if(S.g2<3)return{ok:false,why:LG('Ouvre d’abord ta pension','Open your pension first')};if(!bungSpot())return{ok:false,why:LG('Va sur la plage, face à un lagon assez profond (pas près du ponton ni du quai)','Go to the beach, facing a deep enough lagoon (away from the pontoon and the dock)')};}return _specCheck32(sp);};
+const _doSpec32=doSpecial;doSpecial=function(sp){if(sp==='bungalow'){const p=bungSpot();S.bungalow=Object.assign(p,{day:S.day});placeBungalow();S.pension.beds++;stat('bungalow');
+    toast(LG('Les pilotis sont plantés, la passerelle relie la plage… Ton bungalow sur pilotis est prêt ! Une suite de plus pour la pension.','The stilts are in, the walkway joins the beach… Your overwater bungalow is ready! One more suite for the pension.'));
+    manuSay(LG('Comme à Bora Bora ! Les clients vont adorer le plancher de verre.','Just like Bora Bora! Guests will love the glass floor.'),6);return;}return _doSpec32(sp);};
+const BUNG={len:5,wid:5.4,y:1.15};
+function bungSpot(){const px=player.position.x,pz=player.position.z;if(H(px,pz)<0.05)return null;const a0=Math.atan2(px,pz),r0=Math.hypot(px,pz);
+  for(let d=2.5;d<=12;d+=0.25)for(let k=-5;k<=5;k++){const a=a0+k*0.04,x=Math.sin(a)*(r0+d),z=Math.cos(a)*(r0+d);
+    let ok=true;for(const[u,v]of[[0,0],[2.5,2.6],[2.5,-2.6],[-2.5,2.6],[-2.5,-2.6]]){const ca=Math.sin(a),sa=Math.cos(a),xx=x+ca*u+sa*v,zz=z+sa*u-ca*v,h=H(xx,zz);if(h>-0.28||h<-3.4||Math.hypot(xx,zz)>REEF-0.4||onDockArea(xx,zz)||(S.pflot&&dist(xx,zz,S.pflot.x,S.pflot.z)<7))ok=false;}
+    if(!ok)continue;let gx=px,gz=pz;for(let t=0;t<=1;t+=0.04){const xx=px+(x-px)*t,zz=pz+(z-pz)*t;if(H(xx,zz)>0.1){gx=xx;gz=zz;}}
+    return{x,z,rot:Math.atan2(x-gx,z-gz),gx,gz};}return null;}
+let bungMesh=null,bungFish=[],bungLamp=null;
+MAT.glassFloor=new THREE.MeshBasicMaterial({color:0x7fe6f2,transparent:true,opacity:0.35,depthWrite:false});
+function placeBungalow(){if(!S.bungalow)return;if(bungMesh)scene.remove(bungMesh);const B=S.bungalow,root=new THREE.Group(),Y=BUNG.y,r=mulberry32(4243);
+  const ux=Math.sin(B.rot),uz=Math.cos(B.rot),Lw=Math.max(1,Math.hypot(B.x-B.gx,B.z-B.gz)-BUNG.len/2);
+  // walkway: local frame along the walkway, from the beach to the deck
+  const walk=new THREE.Group();for(let i=0;i<Math.ceil(Lw/0.34);i++){const s=i*0.34+0.17,t=s/Lw,y=Math.max(H(B.gx,B.gz),0)*(1-t)+Y*t;walk.add(box(1.2,0.07,0.3,MAT.plank,0,y,s));}
+  for(let s=1.2;s<Lw;s+=1.6){const t=s/Lw,y=Math.max(H(B.gx,B.gz),0)*(1-t)+Y*t;for(const sd of[-0.6,0.6]){walk.add(cyl(0.08,y+2.2,MAT.trunk||MAT.post,sd,(y-2.2)/2,s,6));walk.add(cyl(0.035,0.9,MAT.post,sd,y+0.45,s,5));}}
+  for(const sd of[-0.62,0.62]){const rl=box(0.06,0.06,Lw,MAT.post,sd,0,Lw/2);rl.position.y=(Math.max(H(B.gx,B.gz),0)+Y)/2+0.9;rl.rotation.x=-Math.atan2(Y-Math.max(H(B.gx,B.gz),0),Lw);walk.add(rl);}
+  walk.position.set(B.gx,0,B.gz);walk.rotation.y=B.rot;root.add(walk);bakeGroup(walk);
+  // the bungalow: local frame at the deck centre (z = seaward)
+  const g=new THREE.Group(),deck=new THREE.Group();g.add(deck);
+  for(let i=0;i<14;i++)deck.add(box(BUNG.wid,0.08,0.34,MAT.plank,0,Y,-BUNG.len/2+0.18+i*0.355));
+  for(const x of[-2.4,-0.8,0.8,2.4])for(const z of[-2.2,-0.7,0.7,2.2])deck.add(cyl(0.12,Y+3.6,MAT.trunk||MAT.post,x,(Y-3.6)/2,z,7));
+  // house walls (bamboo/wood) leaving a door toward the walkway and a big window seaward
+  const wallM=MAT.bungWall||(MAT.bungWall=std(0xc89f66)),W=3.6,D=3.0,hz=-0.85;
+  deck.add(box(W,1.9,0.1,wallM,0,Y+0.95,hz+D/2));// seaward wall (window cut by a frame)
+  deck.add(box(0.1,1.9,D,wallM,-W/2,Y+0.95,hz));deck.add(box(0.1,1.9,D,wallM,W/2,Y+0.95,hz));
+  for(const sx of[-1,1])deck.add(box(1.2,1.9,0.1,wallM,sx*1.2,Y+0.95,hz-D/2));
+  deck.add(box(1.3,0.5,0.12,wallM,0,Y+1.65,hz-D/2));
+  const win=box(2.0,0.85,0.12,MAT.glassFloor,0,Y+1.15,hz+D/2+0.02);g.add(win);
+  // bed, glass floor frame, terrace loungers, ladder
+  deck.add(box(1.4,0.35,1.9,MAT.post,-0.85,Y+0.2,hz+0.3));deck.add(box(1.3,0.12,1.8,std(0xf6f0e0),-0.85,Y+0.43,hz+0.3));
+  for(const[x,z,w,d]of[[1.0,hz-0.05,1.1,0.08],[1.0,hz+0.95,1.1,0.08],[0.45,hz+0.45,0.08,1.08],[1.55,hz+0.45,0.08,1.08]])deck.add(box(w,0.1,d,MAT.post,x,Y+0.06,z));
+  for(const x of[-1.7,-0.6]){const l=box(0.7,0.12,1.3,MAT.post,x,Y+0.25,1.75);l.rotation.x=-0.12;deck.add(l);deck.add(box(0.72,0.1,0.45,std(0xf2f0e6),x,Y+0.4,1.3));}
+  for(let i=0;i<4;i++)deck.add(box(0.6,0.04,0.05,MAT.post,1.9,Y-0.15-i*0.3,BUNG.len/2+0.05));for(const sx of[-0.3,0.3])deck.add(box(0.05,1.4,0.05,MAT.post,1.9+sx,Y-0.5,BUNG.len/2+0.05));
+  for(const[x,z,w,d]of[[0,BUNG.len/2,BUNG.wid,0.06],[-BUNG.wid/2,0.8,0.06,BUNG.len-1.6],[BUNG.wid/2,0.8,0.06,BUNG.len-1.6]])deck.add(box(w,0.06,d,MAT.post,x,Y+0.85,z));
+  bakeGroup(deck);
+  const glass=new THREE.Mesh(new THREE.PlaneGeometry(1.1,0.95),MAT.glassFloor);glass.rotation.x=-Math.PI/2;glass.position.set(1.0,Y+0.045,hz+0.45);g.add(glass);
+  // roof: four-sided pandanus roof with a ridge overhang
+  const roof=mesh(new THREE.ConeGeometry(3.4,2.3,4,1),MAT.thatch,0,Y+1.9+1.15,hz);roof.rotation.y=Math.PI/4;roof.scale.set(1.05,1,1.0);g.add(roof);
+  const roof2=mesh(new THREE.ConeGeometry(3.6,0.45,4,1,true),MAT.thatch,0,Y+2.02,hz);roof2.rotation.y=Math.PI/4;g.add(roof2);
+  const tip=cyl(0.06,0.7,MAT.post,0,Y+4.25,hz,5);g.add(tip);
+  bungLamp=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xffc070,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending}));bungLamp.scale.setScalar(2.6);bungLamp.position.set(0,Y+1.7,hz-D/2-0.3);g.add(bungLamp);
+  // fish under the glass floor
+  bungFish=[];const cols=[0xf2d34a,0x3fb8e0,0xff8a5a,0xf0f0f0];for(let i=0;i<6;i++){const f=new THREE.Group(),m=std(cols[i%4],{flatShading:false});const b=mesh(new THREE.SphereGeometry(0.13,8,6),m,0,0,0,false);b.scale.set(0.5,0.9,1.4);f.add(b);
+    const tl=mesh(new THREE.ConeGeometry(0.1,0.16,4),m,0,0,-0.22,false);tl.rotation.x=-Math.PI/2;f.add(tl);g.add(f);bungFish.push({f,a:r()*6,rad:0.5+r()*1.2,sp:0.4+r()*0.5,y:-0.35-r()*0.5});}
+  g.position.set(B.x,0,B.z);g.rotation.y=B.rot;root.add(g);root.userData.house=g;scene.add(root);bungMesh=root;rimSweep(root);}
+function bungLocal(x,z){const B=S.bungalow,s=Math.sin(B.rot),c=Math.cos(B.rot),dx=x-B.x,dz=z-B.z;return{a:dx*s+dz*c,b:dx*c-dz*s};}
+function onBung(x,z){if(!S.bungalow||S.away)return 0;const l=bungLocal(x,z);if(Math.abs(l.a)<BUNG.len/2-0.1&&Math.abs(l.b)<BUNG.wid/2-0.15)return 1;
+  const B=S.bungalow,dx=B.x-B.gx,dz=B.z-B.gz,L=Math.hypot(dx,dz),ux=dx/L,uz=dz/L,qx=x-B.gx,qz=z-B.gz,al=qx*ux+qz*uz,sd=Math.abs(qx*uz-qz*ux);if(al>-0.3&&al<L-BUNG.len/2+0.2&&sd<0.55)return 2;return 0;}
+const _walk32=walkable;walkable=function(x,z){if(onBung(x,z))return true;return _walk32(x,z);};
+const _groundY32=groundY;groundY=function(x,z){const o=onBung(x,z);if(o===1)return BUNG.y+0.04;if(o===2){const B=S.bungalow,dx=B.x-B.gx,dz=B.z-B.gz,L=Math.hypot(dx,dz)-BUNG.len/2,al=((x-B.gx)*dx+(z-B.gz)*dz)/Math.hypot(dx,dz),t=clamp(al/L,0,1);return Math.max(H(B.gx,B.gz),0)*(1-t)+BUNG.y*t+0.04;}return _groundY32(x,z);};
+function bungActions(A){if(!S.bungalow||S.away||S.boat)return;const px=player.position.x,pz=player.position.z;if(onBung(px,pz)!==1)return;const l=bungLocal(px,pz);
+  if(Math.hypot(l.a+0.4,l.b-1.0)<1.2)A.push({label:LG('Regarder par le plancher de verre','Look through the glass floor'),sub:LG('Les poissons du lagon passent sous tes pieds','Lagoon fish swim under your feet'),fn:()=>{stat('glassfloor');window.__lookFish=4;toast(LG('Un banc de poissons-papillons jaunes passe sous le verre… et un petit poisson-perroquet bleu !','A school of yellow butterflyfish passes under the glass… and a little blue parrotfish!'));actSig='';refresh();}});
+  if(l.a>1.0)A.push({label:LG('Se baigner depuis la terrasse','Swim from the terrace'),sub:LG('L’échelle descend dans l’eau turquoise','The ladder goes down into the turquoise water'),fn:()=>{stat('swims');chopT=0.4;toast(LG('Plouf ! L’eau est tiède, tu vois le sable blanc tout au fond.','Splash! The water is warm, you can see the white sand far below.'));if(typeof dive==='function'&&pflotMesh)dive();actSig='';refresh();}});
+  if(l.a<0.7&&l.a>-2.4&&Math.abs(l.b)<1.8&&isNight())A.push({label:LG('Dormir dans le bungalow','Sleep in the bungalow'),sub:LG('Bercé par le clapotis','Lulled by the lapping water'),fn:()=>{if(typeof sleep==='function')sleep();else{S.tod=0.26;refresh();}}});}
+const _islActions32c=islActions;islActions=function(A){_islActions32c(A);bungActions(A);};
+/* the suite: one guest stays in the bungalow and pays more, and is happier */
+const _spawnGuest32=spawnGuest;spawnGuest=function(){const n=_spawnGuest32();if(S.bungalow&&!S.npcs.some(o=>o!==n&&o.role==='guest'&&o.suite&&o.state!=='leave'))n.suite=true;return n;};
+const _guestDepart32=guestDepart;guestDepart=function(n,quiet){if(n.suite&&!n.paidSuite){n.paidSuite=true;earn(2500,null,true);if(!quiet)setTimeout(()=>toast(LG(`${n.name} a adoré la suite sur pilotis : +2 500 XPF`,`${n.name} loved the overwater suite: +2,500 XPF`)),1200);}return _guestDepart32(n,quiet);};
+const _v10R32=v10Rating;v10Rating=function(){return _v10R32()+(S.bungalow?0.3:0);};
+function updateBungalow(dt,t,day){if(!bungMesh)return;bungMesh.visible=!S.away;if(S.away)return;if(bungLamp)bungLamp.material.opacity=(1-day)*0.85*(0.9+0.1*Math.sin(t*3));
+  bungFish.forEach((o,i)=>{o.a+=dt*o.sp*(window.__lookFish>0?1.8:1);o.f.position.set(1.0+Math.cos(o.a)*o.rad*0.6,o.y+Math.sin(t+i)*0.05,-0.4+Math.sin(o.a)*o.rad*0.8);o.f.rotation.y=-o.a;});
+  if(window.__lookFish>0)window.__lookFish-=dt;}
+if(S.bungalow)placeBungalow();
+ACH.push(['bungalow',()=>LG('Comme à Bora Bora','Just like Bora Bora'),()=>LG('Construire un bungalow sur pilotis','Build an overwater bungalow'),()=>!!S.bungalow]);
+
+/* =====================================================================
+   v33: the rain of stars. After your first wish on a giant shooting star,
+   Manu teaches the Song of the stars. Played on a clear night from the beach,
+   the bungalow or the pontoon, the sky answers: a rain of shooting stars and,
+   at the end, a magic wish star drawing a sparkling arc across the sky.
+   ===================================================================== */
+const STAR_SONG={k:'stars',notes:['G','A','C','A','G','E'],n:()=>LG('Chant des étoiles','Song of the stars'),t:()=>LG('La nuit, ciel dégagé, au bord de l’eau : le ciel répond par une pluie d’étoiles filantes.','At night, under a clear sky, by the water: the sky answers with a rain of shooting stars.')};
+const _songbook33=songbookHtml;songbookHtml=function(){let h=_songbook33();if(songLearned('stars'))h+=`<div class="recipe"><div class="rinfo"><div class="name">✨ ${STAR_SONG.n()}</div><div class="tah">${STAR_SONG.t()}</div><div class="songnotes">${STAR_SONG.notes.map(n=>`<b>${n}</b>`).join('')}</div></div></div>`;return h;};
+/* more shooting-star lines for the shower */
+for(let i=0;i<10;i++){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(6),3));g.setAttribute('color',new THREE.BufferAttribute(new Float32Array([1,1,1,0,0,0]),3));
+  const l=new THREE.Line(g,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));l.frustumCulled=false;l.visible=false;scene.add(l);
+  shooters.push({l,t:1,dur:1,a:new THREE.Vector3(),b:new THREE.Vector3()});}
+/* a twinkling four-point star texture */
+const twinkTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');
+  const gr=g.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(0.18,'rgba(255,255,255,0.55)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);
+  g.globalCompositeOperation='lighter';for(const[w,h]of[[64,5],[5,64]]){const lg=g.createRadialGradient(32,32,0,32,32,32);lg.addColorStop(0,'rgba(255,255,255,1)');lg.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=lg;g.fillRect(32-w/2,32-h/2,w,h);}
+  const t=new THREE.CanvasTexture(c);return t;})();
+const MAGIC={on:false,t:0,dur:5.5,az0:0,sg:1,head:null,glow:null,dust:[],next:0,R:330};
+(function(){const sp=(tex,c,s)=>{const m=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,color:c,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));m.scale.setScalar(s);m.visible=false;scene.add(m);return m;};
+  MAGIC.glow=sp(glowTex,0xffe6a0,44);MAGIC.head=sp(twinkTex,0xffffff,24);const cols=[0xffd770,0xffe9a8,0xffffff,0xbfe6ff,0xffc2e8,0xffd770];
+  for(let i=0;i<200;i++)MAGIC.dust.push({s:sp(i%3?twinkTex:glowTex,cols[i%cols.length],2),p:new THREE.Vector3(),v:new THREE.Vector3(),t:-1,life:2,ph:Math.random()*6});})();
+function magicDir(k,out){const az=MAGIC.az0+MAGIC.sg*(-1.0+2.0*k),el=0.06+0.5*Math.sin(Math.PI*Math.min(1,k));return out.set(Math.cos(az)*Math.cos(el),Math.sin(el),Math.sin(az)*Math.cos(el));}
+function launchMagic(){const fw=camera.getWorldDirection(new THREE.Vector3());MAGIC.az0=Math.atan2(fw.z,fw.x);MAGIC.sg=Math.random()<0.5?1:-1;MAGIC.on=true;MAGIC.t=0;MAGIC.next=0;MAGIC.wished=false;MAGIC.head.visible=MAGIC.glow.visible=true;}
+const _mv=new THREE.Vector3();
+function updateMagic(dt){const c=camera.position;let alive=false;
+  if(MAGIC.on){MAGIC.t+=dt;const k=MAGIC.t/MAGIC.dur;if(k>=1){MAGIC.on=false;MAGIC.head.visible=MAGIC.glow.visible=false;}else{alive=true;
+      magicDir(k,_mv).multiplyScalar(MAGIC.R);MAGIC.head.position.copy(_mv).add(c);MAGIC.glow.position.copy(MAGIC.head.position);
+      const f=Math.min(1,k*6)*(1-smooth(0.85,1,k));MAGIC.head.material.opacity=f;MAGIC.glow.material.opacity=0.55*f;MAGIC.head.material.rotation=MAGIC.t*1.5;MAGIC.head.scale.setScalar(22+5*Math.sin(MAGIC.t*9));
+      MAGIC.next-=dt;while(MAGIC.next<=0){MAGIC.next+=0.011;const d=MAGIC.dust.find(o=>o.t<0);if(!d)break;d.t=0;d.life=2.4+Math.random()*1.6;d.p.copy(_mv).add(new THREE.Vector3((Math.random()-0.5)*3,(Math.random()-0.5)*3,(Math.random()-0.5)*3));
+        d.v.set((Math.random()-0.5)*2,-0.6-Math.random()*1.6,(Math.random()-0.5)*2);d.s.visible=true;}
+      if(k>0.35&&!MAGIC.wished){MAGIC.wished=true;BOL.wishT=14;BOL.magic=true;actSig='';}}}
+  for(const d of MAGIC.dust){if(d.t<0)continue;alive=true;d.t+=dt;if(d.t>d.life){d.t=-1;d.s.visible=false;continue;}d.p.addScaledVector(d.v,dt);d.v.y-=dt*0.35;
+    const a=d.t/d.life;d.s.position.copy(d.p).add(c);d.s.material.opacity=(1-a)*(0.6+0.4*Math.sin(d.t*14+d.ph));d.s.scale.setScalar((d.s.material.map===twinkTex?7:3)*(1-a*0.55)*(0.7+0.3*Math.sin(d.t*9+d.ph)));d.s.material.rotation=d.ph+d.t*2;}
+  return alive;}
+/* the shower itself */
+const SHOWER={t:0,dur:0,next:0,bol:false,magic:0};
+function starShower(){const special=month()===10;SHOWER.t=0;SHOWER.dur=special?55:42;SHOWER.next=0;SHOWER.bol=false;SHOWER.magic=special?2:1;SHOWER.done=0;S.flags.showers=(S.flags.showers||0)+1;stat('showers');
+  toast(LG('Les étoiles t’ont entendu… Le ciel se met à pleuvoir des étoiles filantes !','The stars heard you… The sky starts raining shooting stars!'));
+  setTimeout(()=>manuSay(special?LG('Matariʻi est levé, la pluie est encore plus belle ! Regarde bien, l’étoile des vœux va passer.','Matariʻi has risen, the shower is even more beautiful! Watch closely, the wish star will come.'):LG('Regarde, il y en a partout ! Attends la dernière : c’est l’étoile des vœux.','Look, they’re everywhere! Wait for the last one: it’s the wish star.'),6),1500);pendingSave=true;}
+function updateShower(dt){if(SHOWER.dur<=0)return;SHOWER.t+=dt;const k=SHOWER.t/SHOWER.dur;
+  SHOWER.next-=dt;if(SHOWER.next<=0&&k<0.92){SHOWER.next=0.18+Math.random()*0.5*(k<0.2?2:1);const s=shooters.find(x=>x.t>=x.dur);if(s){const fl=S.flags.shootDay;launchShooter();S.flags.shootDay=fl===undefined?S.day:fl;}}
+  if(!SHOWER.bol&&k>0.35&&!BOL.on){SHOWER.bol=true;launchBolide();}
+  const due=SHOWER.magic===2?[0.5,0.8]:[0.78];if(SHOWER.done<due.length&&k>due[SHOWER.done]&&!MAGIC.on){SHOWER.done++;launchMagic();}
+  if(k>=1&&!MAGIC.on)SHOWER.dur=0;}
+/* playing the song */
+function starSongPlace(){const px=player.position.x,pz=player.position.z;if(S.away||S.inCave)return false;if((typeof onBung==='function'&&onBung(px,pz))||(typeof onPflot==='function'&&onPflot(px,pz)))return true;const h=H(px,pz);return h<1.3;}
+const _playSong33=playSong;playSong=function(s){if(s.k!=='stars')return _playSong33(s);stat('song_stars');
+  if(!isNight()){toast(LG('Les étoiles dorment encore… Rejoue ce chant la nuit.','The stars are still asleep… Play this song again at night.'));return;}
+  if(S.weather.c>0.5||S.weather.r>0.1){toast(LG('Les nuages cachent les étoiles. Attends une nuit claire.','Clouds hide the stars. Wait for a clear night.'));return;}
+  if(!starSongPlace()){toast(LG('Va au bord de l’eau, là où l’on voit tout le ciel.','Go to the water’s edge, where you can see the whole sky.'));return;}
+  if(S.flags.showerDay===S.day){toast(LG('Le ciel s’est déjà offert cette nuit. Reviens une autre nuit.','The sky has already given its show tonight. Come back another night.'));return;}
+  S.flags.showerDay=S.day;starShower();};
+/* matching: add the song to the note detector */
+const _v13Note33=v13Note;v13Note=function(i){_v13Note33(i);if(!songLearned('stars')||(musicInst!=='vivo'&&musicInst!=='uke'))return;const n=STAR_SONG.notes.length;
+  if(noteBuf.length>=n&&noteBuf.slice(-n).join('')===STAR_SONG.notes.join('')){const now=clock.elapsedTime;if(songCd.stars&&now-songCd.stars<25)return;songCd.stars=now;noteBuf=[];playSong(STAR_SONG);}};
+/* teaching: after your first wish, Manu remembers the song */
+const _makeWish33=makeWish;makeWish=function(){const magic=BOL.magic;BOL.magic=false;
+  if(magic){BOL.wishT=0;S.flags.magicWish=(S.flags.magicWish||0)+1;give({cowrie:1,tiare:4});earn(5000,null,true);stat('wishes');
+    toast(LG('Tu fais ton vœu pendant que l’étoile dessine son arc d’or… Une pluie de paillettes retombe sur le lagon. (+1 porcelaine dorée, +4 tiare, +5 000 XPF)','You make your wish as the star draws its golden arc… A rain of sparkles falls over the lagoon. (+1 golden cowrie, +4 tiare, +5,000 XPF)'));
+    manuSay(LG('L’étoile des vœux ! Mon grand-père disait qu’elle n’exauce que les vœux faits avec le cœur.','The wish star! My grandfather said it only grants wishes made with the heart.'),6);pendingSave=true;actSig='';refresh();return;}
+  _makeWish33();
+  if(!songLearned('stars')){setTimeout(()=>{S.songs=S.songs||[];if(!S.songs.includes('stars'))S.songs.push('stars');pendingSave=true;
+    manuSay(LG('Mon grand-père me chantait un air pour appeler les étoiles : sol, la, do, la, sol, mi. Joue-le au vivo, la nuit, au bord de l’eau… et regarde le ciel !','My grandfather sang me a tune to call the stars: G, A, C, A, G, E. Play it on the vivo at night by the water… and watch the sky!'),12);
+    toast(LG('Nouveau chant dans ton carnet : le Chant des étoiles','New song in your notebook: the Song of the stars'));},5200);}};
+const _islActions33=islActions;islActions=function(A){_islActions33(A);const i=A.findIndex(a=>a.fn===makeWish||/vœu|wish/i.test(a.label));if(i>=0&&BOL.magic){A[i]={label:LG('Faire un vœu à l’étoile','Make a wish on the star'),sub:LG('L’étoile des vœux dessine son arc…','The wish star draws its arc…'),cls:'alt',fn:makeWish};}};
+LAMPCOL.fetia={n:LG('Poussière d’étoile','Stardust'),c:'#ffe7a8',cost:{tiare:1},t:LG('l’or de l’étoile des vœux','the gold of the wish star'),secret:'fetia'};
+ACH.push(['shower',()=>LG('Pluie d’étoiles','Rain of stars'),()=>LG('Faire pleuvoir les étoiles avec le Chant des étoiles','Make the stars rain with the Song of the stars'),()=>(S.flags.showers||0)>=1],
+  ['magicwish',()=>LG('L’étoile des vœux','The wish star'),()=>LG('Faire un vœu sur l’étoile qui dessine un arc d’or','Make a wish on the star that draws a golden arc'),()=>(S.flags.magicWish||0)>=1]);
+
 /* =========================================================
    Main loop
    ========================================================= */
@@ -5548,7 +5833,7 @@ function tick(){
   updateV17(dt,t);
   updateV18(dt,t);
   updateV19(dt,t);
-  updateFps(dt);updateRainbow(dt,day);updateSunRays(day,t);updateV21(dt,t);updateV22(dt);updateIsland(dt,t);updateMoorea(dt,t);updateHuahine(dt,t);updateSpecies(dt,t);updatePflot(dt,t);updateCyclone(dt,t);updateVisitors(dt,t);updateVisitorBuilds(dt,t);if(!paused)updateSun(dt);updateActFold();updateSunDisc();
+  updateFps(dt);updateRainbow(dt,day);updateSunRays(day,t);updateV21(dt,t);updateV22(dt);updateIsland(dt,t);updateMoorea(dt,t);updateHuahine(dt,t);updateBolide(dt,day);updateShower(dt);updateMagic(dt);updateBungalow(dt,t,day);updateSpecies(dt,t);updatePflot(dt,t);updateCyclone(dt,t);updateVisitors(dt,t);updateVisitorBuilds(dt,t);if(!paused)updateSun(dt);updateActFold();updateSunDisc();
   /* fire, lamp */
   if(fireMesh){const u=fireMesh.userData,f=0.85+Math.sin(t*13)*0.08+Math.sin(t*7.3)*0.06,damp=1-S.weather.r*0.45;
     u.flame.scale.set(f*damp,(f+0.1)*damp,f*damp);u.light.intensity=(0.4+1.8*(1-day))*f*damp;}
@@ -5580,6 +5865,6 @@ renderTop();renderGoal();renderWx();
 actions=computeActions();renderActions();
 addEventListener('pagehide',()=>{if(!wiping)save();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&!wiping)save();});
-if(location.hash==='#debug')window.__fare={scene,renderer,bushes,save,camera,hua:{HUA,HUAP,HUAP_LAKE,huaH,buildHuahine,fx:huaFX,huaFixTrap,huaFeed,huaHint,makeNahe},fl:{makeTiare,makeHibiscus,makeParterre,flower,MAT,mesh,THREE},sun:{uvIndex,inShade,get sunT(){return S.sunT}},vis:{VISITORS,get meshes(){return visMeshes}},cyc:{scheduleCyclone,cycPhase,cycT,cycHit,pflotSpot,dive,onPflot,SPECIES,discover},moo:{MOO,MOOP,MOOP_SB,mooH,sailTo,crow,get fx(){return mooFX}},isl:{ISL,ISLP,sailToTahiti,sailHome,buildIsland,offerFlower,greetMoo,islH,get falls(){return islFalls},get moo(){return islMoo},get blow(){return islBlow}},v22:{dailyGen,updateDaily,checkAch,ACH,photoMode,savePhoto,AMB,get AC(){return AC;}},stageGroups,gStages,applyPaint,build,v21:{month,startHatch,get hatch(){return hatch;},EVENTS,calendarDay},v18:{hinaPereSong,ERUPT},v17:{enterSea,leaveSea,seaRespect,seaSong,DIVE_AT,freeHonu,spawnTangled,plantCoral},v16:{enterCave,leaveCave,crownSectors,mountainSong,CAVE_FRONT,MTN},v15:{summonButterflies,SWARM},v14:{lightSpots,lightsC:()=>lightsC,BFLY:()=>BFLY,GECKOS:()=>GECKOS,flowersC:()=>flowersC},v13:{summonMermaid,mer:()=>mermaid,playSong,SONGS},v10:{spawnCrop,spawnLamp,v10Sim,v10Place,checkMilestones,lampActs,genActs,lampClick,makeV10Crop},v9:{v9Place,v9DoSpecial,pfarmActs,portActs,helipadActs,hiveActs,PONTON_C,tillCheck,till,S_fields:()=>S.fields,plantField,graft,harvestPearls,rollPearl,PFARM_AT,PORT_AT,startHeli,HELI,flowersNear,treat,canSellHere,pearlClick},v8:{FLY,startFly,stopFly,RINGS,TOUR_STOPS,startTour,board,TOUR_DOCK,computeActions,placeCanoeMesh},v7:{openLook,startExc,whales,smartHint,buildPlayer,clock,cam},S,give,refresh,checkLevel,player,openSheet,doCraft,simStep,v6:{startTornado,TOR,launchShooter,flocks,honus,crabs}};
+if(location.hash==='#debug')window.__fare={scene,renderer,bushes,save,camera,stars:{starShower,launchMagic,updateMagic,updateShower,MAGIC,SHOWER,STAR_SONG},gold:{updateGolden,launchBolide,BOL,farIsl,cirrus,GHU,CLU,bungSpot,placeBungalow,onBung,makeWish},hua:{HUA,HUAP,HUAP_LAKE,huaH,buildHuahine,fx:huaFX,huaFixTrap,huaFeed,huaHint,makeNahe},fl:{makeTiare,makeHibiscus,makeParterre,flower,MAT,mesh,THREE},sun:{uvIndex,inShade,get sunT(){return S.sunT}},vis:{VISITORS,get meshes(){return visMeshes}},cyc:{scheduleCyclone,cycPhase,cycT,cycHit,pflotSpot,dive,onPflot,SPECIES,discover},moo:{MOO,MOOP,MOOP_SB,mooH,sailTo,crow,get fx(){return mooFX}},isl:{ISL,ISLP,sailToTahiti,sailHome,buildIsland,offerFlower,greetMoo,islH,get falls(){return islFalls},get moo(){return islMoo},get blow(){return islBlow}},v22:{dailyGen,updateDaily,checkAch,ACH,photoMode,savePhoto,AMB,get AC(){return AC;}},stageGroups,gStages,applyPaint,build,v21:{month,startHatch,get hatch(){return hatch;},EVENTS,calendarDay},v18:{hinaPereSong,ERUPT},v17:{enterSea,leaveSea,seaRespect,seaSong,DIVE_AT,freeHonu,spawnTangled,plantCoral},v16:{enterCave,leaveCave,crownSectors,mountainSong,CAVE_FRONT,MTN},v15:{summonButterflies,SWARM},v14:{lightSpots,lightsC:()=>lightsC,BFLY:()=>BFLY,GECKOS:()=>GECKOS,flowersC:()=>flowersC},v13:{summonMermaid,mer:()=>mermaid,playSong,SONGS},v10:{spawnCrop,spawnLamp,v10Sim,v10Place,checkMilestones,lampActs,genActs,lampClick,makeV10Crop},v9:{v9Place,v9DoSpecial,pfarmActs,portActs,helipadActs,hiveActs,PONTON_C,tillCheck,till,S_fields:()=>S.fields,plantField,graft,harvestPearls,rollPearl,PFARM_AT,PORT_AT,startHeli,HELI,flowersNear,treat,canSellHere,pearlClick},v8:{FLY,startFly,stopFly,RINGS,TOUR_STOPS,startTour,board,TOUR_DOCK,computeActions,placeCanoeMesh},v7:{openLook,startExc,whales,smartHint,buildPlayer,clock,cam},S,give,refresh,checkLevel,player,openSheet,doCraft,simStep,v6:{startTornado,TOR,launchShooter,flocks,honus,crabs}};
 requestAnimationFrame(tick);
 })();

@@ -466,6 +466,18 @@ People you helped come to visit you on the motu, the day after:
 
 The sky is drawn in three bands (horizon, middle, zenith) that change with the sun's height, with a glow around the sun and a soft pink band opposite it at dusk (the "belt of Venus"). Phases: night → violet blue hour → orange-red sunset → golden hour → blue day. Dawns are pinker and softer than sunsets, clouds take the sunset tint, and the sun itself is drawn with a halo that reddens as it sets. Colours were set from photographs of Polynesian skies. At sunrise and sunset the sun's colour is reflected on the sea as a glittering path that follows the sun; the sun disc itself is small, like in photographs, with a wide soft halo near the horizon.
 
+## Golden hour
+
+At sunrise and sunset the undersides of the clouds turn orange then pink, their tops grey-violet; high thin cirrus catch the last light; faint sun rays fan out when there are clouds; shadows turn violet and the backlit edges of palms, leaves and the mountain glow warm. From your motu you can see the silhouettes of Tahiti (west) and Moorea (north-west) on the horizon: hazy blue by day, dark violet at sunset, the sun sinking beside them. The sun disc flattens and reddens right at the horizon. All of this is done in the shaders, at almost no cost.
+
+## Shooting stars and the rain of stars
+
+On clear nights, once in a while (more often in the Matariʻi months and in August), a giant shooting star crosses the sky with a glowing trail and breaks into sparks: tap "Make a wish". After your first wish, Manu remembers the Song of the stars his grandfather used to sing: G A C A G E on the vivo (or the ukulele), at night, under a clear sky, from the beach, the pontoon or the bungalow. The sky answers with a rain of shooting stars, a giant one, and at the end the wish star, which draws a golden arc of sparkles across the sky (two of them during Matariʻi). Once a night.
+
+## Overwater bungalow
+
+Level 10, with the pension open: build a fare on stilts in the lagoon (Craft · Building, stand on the beach facing deep enough water). A walkway joins the beach; inside a bed, a glass floor where lagoon fish swim under your feet, a terrace with loungers and a ladder for a swim; at night the window glows. It adds a suite to the pension: the guest who stays there pays 2,500 XPF more and the pension rating goes up.
+
 ## Sun and UV
 
 The weather chip shows the UV index (it peaks around noon, often 11–12 "extreme" in Polynesia, lower under clouds). Staying a long time in full sun at UV 8+ without your taupoʻo makes Manu warn you; stay longer and you get a mild sunburn: you get hungry a bit faster until you cool off in the shade (trees, the fare, the guest fare, the fare pōteʻe), in the water, or after sunset. The taupoʻo slows it down a lot.
