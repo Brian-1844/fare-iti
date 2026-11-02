@@ -2042,10 +2042,10 @@ function updateTornado(dt,t){
   for(const c of S.crops)if(c.g>=1&&near(c.x,c.z,4))c.cd=Math.max(c.cd,CROPS[c.type].regrow*0.5);
   for(const p of S.palms)if(p.state!=='stump'&&near(p.x,p.z,4))p.cd=Math.max(p.cd,15);
   const pd=dist(TOR.x,TOR.z,player.position.x,player.position.z);
-  if(pd<4.5){const ax=(player.position.x-TOR.x)/(pd||1),az=(player.position.z-TOR.z)/(pd||1),nx=player.position.x+ax*7*dt,nz=player.position.z+az*7*dt;
+  if(pd<(TOR.kind==='sea'?6:4.5)){const ax=(player.position.x-TOR.x)/(pd||1),az=(player.position.z-TOR.z)/(pd||1),nx=player.position.x+ax*7*dt,nz=player.position.z+az*7*dt;
     if(S.boat?seaOK(nx,nz)&&H(nx,nz)<-0.05:walkable(nx,nz)){player.position.x=nx;player.position.z=nz;}
     if(!TOR.pushed){TOR.pushed=1;toast('The wind throws you back! Get away from the tornado.');}}
-  if(TOR.t>TOR.life||Math.hypot(TOR.x,TOR.z)>80&&TOR.t>5){TOR.on=false;torMesh.g.visible=false;wxSig='';actSig='';toast('The tornado has passed.');}
+  if(TOR.t>TOR.life||Math.hypot(TOR.x,TOR.z)>(TOR.kind==='sea'?150:80)&&TOR.t>5){TOR.on=false;torMesh.g.visible=false;wxSig='';actSig='';toast(TOR.kind==='sea'?LG('La trombe marine s’est dissipée au large.','The waterspout has faded out at sea.'):'The tornado has passed.');TOR.kind=null;}
 }
 
 /* ----- roof damage, repair, lashing ----- */
@@ -5386,9 +5386,9 @@ LAMPCOL.faie={n:LG('Yeux de Faie','Faie eyes'),c:'#4ad8ff',cost:{pitate:1},t:LG(
    horizon), the giant shooting star, and the overwater bungalow (fare sur pilotis)
    ===================================================================== */
 /* ----- sky shader: horizon warmth toward the sun, faint crepuscular rays ----- */
-skyU.uRays={value:0};skyU.uWarmH={value:0};
-sky.material.uniforms.uRays=skyU.uRays;sky.material.uniforms.uWarmH=skyU.uWarmH;
-sky.material.fragmentShader=`uniform vec3 top,mid,bottom,sunDir,sunCol,glowCol,beltCol,uMoon;uniform float uNight,glowAmt,belt,uRays,uWarmH;varying vec3 vP;
+skyU.uRays={value:0};skyU.uWarmH={value:0};skyU.uMoonRed={value:0};
+sky.material.uniforms.uRays=skyU.uRays;sky.material.uniforms.uWarmH=skyU.uWarmH;sky.material.uniforms.uMoonRed=skyU.uMoonRed;
+sky.material.fragmentShader=`uniform vec3 top,mid,bottom,sunDir,sunCol,glowCol,beltCol,uMoon;uniform float uNight,glowAmt,belt,uRays,uWarmH,uMoonRed;varying vec3 vP;
   void main(){vec3 d=normalize(vP);float h=max(d.y,0.0);
     vec3 c=mix(bottom,mid,smoothstep(0.0,0.22,h));c=mix(c,top,pow(smoothstep(0.18,1.0,h),0.75));
     float s=max(dot(d,sunDir),0.0);float horiz=1.0-smoothstep(0.0,0.45,h);
@@ -5399,7 +5399,9 @@ sky.material.fragmentShader=`uniform vec3 top,mid,bottom,sunDir,sunCol,glowCol,b
     if(uRays>0.001){vec3 T=normalize(cross(sunDir,vec3(0.0,1.0,0.0)));vec3 B=cross(T,sunDir);float an=atan(dot(d,T),dot(d,B));
       float r=(sin(an*23.0)*0.5+0.5)*(sin(an*9.0+1.7)*0.5+0.5)*(sin(an*37.0+0.4)*0.25+0.75);c+=glowCol*r*pow(s,5.0)*(1.0-pow(s,120.0))*uRays*0.06*smoothstep(-0.01,0.05,d.y);}
     float anti=max(dot(d,-sunDir),0.0);c=mix(c,beltCol,belt*pow(anti,2.0)*horiz*0.6);
-    float m=max(dot(d,uMoon),0.0);float disc=smoothstep(0.99935,0.9996,m);float crater=0.92+0.08*sin(d.x*900.0)*sin(d.z*700.0);c=mix(c,vec3(0.96,0.95,0.86)*crater,disc*uNight);c+=vec3(0.55,0.62,0.75)*pow(m,160.0)*0.3*uNight;
+    float m=max(dot(d,uMoon),0.0);float disc=smoothstep(0.99935,0.9996,m);float crater=0.92+0.08*sin(d.x*900.0)*sin(d.z*700.0);vec3 moonC=mix(vec3(0.96,0.95,0.86),vec3(1.0,0.62,0.45),uMoonRed);c=mix(c,moonC*crater,disc*uNight);c+=mix(vec3(0.55,0.62,0.75),vec3(0.9,0.35,0.25),uMoonRed)*pow(m,160.0)*(0.3+0.3*uMoonRed)*uNight;
+    if(uMoonRed>0.001){float ang=acos(clamp(m,-1.0,1.0));float ring=exp(-pow((ang-0.24)/0.022,2.0));float inner=exp(-pow(ang/0.12,2.0))*0.35;
+      c+=(vec3(1.0,0.32,0.18)*ring*0.55+vec3(0.85,0.3,0.25)*inner*0.4+vec3(0.6,0.2,0.15)*pow(max(m,0.0),24.0)*0.35)*uMoonRed*uNight;}
     gl_FragColor=vec4(c,1.0);}`;
 sky.material.needsUpdate=true;
 /* ----- sun rim: backlit edges glow warm (palms, leaves, the mountain) ----- */
@@ -5444,6 +5446,12 @@ let HEMI_G=null;
 function updateGolden(){const ang=(S.tod-0.25)*Math.PI*2,elev=Math.sin(ang),cl=S.weather.c,rain=S.weather.r,day=smooth(-0.12,0.18,elev);
   const low=smooth(-0.15,-0.03,elev)*(1-smooth(0.07,0.24,elev)),clear=(1-cl*0.8)*(1-rain*0.7),inside=S.inCave;
   const sd=skyU.sunDir.value;
+  // storm skies: heavy, dark grey-blue
+  {const dk=smooth(0.35,0.9,rain)*(S.inCave?0:1);if(dk>0){GH_C.a.set('#3d4752');skyU.top.value.lerp(GH_C.a,dk*0.6);skyU.mid.value.lerp(GH_C.a,dk*0.5);skyU.bottom.value.lerp(GH_C.b.set('#5b6670'),dk*0.45);scene.fog.color.lerp(GH_C.b.convertSRGBToLinear(),dk*0.4);hemi.intensity*=1-dk*0.3;}}
+  // reddish halo around the moon the nights before a cyclone or a storm
+  {const cycSoon=S.cyc&&!S.cyc.hit&&S.cyc.day-S.day<=1&&(typeof cycPhase!=='function'||cycPhase()!=='rouge');const stormSoon=S.weather.next==='storm'||S.weather.state==='windy'&&S.weather.next==='rain';
+   const tg=(cycSoon?1:stormSoon?0.55:0)*(1-rain);skyU.uMoonRed.value+=(tg-skyU.uMoonRed.value)*Math.min(1,0.016*3);
+   if(tg>0.5&&(1-day)>0.8&&S.flags.moonHaloDay!==S.day&&!inside&&!S.away){S.flags.moonHaloDay=S.day;setTimeout(()=>manuSay(cycSoon?LG('Regarde la lune : elle a un grand halo rouge. Grand-père disait que c’est le signe qu’un gros temps arrive…','Look at the moon: it has a big red halo. Grandfather said it’s the sign that heavy weather is coming…'):LG('Un halo autour de la lune… la pluie et le vent ne sont pas loin.','A halo around the moon… rain and wind are not far off.'),8),1500);}}
   // sky
   skyU.uWarmH.value=low*clear;skyU.uRays.value=(elev>-0.02?smooth(-0.02,0.03,elev)*(1-smooth(0.08,0.18,elev)):0)*(0.25+0.75*smooth(0.15,0.45,cl))*(1-rain);
   // rim light on everything lit by the low sun
@@ -5615,8 +5623,14 @@ const twinkTex=(()=>{const c=document.createElement('canvas');c.width=c.height=6
   const t=new THREE.CanvasTexture(c);return t;})();
 const MAGIC={on:false,t:0,dur:5.5,az0:0,sg:1,head:null,glow:null,dust:[],next:0,R:330};
 (function(){const sp=(tex,c,s)=>{const m=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,color:c,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));m.scale.setScalar(s);m.visible=false;scene.add(m);return m;};
-  MAGIC.glow=sp(glowTex,0xffe6a0,44);MAGIC.head=sp(twinkTex,0xffffff,24);const cols=[0xffd770,0xffe9a8,0xffffff,0xbfe6ff,0xffc2e8,0xffd770];
-  for(let i=0;i<200;i++)MAGIC.dust.push({s:sp(i%3?twinkTex:glowTex,cols[i%cols.length],2),p:new THREE.Vector3(),v:new THREE.Vector3(),t:-1,life:2,ph:Math.random()*6});})();
+  MAGIC.glow=sp(glowTex,0xff9a20,48);MAGIC.head=sp(twinkTex,0xffffff,24);const cols=[0xffa020,0xffd060,0xffffff,0x70b8ff,0xff80c8,0xffa020];
+  const N=520,g=new THREE.BufferGeometry(),pos=new Float32Array(N*3),col=new Float32Array(N*3),al=new Float32Array(N),sz=new Float32Array(N),cc=new THREE.Color();
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));g.setAttribute('alpha',new THREE.BufferAttribute(al,1));g.setAttribute('size',new THREE.BufferAttribute(sz,1));
+  const mat=new THREE.ShaderMaterial({uniforms:{map:{value:twinkTex},uPR:{value:Math.min(window.devicePixelRatio||1,2)*(innerHeight/720)}},transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,vertexColors:true,
+    vertexShader:'attribute float alpha;attribute float size;varying float vA;varying vec3 vC;uniform float uPR;void main(){vA=alpha;vC=color;vec4 mv=modelViewMatrix*vec4(position,1.0);gl_PointSize=size*uPR*(1000.0/-mv.z);gl_Position=projectionMatrix*mv;}',
+    fragmentShader:'uniform sampler2D map;varying float vA;varying vec3 vC;void main(){vec4 t=texture2D(map,gl_PointCoord);gl_FragColor=vec4(vC*t.rgb*vA*1.7,t.a*vA);}'});
+  const pts=new THREE.Points(g,mat);pts.frustumCulled=false;pts.visible=false;scene.add(pts);MAGIC.pts=pts;
+  for(let i=0;i<N;i++){cc.setHex(i%2?cols[i%cols.length]:0xff8a10).convertSRGBToLinear();col[i*3]=cc.r;col[i*3+1]=cc.g;col[i*3+2]=cc.b;MAGIC.dust.push({i,tw:i%2===1,p:new THREE.Vector3(),v:new THREE.Vector3(),t:-1,life:2,ph:Math.random()*6});}})();
 function magicDir(k,out){const az=MAGIC.az0+MAGIC.sg*(-1.0+2.0*k),el=0.06+0.5*Math.sin(Math.PI*Math.min(1,k));return out.set(Math.cos(az)*Math.cos(el),Math.sin(el),Math.sin(az)*Math.cos(el));}
 function launchMagic(){const fw=camera.getWorldDirection(new THREE.Vector3());MAGIC.az0=Math.atan2(fw.z,fw.x);MAGIC.sg=Math.random()<0.5?1:-1;MAGIC.on=true;MAGIC.t=0;MAGIC.next=0;MAGIC.wished=false;MAGIC.head.visible=MAGIC.glow.visible=true;}
 const _mv=new THREE.Vector3();
@@ -5624,12 +5638,14 @@ function updateMagic(dt){const c=camera.position;let alive=false;
   if(MAGIC.on){MAGIC.t+=dt;const k=MAGIC.t/MAGIC.dur;if(k>=1){MAGIC.on=false;MAGIC.head.visible=MAGIC.glow.visible=false;}else{alive=true;
       magicDir(k,_mv).multiplyScalar(MAGIC.R);MAGIC.head.position.copy(_mv).add(c);MAGIC.glow.position.copy(MAGIC.head.position);
       const f=Math.min(1,k*6)*(1-smooth(0.85,1,k));MAGIC.head.material.opacity=f;MAGIC.glow.material.opacity=0.55*f;MAGIC.head.material.rotation=MAGIC.t*1.5;MAGIC.head.scale.setScalar(22+5*Math.sin(MAGIC.t*9));
-      MAGIC.next-=dt;while(MAGIC.next<=0){MAGIC.next+=0.011;const d=MAGIC.dust.find(o=>o.t<0);if(!d)break;d.t=0;d.life=2.4+Math.random()*1.6;d.p.copy(_mv).add(new THREE.Vector3((Math.random()-0.5)*3,(Math.random()-0.5)*3,(Math.random()-0.5)*3));
-        d.v.set((Math.random()-0.5)*2,-0.6-Math.random()*1.6,(Math.random()-0.5)*2);d.s.visible=true;}
+      MAGIC.next-=dt;while(MAGIC.next<=0){MAGIC.next+=0.008;const d=MAGIC.dust.find(o=>o.t<0);if(!d)break;d.t=0;d.life=2.4+Math.random()*1.6;d.p.copy(_mv).add(new THREE.Vector3((Math.random()-0.5)*3,(Math.random()-0.5)*3,(Math.random()-0.5)*3));
+        d.v.set((Math.random()-0.5)*2,-0.6-Math.random()*1.6,(Math.random()-0.5)*2);}
       if(k>0.35&&!MAGIC.wished){MAGIC.wished=true;BOL.wishT=14;BOL.magic=true;actSig='';}}}
-  for(const d of MAGIC.dust){if(d.t<0)continue;alive=true;d.t+=dt;if(d.t>d.life){d.t=-1;d.s.visible=false;continue;}d.p.addScaledVector(d.v,dt);d.v.y-=dt*0.35;
-    const a=d.t/d.life;d.s.position.copy(d.p).add(c);d.s.material.opacity=(1-a)*(0.6+0.4*Math.sin(d.t*14+d.ph));d.s.scale.setScalar((d.s.material.map===twinkTex?7:3)*(1-a*0.55)*(0.7+0.3*Math.sin(d.t*9+d.ph)));d.s.material.rotation=d.ph+d.t*2;}
-  return alive;}
+  const G=MAGIC.pts.geometry,P=G.attributes.position.array,AL=G.attributes.alpha.array,SZ=G.attributes.size.array;let any=false;
+  for(const d of MAGIC.dust){const i=d.i;if(d.t<0){AL[i]=0;continue;}any=true;d.t+=dt;if(d.t>d.life){d.t=-1;AL[i]=0;continue;}d.p.addScaledVector(d.v,dt);d.v.y-=dt*0.35;
+    const a=d.t/d.life;P[i*3]=d.p.x+c.x;P[i*3+1]=d.p.y+c.y;P[i*3+2]=d.p.z+c.z;AL[i]=(1-a)*(d.tw?(0.65+0.35*Math.sin(d.t*14+d.ph)):0.4);SZ[i]=(d.tw?9:8)*(1-a*0.55)*(0.7+0.3*Math.sin(d.t*9+d.ph));}
+  MAGIC.pts.visible=any;if(any){G.attributes.position.needsUpdate=G.attributes.alpha.needsUpdate=G.attributes.size.needsUpdate=true;}
+  return alive||any;}
 /* the shower itself */
 const SHOWER={t:0,dur:0,next:0,bol:false,magic:0};
 function starShower(){const special=month()===10;SHOWER.t=0;SHOWER.dur=special?55:42;SHOWER.next=0;SHOWER.bol=false;SHOWER.magic=special?2:1;SHOWER.done=0;S.flags.showers=(S.flags.showers||0)+1;stat('showers');
@@ -5664,6 +5680,181 @@ const _islActions33=islActions;islActions=function(A){_islActions33(A);const i=A
 LAMPCOL.fetia={n:LG('Poussière d’étoile','Stardust'),c:'#ffe7a8',cost:{tiare:1},t:LG('l’or de l’étoile des vœux','the gold of the wish star'),secret:'fetia'};
 ACH.push(['shower',()=>LG('Pluie d’étoiles','Rain of stars'),()=>LG('Faire pleuvoir les étoiles avec le Chant des étoiles','Make the stars rain with the Song of the stars'),()=>(S.flags.showers||0)>=1],
   ['magicwish',()=>LG('L’étoile des vœux','The wish star'),()=>LG('Faire un vœu sur l’étoile qui dessine un arc d’or','Make a wish on the star that draws a golden arc'),()=>(S.flags.magicWish||0)>=1]);
+
+/* =====================================================================
+   v34: the red shooting star that announces storms and cyclones (a belief
+   of Manu's grandfather), a real-looking tornado funnel, and waterspouts
+   (trombes marines) over the ocean that can come ashore as a tornado.
+   ===================================================================== */
+/* ----- a twisting funnel replaces the stacked cylinders ----- */
+const funnelTex=(()=>{const c=document.createElement('canvas');c.width=128;c.height=256;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,128,256);
+  for(let i=0;i<46;i++){const x=Math.random()*128,w=2+Math.random()*7,a=0.15+Math.random()*0.35;g.fillStyle=`rgba(70,80,90,${a})`;g.save();g.translate(x,0);g.transform(1,0,0.55,1,0,0);g.fillRect(-w/2,0,w,256);g.restore();g.save();g.translate(x-128,0);g.transform(1,0,0.55,1,0,0);g.fillRect(-w/2,0,w,256);g.restore();}
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;return t;})();
+(function(){const prof=[];for(let i=0;i<=16;i++){const y=i/16;prof.push(new THREE.Vector2(0.28+0.22*Math.sin(y*9)*0.15+Math.pow(y,2.2)*5.2,y*16));}
+  const geo=new THREE.LatheGeometry(prof,22);
+  const mat=new THREE.MeshLambertMaterial({map:funnelTex,color:lin(0x9aa2a6),transparent:true,opacity:0.62,side:THREE.DoubleSide,depthWrite:false});
+  const fun=new THREE.Mesh(geo,mat);const inner=new THREE.Mesh(geo,mat.clone());inner.scale.set(0.7,1,0.7);inner.material.opacity=0.35;
+  const capM=new THREE.MeshLambertMaterial({color:lin(0x6a7480),emissive:lin(0x262c33),transparent:true,opacity:0.72,depthWrite:false});const cap=new THREE.Group();
+  for(let i=0;i<10;i++){const a=i/10*Math.PI*2,d=6+Math.random()*4,b=new THREE.Mesh(new THREE.IcosahedronGeometry(3.5+Math.random()*2.5,1),capM);b.position.set(Math.cos(a)*d,16.4+Math.random()*0.6,Math.sin(a)*d);b.scale.y=0.28;cap.add(b);}
+  const mid=new THREE.Mesh(new THREE.IcosahedronGeometry(6,1),capM);mid.position.y=16.9;mid.scale.set(1.5,0.25,1.5);cap.add(mid);
+  const sprayM=new THREE.SpriteMaterial({map:glowTex,color:0xf2f6f8,transparent:true,opacity:0.5,depthWrite:false});const spray=[];for(let i=0;i<8;i++){const sp=new THREE.Sprite(sprayM.clone());sp.scale.setScalar(2.5);torMesh.g.add(sp);spray.push(sp);}
+  torMesh.segs.forEach(s=>s.visible=false);torMesh.g.add(fun);torMesh.g.add(inner);torMesh.g.add(cap);Object.assign(torMesh,{fun,inner,cap,spray});})();
+const _updTor34=updateTornado;updateTornado=function(dt,t){_updTor34(dt,t);if(!TOR.on)return;const sea=TOR.kind==='sea',M=torMesh;
+  M.fun.material.map.offset.x-=dt*(sea?0.9:1.4);M.fun.material.map.offset.y-=dt*0.25;M.inner.rotation.y-=dt*3;
+  const grow=Math.min(1,TOR.t/4)*Math.min(1,(TOR.life-TOR.t)/4);
+  M.fun.scale.set((sea?0.75:1)*(0.3+0.7*grow),sea?1.9:1.15,(sea?0.75:1)*(0.3+0.7*grow));M.inner.scale.set(M.fun.scale.x*0.7,M.fun.scale.y,M.fun.scale.z*0.7);
+  M.cap.position.y=(sea?1.9:1.15)*16-16;M.cap.visible=sea||TOR.t<3||true;M.cap.scale.setScalar(0.6+0.4*grow);
+  M.fun.material.color.copy(lin(sea?0xd8e0e4:0x9aa2a6)).multiplyScalar(0.45+0.55*smooth(-0.1,0.2,Math.sin((S.tod-0.25)*Math.PI*2)));M.fun.material.opacity=(sea?0.5:0.62)*grow;M.inner.material.opacity=0.3*grow;
+  M.deb.visible=!sea;M.deb.material.color.copy(lin(sea?0xffffff:0x5a4630));
+  M.spray.forEach((sp,i)=>{const a=t*(2+i%3)+i*0.8,r=(sea?1.6:1.0)+Math.sin(t*3+i)*0.4;sp.position.set(Math.cos(a)*r,0.4+((t*0.8+i*0.37)%1)*(sea?2.6:1.2),Math.sin(a)*r);sp.scale.setScalar((sea?4.5:2)*(0.6+0.4*Math.sin(t*2+i)));sp.material.opacity=(sea?0.7:0.3)*grow;});
+  // a waterspout that reaches the reef comes ashore as a tornado
+  if(sea&&Math.hypot(TOR.x,TOR.z)<REEF){TOR.kind=null;toast(LG('La trombe marine franchit le récif… elle devient une tornade ! Mets-toi à l’abri !','The waterspout crosses the reef… it becomes a tornado! Take shelter!'));manuSay(LG('Vite, loin du chemin de la tornade !','Quick, get out of the tornado’s path!'),5);wxSig='';}};
+function startWaterspout(toShore){if(TOR.on||S.away||S.inCave)return;const a=Math.random()*Math.PI*2,d=85+Math.random()*25,sx=Math.cos(a)*d,sz=Math.sin(a)*d;
+  let dx,dz;if(toShore){dx=-sx+(Math.random()-0.5)*30;dz=-sz+(Math.random()-0.5)*30;}else{const s=Math.random()<0.5?1:-1;dx=-Math.sin(a)*s-Math.cos(a)*0.15;dz=Math.cos(a)*s-Math.sin(a)*0.15;}
+  const l=Math.hypot(dx,dz);Object.assign(TOR,{on:true,kind:'sea',x:sx,z:sz,dx:dx/l,dz:dz/l,t:0,life:toShore?60:45,hit:{},pushed:0});torMesh.g.visible=true;stat('waterspouts');
+  toast(LG('Une trombe marine se forme au large ! Une colonne d’eau monte de la mer jusqu’aux nuages.','A waterspout is forming out at sea! A column of water rises from the sea up to the clouds.'));
+  manuSay(S.boat?LG('Ne t’approche pas avec le vaʻa, rentre dans le lagon !','Don’t go near it with the vaʻa, get back into the lagoon!'):LG('Regarde, une trombe marine ! Tant qu’elle reste au large, on ne risque rien.','Look, a waterspout! As long as it stays out at sea, we’re safe.'),6);wxSig='';actSig='';}
+let spoutCd=30;
+function updateSpouts(dt){if(S.away||S.inCave||TOR.on){return;}spoutCd-=dt;if(spoutCd>0)return;const w=S.weather,ph=typeof cycPhase==='function'?cycPhase():null;
+  const rough=w.r>0.45||w.state==='storm'||ph==='orange'||ph==='rouge';if(!rough||S.level<3)return;
+  if(Math.random()<dt/(ph?30:60)){spoutCd=70+Math.random()*60;startWaterspout(Math.random()<(ph?0.45:0.25));}}
+const _wxLabel34=wxLabel;wxLabel=function(){if(TOR.on&&TOR.kind==='sea')return['tornado',LG('Trombe marine','Waterspout')];return _wxLabel34();};
+/* ----- the red shooting star: a warning ----- */
+const _bc2=new THREE.Color();
+const _updBol34=updateBolide;updateBolide=function(dt,day){
+  // red omen: the night before a cyclone, or before a storm
+  if(day<0.15&&!S.inCave&&!BOL.on&&S.weather.c<0.8){const cycSoon=S.cyc&&!S.cyc.redStar&&S.cyc.day-S.day<=1&&(cycPhase()===null||cycPhase()==='avis');
+    const stormSoon=S.weather.next==='storm'&&S.flags.redStormDay!==S.day&&S.level>=3;
+    if((cycSoon||stormSoon)&&BOL.redNext===undefined)BOL.redNext=4+Math.random()*12;
+    if(BOL.redNext!==undefined){BOL.redNext-=dt;if(BOL.redNext<=0){BOL.redNext=undefined;if(cycSoon)S.cyc.redStar=1;else S.flags.redStormDay=S.day;launchRedStar(cycSoon);}}}
+  _updBol34(dt,day);
+  if(BOL.on&&BOL.red){BOL.wishT=0;const col=BOL.trail.geometry.attributes.color.array;for(let i=0;i<col.length;i+=3){const v=Math.max(col[i],col[i+1],col[i+2]);col[i]=v*1.2;col[i+1]=v*0.07;col[i+2]=v*0.04;}BOL.trail.geometry.attributes.color.needsUpdate=true;}};
+function launchRedStar(cyc){launchBolide();BOL.red=true;BOL.wished=true;BOL.halo.material.color.setHex(0xff3020);BOL.head.material.color.setHex(0xffb0a0);BOL.sparks.forEach(s=>s.s.material.color.setHex(0xff5a30));S.flags.redStars=(S.flags.redStars||0)+1;stat('redstars');
+  setTimeout(()=>{manuSay(cyc?LG('Une étoile filante rouge… Mon grand-père disait qu’elle annonce la colère du ciel. Un cyclone arrive peut-être : prépare le fare !','A red shooting star… My grandfather said it announces the anger of the sky. A cyclone may be coming: get the fare ready!')
+    :LG('Une étoile filante rouge ! Grand-père disait : « étoile rouge, tempête demain ». Attache bien les toits.','A red shooting star! Grandfather used to say: “red star, storm tomorrow”. Lash the roofs well.'),8);},900);}
+const _launchBol34=launchBolide;launchBolide=function(){BOL.red=false;BOL.halo.material.color.setHex(0x8fffc8);BOL.head.material.color.setHex(0xffffff);BOL.sparks.forEach((s,i)=>s.s.material.color.setHex(i%2?0xffb060:0xb0ffe0));_launchBol34();};
+/* the yearly roll for a normal giant star should not fire on a red-star night */
+const _islActions34=islActions;islActions=function(A){_islActions34(A);if(BOL.on&&BOL.red){const i=A.findIndex(a=>/vœu|wish/i.test(a.label));if(i>=0)A.splice(i,1);}};
+ACH.push(['redstar',()=>LG('Étoile rouge','Red star'),()=>LG('Voir l’étoile filante rouge qui annonce la tempête','See the red shooting star that announces the storm'),()=>(S.flags.redStars||0)>=1],
+  ['waterspout',()=>LG('Trombe marine','Waterspout'),()=>LG('Voir une trombe marine au large','See a waterspout out at sea'),()=>(S.stats.waterspouts||0)>=1]);
+
+/* =====================================================================
+   v35: getting the whole motu ready for a cyclone — animals sheltered, young
+   trees staked, bungalow and fish trap secured — and what happens if not:
+   broken trees, frightened animals that run off to hide, storm surge and
+   huge breaking waves on the reef. Recovery missions afterwards.
+   ===================================================================== */
+const BIG_T=['uru','mango','pample','papaya','banana','tamanu','mape','lime','santal','nono'];
+function youngTrees(){return S.crops.filter(c=>BIG_T.includes(c.type));}
+function cycDayKey(){return S.cyc?S.cyc.day:-1;}
+function treesStaked(){const L=youngTrees();return !L.length||L.every(c=>c.staked===cycDayKey());}
+function animalsSafe(){const L=S.animals.filter(a=>a.tamed);return !L.length||L.every(a=>a.safe===cycDayKey());}
+const _cycCheck35=cycChecklist;cycChecklist=function(){const L=_cycCheck35(),last=L.pop();
+  const nT=youngTrees().length,nTs=youngTrees().filter(c=>c.staked===cycDayKey()).length,nA=S.animals.filter(a=>a.tamed).length,nAs=S.animals.filter(a=>a.tamed&&a.safe===cycDayKey()).length;
+  L.push([animalsSafe(),LG(`Animaux à l’abri (${nAs}/${nA})`,`Animals sheltered (${nAs}/${nA})`),LG('Devant le fare : « Rassembler les animaux »','In front of the fare: “Gather the animals”')]);
+  L.push([treesStaked(),LG(`Arbres fruitiers tuteurés (${nTs}/${nT})`,`Fruit trees staked (${nTs}/${nT})`),LG('Près de chaque arbre · 1 bambou + 1 corde','By each tree · 1 bamboo + 1 rope')]);
+  if(S.bungalow)L.push([S.bungalow.secured===cycDayKey(),LG('Bungalow : volets fermés, meubles attachés','Bungalow: shutters closed, furniture tied'),LG('Dans le bungalow sur pilotis','In the overwater bungalow')]);
+  if(S.fishtrap)L.push([S.fishtrap.secured===cycDayKey(),LG('Piège à poissons lesté de pierres','Fish trap weighted with stones'),LG('Au piège · 2 pierres','At the trap · 2 stones')]);
+  L.push([!!S.flags.surgeKnown||cycPhase()==='sauvegarde',LG('Houle cyclonique : rien laissé sur la plage','Storm surge: nothing left on the beach'),LG('Les vagues montent jusqu’aux cocotiers','The waves come up to the palms')]);
+  L.push(last);return L;};
+/* ----- preparation actions ----- */
+function prepActions(A){if(S.away||S.boat||!S.cyc)return;const ph=cycPhase();if(!(ph==='avis'||ph==='orange'||ph==='rouge'))return;const px=player.position.x,pz=player.position.z,key=cycDayKey();
+  if(dist(px,pz,SITE.x,SITE.z)<7&&!animalsSafe())A.push({label:LG('Rassembler les animaux','Gather the animals'),sub:LG('Ils iront se mettre à l’abri sous le fare','They’ll take shelter under the fare'),cls:'alt',fn:()=>{
+    let n=0;S.animals.forEach((a,i)=>{if(!a.tamed)return;a.safe=key;a.tx=SITE.x+Math.cos(i*1.3)*1.6;a.tz=SITE.z+Math.sin(i*1.3)*1.2;a.wait=0;n++;});
+    toast(LG(`Tu appelles tes animaux… ${n} viennent se blottir à l’abri du fare.`,`You call your animals… ${n} come to huddle in the shelter of the fare.`));pendingSave=true;actSig='';refresh();}});
+  const c=S.crops.find(c=>BIG_T.includes(c.type)&&c.staked!==key&&dist(px,pz,c.x,c.z)<2.6);
+  if(c){const ok=hasAll({bamboo:1,rope:1});A.push({label:LG(`Tuteurer : ${CROPS[c.type].n}`,`Stake: ${CROPS[c.type].n}`),sub:LG('1 bambou + 1 corde · il ne cassera pas','1 bamboo + 1 rope · it won’t break'),off:!ok,fn:ok?()=>{take({bamboo:1,rope:1});c.staked=key;chopT=0.4;stakeMesh(c);toast(LG('L’arbre est attaché à un bon tuteur.','The tree is tied to a sturdy stake.'));pendingSave=true;actSig='';refresh();}:null});}
+  if(S.bungalow&&S.bungalow.secured!==key&&typeof onBung==='function'&&onBung(px,pz)===1)A.push({label:LG('Fermer les volets du bungalow','Close the bungalow shutters'),sub:LG('Et attacher transats et meubles','And tie down loungers and furniture'),cls:'alt',fn:()=>{S.bungalow.secured=key;chopT=0.5;toast(LG('Volets fermés, transats rentrés et attachés.','Shutters closed, loungers brought in and tied down.'));pendingSave=true;actSig='';refresh();}});
+  if(S.fishtrap&&S.fishtrap.secured!==key&&dist(px,pz,S.fishtrap.x,S.fishtrap.z)<5){const ok=hasAll({stone:2});A.push({label:LG('Lester le piège à poissons','Weigh down the fish trap'),sub:'2 '+LG('pierres','stones'),off:!ok,fn:ok?()=>{take({stone:2});S.fishtrap.secured=key;chopT=0.4;toast(LG('Tu cales les pierres du piège.','You wedge the trap stones in place.'));pendingSave=true;actSig='';refresh();}:null});}}
+const _islActions35=islActions;islActions=function(A){_islActions35(A);prepActions(A);recoveryActions(A);};
+const stakeMeshes={};
+function stakeMesh(c){const k=c.x.toFixed(1)+','+c.z.toFixed(1);if(stakeMeshes[k])return;const g=new THREE.Group();for(const s of[-1,1]){const p=cyl(0.04,1.8,MAT.bambooMat||MAT.post,s*0.35,0.9,0,5);p.rotation.z=-s*0.12;g.add(p);}
+  const r=cyl(0.015,0.75,MAT.rope||MAT.post,0,1.3,0,4);r.rotation.z=Math.PI/2;g.add(r);g.position.set(c.x,Math.max(H(c.x,c.z),0),c.z);scene.add(g);bakeGroup(g);stakeMeshes[k]=g;}
+function clearStakes(){for(const k in stakeMeshes){scene.remove(stakeMeshes[k]);delete stakeMeshes[k];}}
+S.crops.forEach(c=>{if(S.cyc&&c.staked===S.cyc.day)stakeMesh(c);});
+/* ----- consequences when the cyclone hits ----- */
+const _cycHit35=cycHit;cycHit=function(){if(!S.cyc||S.cyc.hit)return;const key=cycDayKey(),extra=[];
+  // fruit trees: unstaked ones break
+  let broken=0;youngTrees().forEach(c=>{if(c.staked===key)return;if(Math.random()<0.65){c.g=Math.min(c.g,0.2);c.cd=Math.max(c.cd||0,120);c.broken=S.day;broken++;}});
+  if(broken)extra.push(LG(`${broken} arbre${broken>1?'s':''} fruitier${broken>1?'s':''} cassé${broken>1?'s':''}`,`${broken} fruit tree${broken>1?'s':''} broken`));
+  // palms on the shore: a few fall if not pruned
+  if(!palmsPruned()){let f=0;S.palms.forEach(p=>{if(p.state==='stump'||f>=2)return;if(Math.hypot(p.x,p.z)>R-8&&Math.random()<0.25){p.state='stump';f++;if(typeof updatePalmMesh==='function')updatePalmMesh(p);}});if(f)extra.push(LG(`${f} cocotier${f>1?'s':''} déraciné${f>1?'s':''}`,`${f} palm${f>1?'s':''} uprooted`));}
+  // animals left outside run off and hide
+  let lostA=0;S.animals.forEach(a=>{if(!a.tamed||a.safe===key)return;const b=bushes[Math.floor(Math.random()*bushes.length)];if(!b)return;a.lost={x:b.x+(Math.random()-0.5)*1.2,z:b.z+(Math.random()-0.5)*1.2};lostA++;});
+  if(lostA)extra.push(LG(lostA>1?`${lostA} animaux effrayés et cachés`:'1 animal effrayé et caché',`${lostA} frightened animal${lostA>1?'s':''} hiding`));
+  if(S.bungalow&&S.bungalow.secured!==key){S.bungalow.broken=true;extra.push(LG('bungalow : volets arrachés, terrasse abîmée','bungalow: shutters torn off, terrace damaged'));}
+  if(S.fishtrap&&S.fishtrap.secured!==key){S.fishtrap.broken=true;S.fishtrap.ready=0;extra.push(LG('piège à poissons défait','fish trap scattered'));}
+  if(S.nursery){S.nursery.ready=0;}
+  S.flags.surgeKnown=1;const safe0=S.flags.cycSafe||0;_cycHit35();
+  if(extra.length){if((S.flags.cycSafe||0)>safe0){S.flags.cycSafe=safe0;document.querySelectorAll('.toast').forEach(t=>{if(/tout tenu|held firm/.test(t.textContent))t.remove();});}
+    setTimeout(()=>toast(LG('Dégâts : ','Damage: ')+extra.join(', ')+'. '+LG('Regarde le plan cyclone pour la prochaine fois.','Check the cyclone plan for next time.')),1200);}
+  clearStakes();S.crops.forEach(c=>delete c.staked);S.animals.forEach(a=>delete a.safe);pendingSave=true;};
+/* lost animals stay hidden in a bush until you find them */
+const lostMark=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xffe680,transparent:true,opacity:0.8,depthWrite:false}));lostMark.scale.setScalar(0.6);lostMark.visible=false;scene.add(lostMark);
+const _updAnim35=updateAnimals;updateAnimals=function(dt,t){_updAnim35(dt,t);let shown=false;
+  for(const a of S.animals){if(!a.lost)continue;a.x=a.tx=a.lost.x;a.z=a.tz=a.lost.z;a.wait=5;if(a.mesh){a.mesh.position.set(a.lost.x,Math.max(H(a.lost.x,a.lost.z),0)-0.15,a.lost.z);a.mesh.rotation.z=Math.sin(t*20)*0.04;}
+    if(!shown&&cycPhase()!=='rouge'&&dist(player.position.x,player.position.z,a.lost.x,a.lost.z)<14){lostMark.position.set(a.lost.x,Math.max(H(a.lost.x,a.lost.z),0)+1.2+Math.sin(t*3)*0.1,a.lost.z);shown=true;}}
+  lostMark.visible=shown;};
+function recoveryActions(A){if(S.away||S.boat)return;const px=player.position.x,pz=player.position.z;
+  for(const a of S.animals){if(!a.lost||dist(px,pz,a.lost.x,a.lost.z)>2.4)continue;const D=ANIMALS[a.type];
+    A.unshift({label:LG(`Rassurer ${D.name||D.n}`,`Comfort ${D.name||D.n}`),sub:LG('Il tremble encore sous le buisson…','Still trembling under the bush…'),cls:'alt',fn:()=>{a.lost=null;a.wait=1;stat('foundpets');toast(LG(`Tu caresses ${D.name||D.n} tout doucement. Il sort du buisson et te suit à la maison.`,`You gently stroke ${D.name||D.n}. It comes out of the bush and follows you home.`));pendingSave=true;actSig='';refresh();}});}
+  if(S.bungalow&&S.bungalow.broken&&typeof onBung==='function'&&onBung(px,pz)){const need={plank:4,rope:2},ok=hasAll(need);A.push({label:LG('Réparer le bungalow','Repair the bungalow'),sub:'4 '+LG('planches','planks')+' · 2 '+LG('cordes','ropes'),off:!ok,fn:ok?()=>{take(need);S.bungalow.broken=false;chopT=0.6;stat('repairs');toast(LG('Volets reposés, terrasse réparée. Le bungalow est prêt pour les clients.','Shutters back on, terrace repaired. The bungalow is ready for guests.'));pendingSave=true;actSig='';refresh();}:null});}
+  if(S.fishtrap&&S.fishtrap.broken&&dist(px,pz,S.fishtrap.x,S.fishtrap.z)<5){const ok=hasAll({stone:4});A.push({label:LG('Remonter le piège à poissons','Rebuild the fish trap'),sub:'4 '+LG('pierres','stones'),off:!ok,fn:ok?()=>{take({stone:4});S.fishtrap.broken=false;chopT=0.5;toast(LG('Les pierres sont remises en V.','The stones are back in their V.'));pendingSave=true;actSig='';refresh();}:null});}
+  const c=S.crops.find(c=>c.broken&&dist(px,pz,c.x,c.z)<2.4);if(c)A.push({label:LG('Soigner l’arbre cassé','Tend the broken tree'),sub:LG('Couper net la branche cassée · il repoussera plus vite','Cut the broken branch clean · it will grow back faster'),fn:()=>{c.broken=null;c.cd=Math.max(0,(c.cd||0)-60);chopT=0.5;showTool&&showTool('toi');toast(LG('Coupe nette : l’arbre repoussera vite.','A clean cut: the tree will grow back quickly.'));pendingSave=true;actSig='';refresh();}});}
+/* bungalow guests don't pay the suite while it's broken */
+const _guestDepart35=guestDepart;guestDepart=function(n,q){if(S.bungalow&&S.bungalow.broken)n.paidSuite=true;return _guestDepart35(n,q);};
+/* ----- storm surge and huge waves breaking on the reef ----- */
+const surge={v:0,spr:[]};
+(function(){const M=new THREE.SpriteMaterial({map:glowTex,color:0xffffff,transparent:true,opacity:0,depthWrite:false});for(let i=0;i<36;i++){const s=new THREE.Sprite(M.clone());s.visible=false;scene.add(s);surge.spr.push({s,a:i/36*Math.PI*2+Math.random()*0.1,ph:Math.random()*6});}})();
+const _lagY=lagoon.position.y,_ocY=ocean.position.y,_waY=water.position.y;
+function updateSurge(dt,t){const ph=S.away||S.inCave?null:(typeof cycPhase==='function'?cycPhase():null),w=S.weather;
+  const target=ph==='rouge'?0.75:ph==='orange'?0.3:(w.state==='storm'&&!S.away?0.12:0);surge.v+=(target-surge.v)*Math.min(1,dt*0.15);
+  lagoon.position.y=_lagY+surge.v*(0.7+0.3*Math.sin(t*0.5));ocean.position.y=_ocY+surge.v*0.8;water.position.y=_waY+surge.v*(0.7+0.3*Math.sin(t*0.5));
+  const k=smooth(0.05,0.6,surge.v);surge.spr.forEach((o,i)=>{const vis=k>0.02;o.s.visible=vis;if(!vis)return;const cyc=(t*0.35+o.ph)%1,r=REEF+0.5;
+    o.s.position.set(Math.cos(o.a)*r,surge.v+0.4+Math.sin(cyc*Math.PI)*(1.5+3*k),Math.sin(o.a)*r);o.s.scale.set(5+6*k*Math.sin(cyc*Math.PI),2+4*k*Math.sin(cyc*Math.PI),1);o.s.material.opacity=0.75*k*Math.sin(cyc*Math.PI);});
+  if(surge.v>0.5&&!S.flags.surgeSaid){S.flags.surgeSaid=S.day;manuSay(LG('La houle cyclonique ! La mer monte jusqu’aux cocotiers, reste loin de la plage !','The storm surge! The sea is rising up to the palms, keep away from the beach!'),6);}
+  if(surge.v>0.45&&!S.boat&&!S.away){const h=H(player.position.x,player.position.z);if(h<surge.v-0.1&&h>-0.6&&Math.random()<dt*0.6){const r=Math.hypot(player.position.x,player.position.z)||1,nx=player.position.x/r*-1.2,nz=player.position.z/r*-1.2;if(walkable(player.position.x+nx,player.position.z+nz)){player.position.x+=nx;player.position.z+=nz;}toast(LG('Une vague te bouscule !','A wave knocks you back!'));}}}
+ACH.push(['cycready',()=>LG('Rien laissé au hasard','Nothing left to chance'),()=>LG('Mettre animaux et arbres à l’abri avant un cyclone','Shelter animals and trees before a cyclone'),()=>(S.stats.cycPrepAll||0)>=1],
+  ['foundpets',()=>LG('Tout le monde est rentré','Everyone is home'),()=>LG('Retrouver un animal caché après la tempête','Find an animal hiding after the storm'),()=>(S.stats.foundpets||0)>=1]);
+const _cycHit35b=cycHit;cycHit=function(){if(S.cyc&&!S.cyc.hit&&animalsSafe()&&treesStaked())stat('cycPrepAll');_cycHit35b();};
+
+/* =====================================================================
+   v36: lightning bolts and thunder. Every sky flash of a storm now draws a
+   forked bolt somewhere around you; the thunder follows after a delay that
+   tells how far it struck. During a cyclone it can hit a palm on the motu.
+   ===================================================================== */
+const LIT={on:0,t:0,lines:[],glow:null,halo:null,prev:0,pos:new THREE.Vector3()};
+(function(){const M=new THREE.LineBasicMaterial({color:0xe8f0ff,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,fog:false});
+  for(let i=0;i<5;i++){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(40*3),3));const l=new THREE.Line(g,M.clone());l.frustumCulled=false;l.visible=false;scene.add(l);LIT.lines.push(l);}
+  const sp=(c,o)=>{const s=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:c,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));s.visible=false;scene.add(s);return s;};
+  LIT.glow=sp(0xcfe0ff);LIT.halo=sp(0x9fb8ff);})();
+function boltPath(a,b,n,jit,out){out.length=0;out.push(a.clone());for(let i=1;i<n;i++){const k=i/n,p=a.clone().lerp(b,k);p.x+=(Math.random()-0.5)*jit*(1-k*0.3);p.z+=(Math.random()-0.5)*jit*(1-k*0.3);out.push(p);}out.push(b.clone());return out;}
+function setLine(l,pts){const arr=l.geometry.attributes.position.array;for(let i=0;i<40;i++){const p=pts[Math.min(i,pts.length-1)];arr[i*3]=p.x;arr[i*3+1]=p.y;arr[i*3+2]=p.z;}l.geometry.attributes.position.needsUpdate=true;l.geometry.setDrawRange(0,pts.length);l.visible=true;}
+let litStrikeCd=0;
+function lightning(fx,fz){const px=player.position.x,pz=player.position.z;let x,z,target=null;const ph=typeof cycPhase==='function'?cycPhase():null;
+  // during a cyclone (or a big storm) the bolt can hit the tallest palm near you on the motu
+  if(!S.away&&!S.inCave&&litStrikeCd<=0&&(ph==='rouge'||ph==='orange'||S.weather.state==='storm')&&Math.random()<(ph?0.12:0.05)){const L=S.palms.filter(p=>p.state!=='stump'&&dist(p.x,p.z,px,pz)>8&&dist(p.x,p.z,px,pz)<45);if(L.length)target=L[Math.floor(Math.random()*L.length)];}
+  if(fx!==undefined){x=fx;z=fz;}else if(target){x=target.x;z=target.z;litStrikeCd=60;}else{const a=Math.random()*Math.PI*2,d=40+Math.random()*110;x=px+Math.cos(a)*d;z=pz+Math.sin(a)*d;}
+  const gy=Math.max(H(x,z),0)+(target?7:0),top=new THREE.Vector3(x+(Math.random()-0.5)*20,48,z+(Math.random()-0.5)*20),bot=new THREE.Vector3(x,gy,z),pts=[];
+  setLine(LIT.lines[0],boltPath(top,bot,26,6,pts));const main=pts.slice();setLine(LIT.lines[1],main.map(p=>p.clone().add(new THREE.Vector3(0.25,0,0.2))));
+  for(let b=2;b<5;b++){const i0=4+Math.floor(Math.random()*12),s=main[i0],e=s.clone().add(new THREE.Vector3((Math.random()-0.5)*18,-6-Math.random()*12,(Math.random()-0.5)*18));if(Math.random()<0.8)setLine(LIT.lines[b],boltPath(s,e,10,3,[]));else LIT.lines[b].visible=false;}
+  LIT.pos.copy(bot);LIT.glow.position.copy(bot);LIT.glow.scale.setScalar(14);LIT.halo.position.set((top.x+x)/2,(48+gy)/2,(top.z+z)/2);LIT.halo.scale.set(26,60,1);LIT.glow.visible=LIT.halo.visible=true;LIT.on=1;LIT.t=0;
+  const d=dist(x,z,px,pz);setTimeout(()=>thunder(d),Math.min(5000,d*22));
+  if(target){setTimeout(()=>{target.state='stump';target.burnt=S.day;stat('lightningpalms');toast(LG('La foudre frappe un cocotier ! Il ne reste qu’un tronc fumant.','Lightning strikes a palm! Only a smoking trunk is left.'));
+    if(!S.flags.rodHint){S.flags.rodHint=1;setTimeout(()=>manuSay(LG('Pendant l’orage, ne reste jamais sous un grand cocotier, ni seul sur l’eau en vaʻa !','In a thunderstorm, never stay under a tall palm, nor alone on the water in a vaʻa!'),7),1500);}pendingSave=true;actSig='';refresh();},120);}
+  else if(S.boat&&d<70&&!S.flags.boatLitDay){S.flags.boatLitDay=S.day;setTimeout(()=>manuSay(LG('L’éclair est tombé tout près ! Rentre vite au rivage, sur l’eau tu es le point le plus haut.','That bolt struck close! Get back to shore, on the water you’re the highest point.'),7),600);}}
+function thunder(d){if(!AC||!noiseB||S.flags.mute)return;try{const A=AC,t=A.currentTime,near=d<55;
+  const src=A.createBufferSource();src.buffer=noiseB;src.loop=true;src.playbackRate.value=0.6+Math.random()*0.2;const lp=A.createBiquadFilter();lp.type='lowpass';lp.frequency.setValueAtTime(near?1200:420,t);lp.frequency.exponentialRampToValueAtTime(90,t+2.4);
+  const g=A.createGain(),vol=Math.max(0.08,0.55*(1-Math.min(1,d/170)));g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol*(near?1.2:0.6),t+(near?0.03:0.25));
+  for(let i=1;i<6;i++)g.gain.setTargetAtTime(vol*(0.3+Math.random()*0.6)*(1-i/7),t+i*0.35,0.12);g.gain.setTargetAtTime(0.0001,t+2.6,0.6);
+  src.connect(lp);lp.connect(g);g.connect(master);src.start(t);src.stop(t+4.5);}catch(e){}}
+function updateLightning(dt){if(litStrikeCd>0)litStrikeCd-=dt;
+  if(flash>0.9&&LIT.prev<=0.9&&!S.inCave)lightning();LIT.prev=flash;
+  if(!LIT.on)return;LIT.t+=dt;const k=LIT.t,o=k<0.06?1:k<0.1?0.15:k<0.16?0.9:k<0.3?Math.max(0,1-(k-0.16)/0.14):0;
+  LIT.lines.forEach((l,i)=>{if(!l.visible)return;l.material.opacity=o*(i<2?1:0.7);});LIT.glow.material.opacity=o*0.9;LIT.halo.material.opacity=o*0.35;
+  if(k>0.32){LIT.on=0;LIT.lines.forEach(l=>l.visible=false);LIT.glow.visible=LIT.halo.visible=false;}}
+ACH.push(['lightning',()=>LG('Le feu du ciel','Fire from the sky'),()=>LG('Voir la foudre tomber pendant un orage','See lightning strike during a storm'),()=>(S.stats.bolts||0)>=3]);
+const _lightning0=lightning;lightning=function(x,z){stat('bolts');_lightning0(x,z);};
 
 /* =========================================================
    Main loop
@@ -5833,7 +6024,7 @@ function tick(){
   updateV17(dt,t);
   updateV18(dt,t);
   updateV19(dt,t);
-  updateFps(dt);updateRainbow(dt,day);updateSunRays(day,t);updateV21(dt,t);updateV22(dt);updateIsland(dt,t);updateMoorea(dt,t);updateHuahine(dt,t);updateBolide(dt,day);updateShower(dt);updateMagic(dt);updateBungalow(dt,t,day);updateSpecies(dt,t);updatePflot(dt,t);updateCyclone(dt,t);updateVisitors(dt,t);updateVisitorBuilds(dt,t);if(!paused)updateSun(dt);updateActFold();updateSunDisc();
+  updateFps(dt);updateRainbow(dt,day);updateSunRays(day,t);updateV21(dt,t);updateV22(dt);updateIsland(dt,t);updateMoorea(dt,t);updateHuahine(dt,t);updateBolide(dt,day);updateShower(dt);updateMagic(dt);updateSpouts(dt);updateSurge(dt,t);updateLightning(dt);updateBungalow(dt,t,day);updateSpecies(dt,t);updatePflot(dt,t);updateCyclone(dt,t);updateVisitors(dt,t);updateVisitorBuilds(dt,t);if(!paused)updateSun(dt);updateActFold();updateSunDisc();
   /* fire, lamp */
   if(fireMesh){const u=fireMesh.userData,f=0.85+Math.sin(t*13)*0.08+Math.sin(t*7.3)*0.06,damp=1-S.weather.r*0.45;
     u.flame.scale.set(f*damp,(f+0.1)*damp,f*damp);u.light.intensity=(0.4+1.8*(1-day))*f*damp;}
@@ -5865,6 +6056,6 @@ renderTop();renderGoal();renderWx();
 actions=computeActions();renderActions();
 addEventListener('pagehide',()=>{if(!wiping)save();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&!wiping)save();});
-if(location.hash==='#debug')window.__fare={scene,renderer,bushes,save,camera,stars:{starShower,launchMagic,updateMagic,updateShower,MAGIC,SHOWER,STAR_SONG},gold:{updateGolden,launchBolide,BOL,farIsl,cirrus,GHU,CLU,bungSpot,placeBungalow,onBung,makeWish},hua:{HUA,HUAP,HUAP_LAKE,huaH,buildHuahine,fx:huaFX,huaFixTrap,huaFeed,huaHint,makeNahe},fl:{makeTiare,makeHibiscus,makeParterre,flower,MAT,mesh,THREE},sun:{uvIndex,inShade,get sunT(){return S.sunT}},vis:{VISITORS,get meshes(){return visMeshes}},cyc:{scheduleCyclone,cycPhase,cycT,cycHit,pflotSpot,dive,onPflot,SPECIES,discover},moo:{MOO,MOOP,MOOP_SB,mooH,sailTo,crow,get fx(){return mooFX}},isl:{ISL,ISLP,sailToTahiti,sailHome,buildIsland,offerFlower,greetMoo,islH,get falls(){return islFalls},get moo(){return islMoo},get blow(){return islBlow}},v22:{dailyGen,updateDaily,checkAch,ACH,photoMode,savePhoto,AMB,get AC(){return AC;}},stageGroups,gStages,applyPaint,build,v21:{month,startHatch,get hatch(){return hatch;},EVENTS,calendarDay},v18:{hinaPereSong,ERUPT},v17:{enterSea,leaveSea,seaRespect,seaSong,DIVE_AT,freeHonu,spawnTangled,plantCoral},v16:{enterCave,leaveCave,crownSectors,mountainSong,CAVE_FRONT,MTN},v15:{summonButterflies,SWARM},v14:{lightSpots,lightsC:()=>lightsC,BFLY:()=>BFLY,GECKOS:()=>GECKOS,flowersC:()=>flowersC},v13:{summonMermaid,mer:()=>mermaid,playSong,SONGS},v10:{spawnCrop,spawnLamp,v10Sim,v10Place,checkMilestones,lampActs,genActs,lampClick,makeV10Crop},v9:{v9Place,v9DoSpecial,pfarmActs,portActs,helipadActs,hiveActs,PONTON_C,tillCheck,till,S_fields:()=>S.fields,plantField,graft,harvestPearls,rollPearl,PFARM_AT,PORT_AT,startHeli,HELI,flowersNear,treat,canSellHere,pearlClick},v8:{FLY,startFly,stopFly,RINGS,TOUR_STOPS,startTour,board,TOUR_DOCK,computeActions,placeCanoeMesh},v7:{openLook,startExc,whales,smartHint,buildPlayer,clock,cam},S,give,refresh,checkLevel,player,openSheet,doCraft,simStep,v6:{startTornado,TOR,launchShooter,flocks,honus,crabs}};
+if(location.hash==='#debug')window.__fare={scene,renderer,bushes,save,camera,prep:{prepActions,lightning,LIT,surge,cycHit:()=>cycHit()},storm:{startWaterspout,launchRedStar,startTornado,TOR,torMesh},stars:{starShower,launchMagic,updateMagic,updateShower,MAGIC,SHOWER,STAR_SONG},gold:{updateGolden,launchBolide,BOL,farIsl,cirrus,GHU,CLU,bungSpot,placeBungalow,onBung,makeWish},hua:{HUA,HUAP,HUAP_LAKE,huaH,buildHuahine,fx:huaFX,huaFixTrap,huaFeed,huaHint,makeNahe},fl:{makeTiare,makeHibiscus,makeParterre,flower,MAT,mesh,THREE},sun:{uvIndex,inShade,get sunT(){return S.sunT}},vis:{VISITORS,get meshes(){return visMeshes}},cyc:{scheduleCyclone,cycPhase,cycT,cycHit,pflotSpot,dive,onPflot,SPECIES,discover},moo:{MOO,MOOP,MOOP_SB,mooH,sailTo,crow,get fx(){return mooFX}},isl:{ISL,ISLP,sailToTahiti,sailHome,buildIsland,offerFlower,greetMoo,islH,get falls(){return islFalls},get moo(){return islMoo},get blow(){return islBlow}},v22:{dailyGen,updateDaily,checkAch,ACH,photoMode,savePhoto,AMB,get AC(){return AC;}},stageGroups,gStages,applyPaint,build,v21:{month,startHatch,get hatch(){return hatch;},EVENTS,calendarDay},v18:{hinaPereSong,ERUPT},v17:{enterSea,leaveSea,seaRespect,seaSong,DIVE_AT,freeHonu,spawnTangled,plantCoral},v16:{enterCave,leaveCave,crownSectors,mountainSong,CAVE_FRONT,MTN},v15:{summonButterflies,SWARM},v14:{lightSpots,lightsC:()=>lightsC,BFLY:()=>BFLY,GECKOS:()=>GECKOS,flowersC:()=>flowersC},v13:{summonMermaid,mer:()=>mermaid,playSong,SONGS},v10:{spawnCrop,spawnLamp,v10Sim,v10Place,checkMilestones,lampActs,genActs,lampClick,makeV10Crop},v9:{v9Place,v9DoSpecial,pfarmActs,portActs,helipadActs,hiveActs,PONTON_C,tillCheck,till,S_fields:()=>S.fields,plantField,graft,harvestPearls,rollPearl,PFARM_AT,PORT_AT,startHeli,HELI,flowersNear,treat,canSellHere,pearlClick},v8:{FLY,startFly,stopFly,RINGS,TOUR_STOPS,startTour,board,TOUR_DOCK,computeActions,placeCanoeMesh},v7:{openLook,startExc,whales,smartHint,buildPlayer,clock,cam},S,give,refresh,checkLevel,player,openSheet,doCraft,simStep,v6:{startTornado,TOR,launchShooter,flocks,honus,crabs}};
 requestAnimationFrame(tick);
 })();

@@ -450,6 +450,16 @@ From November to April a cyclone may be announced. A banner shows the alert leve
 - During the red alert, stay inside the fare. Afterwards, clear the fallen trunks (logs and fronds) and the litter washed up on the beaches.
 - Get through a cyclone without any damage for the *Cyclone-ready* achievement.
 
+## Storms: lightning, waterspouts, tornadoes, storm surge
+
+Storm skies turn dark grey; each flash draws a forked lightning bolt somewhere around you and the thunder follows after a delay that tells how far it struck. During a cyclone or a big storm a bolt can hit a palm near you (only a smoking trunk is left): never stay under a tall palm or alone on the water in your vaʻa. Out at sea, waterspouts (a column of water rising up to a flat dark cloud) can form in rough weather; if one crosses the reef it comes ashore as a tornado. The tornado itself is now a twisting funnel under a dark cloud base.
+
+The night before a cyclone or a storm, a red shooting star may cross the sky: Manu's grandfather used to say it announces the anger of the sky (a game tale). The same nights, the moon turns reddish with a wide red halo around it (a real ring halo often comes before bad weather, here coloured red as an omen); a paler halo shows before an ordinary storm.
+
+During the red alert the storm surge raises the sea up to the palms and huge waves break on the reef; a wave can knock you back on the beach.
+
+The cyclone plan now also asks you to: gather your animals under the fare, stake the fruit trees (1 bamboo + 1 rope each), close the bungalow shutters and tie its furniture, weigh down the fish trap. If you don't: unstaked trees break, shore palms can be uprooted, frightened animals run off and hide in the bushes (find and comfort them, a little light shows where), the bungalow loses its shutters and terrace (repair: 4 planks, 2 ropes), the fish trap is scattered (4 stones). Broken trees can be tended with a clean cut so they grow back faster.
+
 ## Floating pontoon
 
 Buy float drums from the goélette, then **Build a floating pontoon** while standing on the beach facing the lagoon. It floats on blue drums, rides the swell and is linked to the beach by a gangway. Walk on it to dive into the lagoon or fish seaward.
