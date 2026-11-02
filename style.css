@@ -313,10 +313,10 @@ body.flying #actions,body.flying .goal,body.flying .exc,body.flying .inv,body.fl
 .ctab .emo{font-size:22px;line-height:26px;height:26px}
 
 /* v25-26: cyclone banner, veil, plan */
-#cycBan{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 64px);transform:translateX(-50%);z-index:25;border:2.5px solid var(--ink);border-radius:999px;padding:7px 16px;font:800 14px/1 Nunito,system-ui,sans-serif;background:#ffd166;color:#14313a;box-shadow:0 3px 0 var(--ink);cursor:pointer}
+#cycBan{pointer-events:auto;align-self:flex-start;border:2.5px solid var(--ink);border-radius:999px;padding:7px 16px;font:800 14px/1 Nunito,system-ui,sans-serif;background:#ffd166;color:#14313a;box-shadow:0 3px 0 var(--ink);cursor:pointer}
 #cycBan[hidden]{display:none}
 #cycBan.orange{background:#ff9a3c}#cycBan.rouge{background:#e0402e;color:#fff;animation:cycPulse 1s ease-in-out infinite}#cycBan.sauvegarde{background:#7fd6db}
-@keyframes cycPulse{50%{transform:translateX(-50%) scale(1.06)}}
+@keyframes cycPulse{50%{transform:scale(1.04)}}
 #cycVeil{position:fixed;inset:0;pointer-events:none;z-index:4;opacity:0;transition:opacity 3s;background:radial-gradient(ellipse at center,rgba(20,30,40,0) 30%,rgba(10,18,26,.9) 100%)}
 .cycband{border:2.5px solid var(--ink);border-radius:12px;padding:8px 12px;margin:0 0 8px;font-weight:800;background:#e9f3f2}
 .cycband.avis{background:#ffe08a}.cycband.orange{background:#ffb070}.cycband.rouge{background:#ff8a7a}.cycband.sauvegarde{background:#bfeef0}
@@ -375,3 +375,7 @@ body.coarse .wx svg{width:22px;height:22px}
 /* horizontal tab rows stay swipeable */
 .sheet .card .ctabs,.sheet .card .ctabs *{touch-action:pan-x pan-y}
 .ctabs{-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+
+/* soft vignette for a more cinematic frame */
+#vignette{position:fixed;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 58%,rgba(10,30,40,.22) 100%)}
+body.coarse #vignette{background:radial-gradient(ellipse at center,rgba(0,0,0,0) 62%,rgba(10,30,40,.16) 100%)}

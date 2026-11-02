@@ -425,6 +425,14 @@ Choose **Sail to another island** past the reef, then *Moorea*. The vaʻa glides
 - **The sandbank** in the lagoon, where stingrays and a little blacktip shark circle around you (look, don't touch), and a small motu with palms.
 - **The night of Pai**: once you know the legend, torches sometimes appear on Rotui at night. Find the three roosters and crow like them: the thieves flee and the lamp colour *Moorea dawn* unlocks.
 
+## Huahine
+
+The third island (level 12, from the vaʻa, "Sail to another island"). Huahine Nui and Huahine Iti, split by Hiro's canoe according to legend, with the sleeping-woman ridge in the south. On the Maeva plain: the lake Fauna Nui with its V-shaped stone fish traps (three have a gap to close with stones from the pile by the lake), the Maeva marae and its fare pōteʻe, a watermelon field. At Faie, the river pool of the sacred blue-eyed eels: bring them fish three times. Papa Marama tells the legend of Hiro's canoe and the one of Hina and Tuna the eel (the first coconut tree). Species: Huahine watermelon (seedling), pitate jasmine (cutting), the eels, the kaveu coconut crab, the tupa land crab, the ʻōtuʻu heron. Once the lake traps are repaired, Papa Marama visits your motu and teaches the stone fish trap: build it in shallow water, and it holds fish every morning.
+
+## Tree ferns
+
+Nahe tree ferns grow in shaded places: around the Faarumai falls and along the Papenoo river on Tahiti, on the wet slopes of Moorea, on the jungle side of your motu below the mountain, and in the south of Huahine.
+
 ## Species to discover, plants to bring home
 
 Twelve species live on the islands. Animals are noted in your notebook (new **Species** tab) as soon as you get close; plants need a cutting (one a day).
@@ -454,6 +462,10 @@ People you helped come to visit you on the motu, the day after:
 - **Mama Hinano** (after the night of Pai) asks for three pineapples for the village feast and gives you a copy of **Pai's spear**, hung on your fare.
 - **Hereiti**, a reef biologist (after saving honu hatchlings or replanting coral), helps you set up a **coral nursery** in the lagoon: a coral cutting every morning, to replant on the reef.
 
+## Sky, dawn and dusk
+
+The sky is drawn in three bands (horizon, middle, zenith) that change with the sun's height, with a glow around the sun and a soft pink band opposite it at dusk (the "belt of Venus"). Phases: night → violet blue hour → orange-red sunset → golden hour → blue day. Dawns are pinker and softer than sunsets, clouds take the sunset tint, and the sun itself is drawn with a halo that reddens as it sets. Colours were set from photographs of Polynesian skies. At sunrise and sunset the sun's colour is reflected on the sea as a glittering path that follows the sun; the sun disc itself is small, like in photographs, with a wide soft halo near the horizon.
+
 ## Sun and UV
 
 The weather chip shows the UV index (it peaks around noon, often 11–12 "extreme" in Polynesia, lower under clouds). Staying a long time in full sun at UV 8+ without your taupoʻo makes Manu warn you; stay longer and you get a mild sunburn: you get hungry a bit faster until you cool off in the shade (trees, the fare, the guest fare, the fare pōteʻe), in the water, or after sunset. The taupoʻo slows it down a lot.
@@ -461,6 +473,8 @@ The weather chip shows the UV index (it peaks around noon, often 11–12 "extrem
 ## Look of the game
 
 A toon look: four-step lighting, a soft rim light and darker ground contact, shared by every material. After rain a rainbow stands over the lagoon; in the morning sun rays fall through the jungle; at night the moon glitters on the water. Trees, bushes, bamboo, clouds, the fare and the caves are merged into a handful of meshes each, so phones draw far fewer objects.
+
+Flowers are real flowers: tiare with seven pointed petals, five-petal hibiscus with a yellow pistil, bougainvillea bracts, taina, pua and wildflowers on stems in the grass and in the flower beds. Each kind is one shared geometry, so they cost almost nothing to draw.
 
 ## Quality, saving your island
 

@@ -33,7 +33,7 @@ function smooth(a,b,x){const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 function dist(a,b,x,z){return Math.hypot(a-x,b-z);}
 function H(x,z){
-  if(x<-700)return z>450?mooH(x+1000,z-900):islH(x+1000,z);
+  if(x<-700)return z>450?mooH(x+1000,z-900):z<-450?huaH(x+1000,z+900):islH(x+1000,z);
   const r=Math.hypot(x,z);
   let h=r<R?2.4*(1-(r/R)**2):-(r-R)*0.35;
   if(r<R)h+=0.45*Math.sin(x*0.23+1.3)*Math.cos(z*0.19)*(1-r/R);
@@ -183,10 +183,16 @@ $('#scene').appendChild(renderer.domElement);
 const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(55,1,0.1,600);
 
-const skyU={top:{value:new THREE.Color()},bottom:{value:new THREE.Color()}};
+const skyU={top:{value:new THREE.Color()},mid:{value:new THREE.Color()},bottom:{value:new THREE.Color()},sunDir:{value:new THREE.Vector3(0,1,0)},glowCol:{value:new THREE.Color(0xffd080)},glowAmt:{value:0},belt:{value:0},beltCol:{value:new THREE.Color(0xe8a0c0)}};
 const sky=new THREE.Mesh(new THREE.SphereGeometry(420,24,12),new THREE.ShaderMaterial({uniforms:skyU,side:THREE.BackSide,depthWrite:false,
   vertexShader:'varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
-  fragmentShader:'uniform vec3 top;uniform vec3 bottom;varying vec3 vP;void main(){float h=max(normalize(vP).y,0.0);gl_FragColor=vec4(mix(bottom,top,pow(h,0.55)),1.0);}'}));
+  fragmentShader:`uniform vec3 top,mid,bottom,sunDir,glowCol,beltCol;uniform float glowAmt,belt;varying vec3 vP;
+  void main(){vec3 n=normalize(vP);float h=max(n.y,0.0);
+    vec3 c=mix(bottom,mid,smoothstep(0.0,0.22,h));c=mix(c,top,pow(smoothstep(0.18,1.0,h),0.75));
+    float d=max(dot(n,sunDir),0.0);float horiz=1.0-smoothstep(0.0,0.45,h);
+    float g=pow(d,10.0)*1.0+pow(d,3.0)*0.45*horiz+pow(d,1.5)*0.12;c+=glowCol*g*glowAmt;
+    float anti=max(dot(n,-sunDir),0.0);c=mix(c,beltCol,belt*pow(anti,2.0)*horiz*0.6);
+    gl_FragColor=vec4(c,1.0);}`}));
 sky.renderOrder=-1;scene.add(sky);
 const stars=(function(){const n=700,p=new Float32Array(n*3),rand=mulberry32(31);
   for(let i=0;i<n;i++){const u=rand()*Math.PI*2,v=Math.acos(rand()*0.95);p[i*3]=Math.sin(v)*Math.cos(u)*380;p[i*3+1]=Math.cos(v)*380;p[i*3+2]=Math.sin(v)*Math.sin(u)*380;}
@@ -408,12 +414,33 @@ function makeTaroPlant(seed){
   const bunch=new THREE.Group();const corm=mesh(new THREE.SphereGeometry(0.16,6,5),std(0x8c6a7a),0,0.08,0);corm.scale.y=0.7;bunch.add(corm);g.add(bunch);
   return {group:g,crown,bunch,phase:rand()*6};
 }
+/* real petals: n petals of length L and width W, cupped upward by `cup` radians, optional twist (pinwheel) */
+const _petalCache={};
+function petalGeo(L,W,seg){const k=L+'_'+W+'_'+(seg||4);if(_petalCache[k])return _petalCache[k];const sh=new THREE.Shape();sh.moveTo(0,0);sh.quadraticCurveTo(W*0.7,L*0.35,W*0.42,L*0.72);sh.quadraticCurveTo(W*0.2,L*0.98,0,L);sh.quadraticCurveTo(-W*0.2,L*0.98,-W*0.42,L*0.72);sh.quadraticCurveTo(-W*0.7,L*0.35,0,0);
+  const g=new THREE.ShapeGeometry(sh,seg||4);g.rotateX(-Math.PI/2);return _petalCache[k]=g;}
+function flowerGeo(n,L,W,cup,twist,centerR,lo){const parts=[],e=new THREE.Euler();for(let i=0;i<n;i++){e.set(-(cup||0),i/n*Math.PI*2+(twist||0)*0,(twist||0),'YXZ');parts.push({g:petalGeo(L,W,lo?2:4),q:new THREE.Quaternion().setFromEuler(e),p:new THREE.Vector3(0,0.004*i,0)});}
+  if(centerR)parts.push({g:new THREE.SphereGeometry(centerR,lo?4:6,lo?3:5),p:new THREE.Vector3(0,0.01,0),s:new THREE.Vector3(1,0.6,1)});
+  return mergeGeos(parts);}
+const FLG={tiare:null,hib:null,pua:null,taina:null,bougain:null,small:null};
+function flg(k){if(FLG[k])return FLG[k];
+  if(k==='tiare')FLG[k]=flowerGeo(7,0.17,0.06,0.25,0.5,0.018);
+  else if(k==='hib')FLG[k]=flowerGeo(5,0.19,0.16,0.55,0.15,0);
+  else if(k==='pua')FLG[k]=flowerGeo(5,0.14,0.085,0.35,0.6,0.02);
+  else if(k==='taina')FLG[k]=flowerGeo(6,0.12,0.065,0.3,0.3,0.015);
+  else if(k==='bougain')FLG[k]=flowerGeo(3,0.13,0.1,0.45,0,0.012);
+  else FLG[k]=flowerGeo(5,0.08,0.045,0.3,0.3,0.01,true);return FLG[k];}
+MAT.petalW=std(0xfefcf5,{roughness:0.55,flatShading:false,side:THREE.DoubleSide,emissive:0x2a2a22});MAT.petalCream=std(0xfff1bf,{roughness:0.55,flatShading:false,side:THREE.DoubleSide});
+MAT.petalHib=std(0xe8352c,{roughness:0.5,flatShading:false,side:THREE.DoubleSide});MAT.petalMag=std(0xd92f9b,{roughness:0.55,flatShading:false,side:THREE.DoubleSide});MAT.petalMag2=std(0xf06ac0,{roughness:0.55,flatShading:false,side:THREE.DoubleSide});
+MAT.petalYel=std(0xf8d35a,{roughness:0.55,flatShading:false,side:THREE.DoubleSide});MAT.petalPink=std(0xffa7c4,{roughness:0.55,flatShading:false,side:THREE.DoubleSide});MAT.petalOrange=std(0xff8a3a,{roughness:0.55,flatShading:false,side:THREE.DoubleSide});
+const _fUp=new THREE.Vector3(0,1,0),_fD=new THREE.Vector3();
+function flower(k,mat,x,y,z,sc,r,dir){const f=new THREE.Mesh(flg(k),mat);f.position.set(x,y,z);f.scale.setScalar(sc||1);
+  if(dir){_fD.copy(dir).normalize();f.quaternion.setFromUnitVectors(_fUp,_fD);f.rotateY((r?r():0)*6.28);}else f.rotation.set((r?r()-0.5:0)*0.8,(r?r():0)*6.28,(r?r()-0.5:0)*0.8);f.castShadow=false;return f;}
 function makeTiare(seed){
   const rand=mulberry32(seed),g=new THREE.Group(),crown=new THREE.Group();g.add(crown);
   for(let i=0;i<5;i++){const b=mesh(new THREE.IcosahedronGeometry(0.42,0),MAT.bushDark,(rand()-0.5)*0.6,0.4+rand()*0.4,(rand()-0.5)*0.6);crown.add(b);}
   const bunch=new THREE.Group();
   for(let i=0;i<10;i++){const a=rand()*Math.PI*2,y=0.4+rand()*0.6,f=new THREE.Group();f.position.set(Math.cos(a)*0.62,y,Math.sin(a)*0.62);
-    for(let p=0;p<6;p++){const pe=mesh(new THREE.SphereGeometry(0.05,5,4),MAT.tiare,Math.cos(p)*0.06,0,Math.sin(p)*0.06,false);pe.scale.set(1.4,0.4,0.7);pe.rotation.y=-p;f.add(pe);}bunch.add(f);}
+    f.add(flower('tiare',MAT.petalW,0,0,0,1.3,rand,_fD.set(Math.cos(a),0.9,Math.sin(a))));bunch.add(f);}
   g.add(bunch);
   return {group:g,crown,bunch,phase:rand()*6};
 }
@@ -641,7 +668,7 @@ const springObj=(function(){
 
 /* Decor: hibiscus bushes */
 const bushes=[];
-function makeHibiscus(){const f=new THREE.Group();for(let i=0;i<5;i++){const a=i/5*Math.PI*2,pe=mesh(new THREE.SphereGeometry(0.075,8,6),MAT.flower,Math.cos(a)*0.07,Math.sin(a)*0.07,0,false);pe.scale.set(1,1.5,0.3);pe.rotation.z=a+Math.PI/2;f.add(pe);}
+function makeHibiscus(){const f=new THREE.Group();const fl=flower('hib',MAT.petalHib,0,0,0.02,1.3);fl.rotation.x=Math.PI/2;f.add(fl);const pis=cyl(0.012,0.12,MAT.petalYel,0,0,0.075,4);pis.rotation.x=Math.PI/2;f.add(pis);
   const st=cyl(0.008,0.12,MAT.hibStem||(MAT.hibStem=std(0xf2c94c,{flatShading:false})),0,0,0.05,4);st.rotation.x=Math.PI/2;f.add(st);return f;}
 (function decor(){const rand=mulberry32(77);let n=0,tries=0;
   while(n<10&&tries++<500){const a=rand()*Math.PI*2,r=8+rand()*27,x=Math.cos(a)*r,z=Math.sin(a)*r,h=H(x,z);
@@ -1347,16 +1374,33 @@ function updateWeather(dt,quiet){const w=S.weather;w.left-=dt;
 }
 const C={topDay:new THREE.Color('#3f9fd6'),topNight:new THREE.Color('#081428'),horDay:new THREE.Color('#d3efe9'),horNight:new THREE.Color('#1b2c45'),
   sunset:new THREE.Color('#f4a35c'),grey:new THREE.Color('#8e9a9e'),greyN:new THREE.Color('#2a3036'),sunWarm:new THREE.Color('#ffb36b'),sunDay:new THREE.Color('#fff1d6'),
-  t1:new THREE.Color(),t2:new THREE.Color(),t3:new THREE.Color()};
+  t1:new THREE.Color(),t2:new THREE.Color(),t3:new THREE.Color(),t4:new THREE.Color()};
+/* sky phases, keyed on the sun's elevation: night · blue hour · sunset · golden · day (photos of Polynesian skies as reference) */
+const SKY_KEYS=[
+ {e:-0.30,top:'#081428',mid:'#0e1f3a',hor:'#1b2c45',glow:'#2a3560',amt:0.0,belt:0},
+ {e:-0.14,top:'#141d4a',mid:'#3a3f86',hor:'#8f5c9a',glow:'#ff9a5a',amt:0.35,belt:0.25},
+ {e:-0.06,top:'#2b3f86',mid:'#9a5f96',hor:'#f06a3c',glow:'#ff9a48',amt:1.0,belt:0.6},
+ {e:0.01,top:'#3a6fb0',mid:'#e8847e',hor:'#ff9a46',glow:'#ffc26a',amt:1.2,belt:0.5},
+ {e:0.09,top:'#3f93cf',mid:'#b9c9df',hor:'#ffd6a2',glow:'#ffe2a0',amt:0.55,belt:0.15},
+ {e:0.30,top:'#3f9fd6',mid:'#8fcbe6',hor:'#d3efe9',glow:'#fff2d0',amt:0.18,belt:0},
+ {e:1.00,top:'#2f8fd0',mid:'#8fcbe6',hor:'#d3efe9',glow:'#fff2d0',amt:0.14,belt:0}];
+const SKY_RISE={mid:'#f0a6b0',hor:'#ffc4b0',glow:'#ffd6a8'}; // dawns are pinker and softer
+const _skyC={top:new THREE.Color(),mid:new THREE.Color(),hor:new THREE.Color(),glow:new THREE.Color(),a:new THREE.Color(),b:new THREE.Color()};
+function skyPhase(elev,rising){const K=SKY_KEYS;let i=0;while(i<K.length-2&&elev>K[i+1].e)i++;const A=K[i],B=K[i+1],t=smooth(A.e,B.e,elev);
+  const o=_skyC,mix=(k)=>o[k].set(A[k]).lerp(_skyC.b.set(B[k]),t);mix('top');mix('mid');mix('hor');mix('glow');
+  o.glowAmt=A.amt+(B.amt-A.amt)*t;o.belt=A.belt+(B.belt-A.belt)*t;
+  if(rising){const w=Math.max(0,1-Math.abs(elev-0.0)/0.16)*0.55;o.mid.lerp(_skyC.a.set(SKY_RISE.mid),w);o.hor.lerp(_skyC.a.set(SKY_RISE.hor),w);o.glow.lerp(_skyC.a.set(SKY_RISE.glow),w);}
+  return o;}
 function updateSky(){
   const ang=(S.tod-0.25)*Math.PI*2,elev=Math.sin(ang),day=smooth(-0.12,0.18,elev),set=Math.max(0,1-Math.abs(elev-0.03)/0.22)*(elev>-0.2?1:0);
   const w=S.weather,cl=w.c;
-  const top=C.t1.copy(C.topNight).lerp(C.topDay,day);
-  const hor=C.t2.copy(C.horNight).lerp(C.horDay,day).lerp(C.sunset,set*0.75*(1-cl*0.7));
+  const ph=skyPhase(elev,S.tod<0.5),top=C.t1.copy(ph.top),hor=C.t2.copy(ph.hor),mid=C.t4.copy(ph.mid);
   const g=C.t3.copy(C.greyN).lerp(C.grey,day);
-  top.lerp(g,cl*0.75);hor.lerp(g,cl*0.6);
-  if(flash>0){top.lerp(C.horDay,flash*0.6);hor.lerp(C.horDay,flash*0.6);}
-  skyU.top.value.copy(top);skyU.bottom.value.copy(hor);
+  top.lerp(g,cl*0.75);hor.lerp(g,cl*0.6);mid.lerp(g,cl*0.7);
+  if(flash>0){top.lerp(C.horDay,flash*0.6);hor.lerp(C.horDay,flash*0.6);mid.lerp(C.horDay,flash*0.6);}
+  skyU.top.value.copy(top);skyU.bottom.value.copy(hor);skyU.mid.value.copy(mid);
+  skyU.sunDir.value.set(Math.cos(ang)*30,elev*40,14).normalize();skyU.glowCol.value.copy(ph.glow);skyU.glowAmt.value=ph.glowAmt*(1-cl*0.85)*(S.inCave?0:1);
+  skyU.belt.value=ph.belt*(1-cl*0.8);
   scene.fog.color.copy(hor).convertSRGBToLinear();
   scene.fog.near=70-45*w.r;scene.fog.far=230-120*w.r;
   stars.material.opacity=(1-day)*(1-cl)*0.95;
@@ -1369,7 +1413,7 @@ function updateSky(){
   hemi.intensity=(0.18+0.42*day)*(1-0.25*cl)+flash*1.6;
   lagoon.material.color.copy(COL.lagoonNight).lerp(COL.lagoonDay,0.15+0.85*day).lerp(COL.lagoonStorm,w.r*0.5*day);
   ocean.material.color.copy(COL.oceanNight).lerp(COL.oceanDay,0.15+0.85*day).lerp(COL.oceanStorm,w.r*0.5*day);
-  cloudMat.color.setScalar(0.35+0.65*day).lerp(C.grey,w.r*0.6);
+  cloudMat.color.setScalar(0.35+0.65*day).lerp(hor,set*0.7).lerp(C.grey,w.r*0.6);
   clouds.children.forEach(cg=>{cg.visible=cg.userData.need<0.25+cl*0.8;});
   return day;
 }
@@ -1688,12 +1732,12 @@ function updatePension(dt,t){
 const depthTex=(function(){const N=256,c=document.createElement('canvas');c.width=c.height=N;const g=c.getContext('2d'),img=g.createImageData(N,N);
   for(let j=0;j<N;j++)for(let i=0;i<N;i++){const x=-95+(i+0.5)/N*190,z=-95+(j+0.5)/N*190,d=clamp(-H(x,z)/4,0,1),k=(j*N+i)*4;img.data[k]=img.data[k+1]=img.data[k+2]=d*255;img.data[k+3]=255;}
   g.putImageData(img,0,0);const t=new THREE.CanvasTexture(c);t.flipY=false;t.minFilter=THREE.LinearFilter;return t;})();
-const waterU={uTime:{value:0},uDepth:{value:depthTex},uDay:{value:1},uStorm:{value:0},uR:{value:R},uSun:{value:new THREE.Vector3(0.5,0.8,0.3)},uMoon:{value:new THREE.Vector3(0,1,0)},uNight:{value:0},
+const waterU={uTime:{value:0},uDepth:{value:depthTex},uSunCol:{value:new THREE.Color(1,0.8,0.5)},uSkyMid:{value:new THREE.Color()},uLow:{value:0},uDay:{value:1},uStorm:{value:0},uR:{value:R},uSun:{value:new THREE.Vector3(0.5,0.8,0.3)},uMoon:{value:new THREE.Vector3(0,1,0)},uNight:{value:0},
   uFog:{value:new THREE.Color()},uFogNear:{value:70},uFogFar:{value:230},uCam:{value:new THREE.Vector3()}};
 const water=new THREE.Mesh(new THREE.RingGeometry(0.01,330,160,70),new THREE.ShaderMaterial({uniforms:waterU,transparent:true,depthWrite:false,
   vertexShader:`uniform float uTime;varying vec3 vW;varying float vDist;
   void main(){vec4 w=modelMatrix*vec4(position,1.0);w.y+=sin(w.x*0.35+uTime*1.3)*0.03+sin(w.z*0.28-uTime*1.1)*0.03;vW=w.xyz;vec4 mv=viewMatrix*w;vDist=-mv.z;gl_Position=projectionMatrix*mv;}`,
-  fragmentShader:`uniform sampler2D uDepth;uniform float uTime,uDay,uStorm,uR,uFogNear,uFogFar;uniform vec3 uMoon;uniform float uNight;uniform vec3 uSun,uFog,uCam;varying vec3 vW;varying float vDist;
+  fragmentShader:`uniform sampler2D uDepth;uniform float uTime,uDay,uStorm,uR,uFogNear,uFogFar;uniform vec3 uMoon;uniform float uNight;uniform vec3 uSun,uFog,uCam,uSunCol,uSkyMid;uniform float uLow;varying vec3 vW;varying float vDist;
   float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
   float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(hash(i),hash(i+vec2(1.0,0.0)),f.x),mix(hash(i+vec2(0.0,1.0)),hash(i+vec2(1.0,1.0)),f.x),f.y);}
   void main(){
@@ -1711,14 +1755,17 @@ const water=new THREE.Mesh(new THREE.RingGeometry(0.01,330,160,70),new THREE.Sha
     float reefF=(1.0-smoothstep(0.0,1.2,abs(r-(uR+7.5))))*(0.6+0.4*sin(uTime*3.0+atan(vW.z,vW.x)*24.0+n*4.0));
     float foam=clamp(shoreF*0.8+reefF*(0.8+uStorm*0.4),0.0,1.0)*smoothstep(0.3,0.75,n+0.3);
     vec3 V=normalize(uCam-vW);vec3 N=normalize(vec3((n-0.5)*0.5,1.0,(noise(vW.zx*1.7+uTime*0.3)-0.5)*0.5));
-    float spec=pow(max(dot(reflect(-V,N),normalize(uSun)),0.0),120.0)*1.6;
+    vec3 Rv=reflect(-V,N);vec3 Sd=normalize(uSun);float spec=pow(max(dot(Rv,Sd),0.0),120.0)*1.6;
+    vec2 ra=normalize(Rv.xz+vec2(1e-4)),sa=normalize(Sd.xz+vec2(1e-4));float az=max(dot(ra,sa),0.0);
+    float path=pow(az,30.0)*(1.0-smoothstep(0.0,0.7,abs(Rv.y-max(Sd.y,0.02))))*smoothstep(0.3,0.85,n+0.25);
+    path*=uLow;
     float mdot=max(dot(reflect(-V,N),normalize(uMoon)),0.0);float mspec=(pow(mdot,60.0)*0.9+pow(mdot,5.0)*0.16)*uNight;
     float fres=pow(1.0-max(dot(V,vec3(0.0,1.0,0.0)),0.0),3.0);
     vec3 base=col*(0.22+0.78*uDay);
     base=mix(base,vec3(0.32,0.42,0.44)*(0.3+0.7*uDay),uStorm*0.5);
-    base=mix(base,uFog,fres*0.35);
+    base=mix(base,mix(uFog,uSkyMid,0.5),fres*(0.35+0.4*uLow));base=mix(base,uSunCol*0.55,uLow*0.25*(1.0-d*0.5)*smoothstep(0.0,0.6,max(dot(normalize(vW.xz-uCam.xz),sa),0.0)));
     base+=vec3(1.0)*foam*(0.3+0.6*uDay);
-    base+=vec3(1.0,0.95,0.82)*spec*uDay*(1.0-uStorm*0.8);base+=vec3(0.75,0.82,1.0)*mspec*(1.0-uStorm*0.8);
+    base+=vec3(1.0,0.95,0.82)*spec*uDay*(1.0-uStorm*0.8);base+=uSunCol*(path*2.4+pow(az,6.0)*0.14*uLow)*(1.0-uStorm*0.9);base+=vec3(0.75,0.82,1.0)*mspec*(1.0-uStorm*0.8);
     float a=mix(0.5,0.93,smoothstep(0.0,0.6,d));a=max(a,foam);a=mix(a,1.0,outside);
     base=mix(base,uFog,smoothstep(uFogNear,uFogFar,vDist));
     gl_FragColor=vec4(base,a);
@@ -1751,7 +1798,8 @@ const rp=(rand,rmin,rmax)=>{const a=rand()*Math.PI*2,r=rmin+rand()*(rmax-rmin);r
 const GRASS_N=LOWQ?1800:HIQ?4200:3000;
 scatter(GRASS_N,bladeGeo,swayMat(0xffffff,2.2),rand=>{const[x,z]=rp(rand,2,R-1.5),h=H(x,z);if(h<0.75||h>5.2||!clearGround(x,z,0.8))return null;return{x,y:h-0.02,z,s:0.7+rand()*0.9};},
   (rand,c)=>c.setHSL(0.25+rand()*0.07,0.62+rand()*0.2,0.24+rand()*0.12));
-scatter(coarse?220:360,new THREE.IcosahedronGeometry(0.07,0),std(0xffffff,{flatShading:false,roughness:0.6}),rand=>{const[x,z]=rp(rand,4,R-3),h=H(x,z);if(h<0.9||h>4||!clearGround(x,z,1))return null;return{x,y:h+0.28+rand()*0.12,z,s:0.8+rand()*0.7,sy:0.6};},
+const wildGeo=mergeGeos([{g:flg('small'),p:new THREE.Vector3(0,0.3,0),q:new THREE.Quaternion().setFromEuler(new THREE.Euler(0.35,0,0))},{g:new THREE.CylinderGeometry(0.006,0.008,0.3,4),p:new THREE.Vector3(0,0.15,0)}]);
+scatter(coarse?220:360,wildGeo,std(0xffffff,{flatShading:false,roughness:0.6,side:THREE.DoubleSide}),rand=>{const[x,z]=rp(rand,4,R-3),h=H(x,z);if(h<0.9||h>4||!clearGround(x,z,1))return null;return{x,y:h-0.02,z,s:0.9+rand()*0.7,rx:(rand()-0.5)*0.3};},
   (rand,c)=>{const k=rand();c.set(k<0.55?0xffffff:k<0.8?0xe2402e:k<0.92?0xffc83d:0xf08ad0);});
 scatter(160,new THREE.SphereGeometry(0.08,6,4),std(0xffffff,{roughness:0.5}),rand=>{const[x,z]=rp(rand,R-3.5,R+0.6),h=H(x,z);if(h<-0.05||h>0.5||!clearGround(x,z,0.5))return null;return{x,y:h+0.01,z,s:0.6+rand()*0.9,sy:0.45};},
   (rand,c)=>c.set([0xfbf3e2,0xf3c9c0,0xe9dcc0,0xd6cfc2][Math.floor(rand()*4)]));
@@ -1768,7 +1816,7 @@ scatter(60,new THREE.ConeGeometry(0.5,3,5),std(0xffffff,{roughness:1}),rand=>{co
   isl(-150,40,9,46,62,7);isl(-138,-10,4,22,40,9);isl(60,-160,7,32,44,11);})();
 
 /* Sun disc in the sky */
-sky.material.uniforms.sunDir={value:new THREE.Vector3(0,1,0)};sky.material.uniforms.sunCol={value:new THREE.Color(1,0.9,0.7)};
+sky.material.uniforms.sunCol={value:new THREE.Color(1,0.9,0.7)};
 sky.material.fragmentShader='uniform vec3 top;uniform vec3 bottom;uniform vec3 sunDir;uniform vec3 sunCol;varying vec3 vP;void main(){vec3 d=normalize(vP);float h=max(d.y,0.0);vec3 c=mix(bottom,top,pow(h,0.55));float s=max(dot(d,sunDir),0.0);c+=sunCol*(pow(s,900.0)*1.4+pow(s,24.0)*0.18);gl_FragColor=vec4(c,1.0);}';
 sky.material.needsUpdate=true;
 
@@ -1776,8 +1824,9 @@ function updateGfx(t,day){
   waterU.uTime.value=t;waterU.uDay.value=day;waterU.uStorm.value=S.weather.r*S.weather.w;
   waterU.uFog.value.copy(skyU.bottom.value);waterU.uFogNear.value=scene.fog.near;waterU.uFogFar.value=scene.fog.far;
   waterU.uCam.value.copy(camera.position);
-  const sd=waterU.uSun.value.copy(sun.position).sub(sun.target.position).normalize();
-  sky.material.uniforms.sunDir.value.copy(sd);sky.material.uniforms.sunCol.value.setRGB(1,0.85,0.6).multiplyScalar(day*(1-S.weather.c*0.8));
+  const angW=(S.tod-0.25)*Math.PI*2,elevW=Math.sin(angW);const sd=waterU.uSun.value.set(Math.cos(angW)*30,Math.max(elevW,0.012)*40,14).normalize();
+  waterU.uLow.value=smooth(-0.06,0.02,elevW)*(1-smooth(0.08,0.35,elevW))*(1-S.weather.c*0.85);waterU.uSunCol.value.copy(skyU.glowCol.value).lerp(new THREE.Color(0xff8a3a),Math.max(0,1-elevW/0.06)*0.5);waterU.uSkyMid.value.copy(skyU.mid.value);
+  sky.material.uniforms.sunCol.value.setRGB(1,0.85,0.6).multiplyScalar(day*(1-S.weather.c*0.8));
   grassU.uTime.value=t;grassU.uWind.value=S.weather.w;
 }
 
@@ -1920,7 +1969,14 @@ water.material.needsUpdate=true;
 /* ----- night sky: twinkling stars, Milky Way, moon, shooting stars ----- */
 stars.visible=false;
 sky.material.uniforms.uNight={value:0};sky.material.uniforms.uMoon={value:new THREE.Vector3(0,1,0)};
-sky.material.fragmentShader='uniform vec3 top;uniform vec3 bottom;uniform vec3 sunDir;uniform vec3 sunCol;uniform float uNight;uniform vec3 uMoon;varying vec3 vP;void main(){vec3 d=normalize(vP);float h=max(d.y,0.0);vec3 c=mix(bottom,top,pow(h,0.55));float s=max(dot(d,sunDir),0.0);c+=sunCol*(pow(s,900.0)*1.4+pow(s,24.0)*0.18);vec3 md=uMoon;float m=max(dot(d,md),0.0);float disc=smoothstep(0.99935,0.9996,m);float crater=0.92+0.08*sin(d.x*900.0)*sin(d.z*700.0);c=mix(c,vec3(0.96,0.95,0.86)*crater,disc*uNight);c+=vec3(0.55,0.62,0.75)*pow(m,160.0)*0.3*uNight;gl_FragColor=vec4(c,1.0);}';
+sky.material.fragmentShader=`uniform vec3 top,mid,bottom,sunDir,sunCol,glowCol,beltCol,uMoon;uniform float uNight,glowAmt,belt;varying vec3 vP;
+  void main(){vec3 d=normalize(vP);float h=max(d.y,0.0);
+    vec3 c=mix(bottom,mid,smoothstep(0.0,0.22,h));c=mix(c,top,pow(smoothstep(0.18,1.0,h),0.75));
+    float s=max(dot(d,sunDir),0.0);float horiz=1.0-smoothstep(0.0,0.45,h);
+    c+=glowCol*(pow(s,40.0)*0.8+pow(s,7.0)*0.2*horiz+pow(s,1.5)*0.03)*glowAmt;
+    float anti=max(dot(d,-sunDir),0.0);c=mix(c,beltCol,belt*pow(anti,2.0)*horiz*0.6);
+    float m=max(dot(d,uMoon),0.0);float disc=smoothstep(0.99935,0.9996,m);float crater=0.92+0.08*sin(d.x*900.0)*sin(d.z*700.0);c=mix(c,vec3(0.96,0.95,0.86)*crater,disc*uNight);c+=vec3(0.55,0.62,0.75)*pow(m,160.0)*0.3*uNight;
+    gl_FragColor=vec4(c,1.0);}`;
 sky.material.needsUpdate=true;
 const starU={uOp:{value:0},uTime:{value:0},uPR:{value:Math.min(window.devicePixelRatio||1,2)}};
 function starPoints(N,band,haze){const pos=new Float32Array(N*3),sz=new Float32Array(N),ph=new Float32Array(N),rand=mulberry32(band?91:77);
@@ -2429,7 +2485,7 @@ const HOW={stone:['rock','Break the dark basalt rocks for stone.'],log:['palm','
   monoi:[null,'Make monoʻi from coconut oil and tiare (Craft · Crafts).'],flour:['dock','Buy flour from the goélette.']};
 const GOAL_RECIPE={shellhei:'heipupu'};
 const MASS=new Set(['stone','thatch','bamboo','fish','water','oil','pupu','poreho','parau','aute','bark','flour','rice','sugar','coffee','fei','taro','uru']);
-function plural(k,n){const w=nm(k);return n>1&&!MASS.has(k)&&!/s$/.test(w)?w.replace(/^(\S+)/,m=>m+'s'):w;}
+function plural(k,n){const w=nm(k);if(n<=1||MASS.has(k))return w;if(window.FARE_LANG==='fr'){return w.replace(/^([^\s·(]+)/,m=>/[sxz]$/.test(m)?m:m+'s');}return /s$/.test(w)?w:w.replace(/^(\S+)/,m=>m+'s');}
 function sayMissing(title,need,done){const miss=Object.entries(need).filter(([k,v])=>(S.inv[k]||0)<v).map(([k,v])=>[k,v-(S.inv[k]||0)]);
   if(!miss.length){manuSay(`You have everything for the ${title}! ${done[1]}`,7);return done[0];}
   const how=HOW[miss[0][0]]||[null,''];manuSay(`For the ${title} you still need ${miss.map(([k,n])=>`${n} ${plural(k,n)}`).join(', ')}. ${how[1]}`,9);return how[0];}
@@ -2643,6 +2699,7 @@ function updateV7(dt,t,moving,paused){
   blinkT-=dt;if(blinkT<=0){blinkOn=0.12;blinkT=2.5+Math.random()*3.5;}if(blinkOn>0)blinkOn-=dt;PC.eyes.forEach(e=>{e.scale.y=blinkOn>0?0.12:1;});
   if(lookOpen){const f=player.rotation.y+Math.sin(t*0.4)*0.25,wide=innerWidth>innerHeight;camera.position.set(px+Math.sin(f)*(wide?4.2:5.2),player.position.y+1.4,pz+Math.cos(f)*(wide?4.2:5.2));camera.lookAt(px,player.position.y+(wide?0.7:-0.27),pz);}
   if(window.__faceCam){const f=player.rotation.y;camera.position.set(px+Math.sin(f)*1.15,player.position.y+1.86,pz+Math.cos(f)*1.15);camera.lookAt(px,player.position.y+1.74,pz);PC.eyes.forEach(e=>{e.scale.y=1;});}
+  if(window.__camFn)window.__camFn(camera,player);
   updateWhales(dt,t);
   if(!paused)updateExcursion(dt);
   for(const n of S.npcs)if(n.role==='guest'&&n.exc===undefined){const o=Object.keys(EXC).filter(excAvailable);n.exc=S.level>=7&&o.length&&Math.random()<0.75?o[Math.floor(Math.random()*o.length)]:null;}
@@ -3103,15 +3160,16 @@ MAT.bougain=std(0xd6359a);MAT.bougain2=std(0xe85ab0);MAT.tainaF=std(0xfbf8f0);MA
 MAT.nonoF=std(0xe9e6b8);MAT.tamanuF=std(0x7fae4a);MAT.mapeF=std(0xb48a4a);MAT.barkG=std(0x6e6458);MAT.barkR=std(0x7a4a2a);MAT.santL=std(0x6a9a4a);
 function blobCrown(crown,n,rad,size,mats,seed,yOff){const r=mulberry32(seed);for(let i=0;i<n;i++){const a=i/n*Math.PI*2+r(),d=i?rad*(0.6+r()*0.4):0;
   crown.add(mesh(noisyGeo(new THREE.IcosahedronGeometry(size*(0.8+r()*0.4),1),size*0.3,seed+i),mats[i%mats.length],Math.cos(a)*d,(yOff||0)+(i?r()*size*0.6:size*0.5),Math.sin(a)*d));}}
-function flowerDots(bunch,n,mat,rad,y0,y1,size,seed,shape){const r=mulberry32(seed);for(let i=0;i<n;i++){const a=r()*Math.PI*2,y=y0+r()*(y1-y0),d=rad*(0.75+r()*0.3);
+function flowerDots(bunch,n,mat,rad,y0,y1,size,seed,shape,kind){const r=mulberry32(seed);for(let i=0;i<n;i++){const a=r()*Math.PI*2,y=y0+r()*(y1-y0),d=rad*(0.75+r()*0.3);
+  if(kind){bunch.add(flower(kind,mat,Math.cos(a)*d,y,Math.sin(a)*d,size/0.08,r,_fD.set(Math.cos(a),0.7,Math.sin(a))));continue;}
   const f=mesh(shape||new THREE.SphereGeometry(size,6,5),mat,Math.cos(a)*d,y,Math.sin(a)*d,false);f.scale.y=0.6;bunch.add(f);}}
 function makeV10Crop(c){const s=c.seed,r=mulberry32(s),g=new THREE.Group(),crown=new THREE.Group(),bunch=new THREE.Group();g.add(crown);g.add(bunch);
   const T=c.type;
   if(T==='bougain'){for(let i=0;i<4;i++){const st=cyl(0.03,1.4,MAT.trunk,(r()-0.5)*0.4,0.6,(r()-0.5)*0.4,5);st.rotation.set((r()-0.5)*0.6,0,(r()-0.5)*0.6);g.add(st);}
-    blobCrown(crown,5,0.5,0.4,[MAT.bushDark,MAT.bush],s,0.8);flowerDots(bunch,26,MAT.bougain,0.62,0.6,1.5,0.09,s+1);flowerDots(bunch,10,MAT.bougain2,0.55,0.9,1.5,0.08,s+2);}
-  else if(T==='taina'){blobCrown(crown,5,0.4,0.36,[MAT.glossy,MAT.glossy2],s,0.35);flowerDots(bunch,12,MAT.tainaF,0.55,0.4,1.0,0.075,s+1,new THREE.IcosahedronGeometry(0.075,0));}
+    blobCrown(crown,5,0.5,0.4,[MAT.bushDark,MAT.bush],s,0.8);flowerDots(bunch,22,MAT.petalMag,0.62,0.6,1.5,0.09,s+1,null,'bougain');flowerDots(bunch,10,MAT.petalMag2,0.55,0.9,1.5,0.085,s+2,null,'bougain');}
+  else if(T==='taina'){blobCrown(crown,5,0.4,0.36,[MAT.glossy,MAT.glossy2],s,0.35);flowerDots(bunch,12,MAT.petalW,0.55,0.4,1.0,0.085,s+1,null,'taina');}
   else if(T==='pua'){g.add(cyl(0.09,1.4,MAT.trunk,0,0.7,0,6));crown.position.y=1.3;blobCrown(crown,6,0.6,0.5,[MAT.glossy2,MAT.bushDark],s,0);
-    bunch.position.y=1.3;flowerDots(bunch,14,MAT.puaF,0.85,-0.1,0.7,0.08,s+1);}
+    bunch.position.y=1.3;flowerDots(bunch,16,MAT.petalCream,0.85,-0.1,0.7,0.095,s+1,null,'pua');}
   else if(T==='nono'){g.add(cyl(0.1,1.6,MAT.barkG,0,0.8,0,6));crown.position.y=1.7;
     for(let i=0;i<14;i++){const a=r()*Math.PI*2,l=mesh(taroLeafGeo,MAT.glossy2,Math.cos(a)*0.55,(r()-0.4)*0.8,Math.sin(a)*0.55);l.scale.setScalar(0.75);l.rotation.set(-0.3,-a+Math.PI/2,0.2);crown.add(l);}
     bunch.position.y=1.5;for(let i=0;i<4;i++){const a=i*1.6,f=mesh(noisyGeo(new THREE.SphereGeometry(0.11,8,6),0.03,s+i),MAT.nonoF,Math.cos(a)*0.35,0,Math.sin(a)*0.35);f.scale.y=1.4;bunch.add(f);}}
@@ -3138,10 +3196,11 @@ function checkMilestones(){for(const m of MILESTONES){if(S.flags[m.k]||!m.chk(S)
 function makeParterre(p){const g=new THREE.Group(),r=mulberry32(p.seed);
   const soil=mesh(new THREE.CylinderGeometry(1.0,1.05,0.16,20),MAT.tilled,0,0.04,0);soil.castShadow=false;g.add(soil);
   for(let i=0;i<14;i++){const a=i/14*Math.PI*2,st=mesh(rockGeo,i%2?MAT.basalt:MAT.basalt2,Math.cos(a)*1.05,0.08,Math.sin(a)*1.05);st.scale.set(0.22,0.16,0.18);st.rotation.y=a;g.add(st);}
-  const mats=[MAT.bougain,MAT.tainaF,MAT.tiare,std(0xde4634),MAT.puaF,MAT.bougain2];
+  const kinds=[['small',MAT.petalHib],['small',MAT.petalYel],['tiare',MAT.petalW],['small',MAT.petalPink],['pua',MAT.petalCream],['small',MAT.petalOrange],['bougain',MAT.petalMag]];
   for(let i=0;i<9;i++){const a=r()*Math.PI*2,d=r()*0.7,b=new THREE.Group();b.position.set(Math.cos(a)*d,0.12,Math.sin(a)*d);
-    b.add(mesh(new THREE.IcosahedronGeometry(0.2,0),MAT.bush,0,0.12,0));const m=mats[i%mats.length];
-    for(let k=0;k<5;k++)b.add(mesh(new THREE.SphereGeometry(0.06,6,4),m,(r()-0.5)*0.32,0.22+r()*0.12,(r()-0.5)*0.32,false));g.add(b);}
+    b.add(mesh(new THREE.IcosahedronGeometry(0.2,0),i%2?MAT.bush:MAT.bushDark,0,0.12,0));const[kd,m]=kinds[i%kinds.length];
+    for(let k=0;k<5;k++){const st=cyl(0.008,0.14,MAT.stem,(r()-0.5)*0.3,0.26,(r()-0.5)*0.3,4);b.add(st);b.add(flower(kd,m,st.position.x,0.34,st.position.z,0.8+r()*0.4,r));}g.add(b);}
+  bakeGroup(g);
   g.position.set(p.x,H(p.x,p.z),p.z);world.add(g);p.mesh=g;}
 
 /* ----- street lamps ----- */
@@ -3177,7 +3236,7 @@ function lampActs(L,A){const C=LAMPCOL[L.col]||LAMPCOL.warm,lit=lampLit(L)>0;
     if(L.type!=='solar'&&S.inv.solar>0)A.push({label:'Fit the solar kit',sub:'Charges in the sun · no fuel',cls:'alt',fn:()=>{S.inv.solar--;L.type='solar';L.charge=0.5;spawnLamp(L);stat('solarfit');toast('Solar street lamp! It charges in the daytime. Cloudy days give less light.');refresh();}});
     if(L.type!=='elec'&&S.inv.bulb>0)A.push(S.gen?{label:'Wire it to the generator',sub:'1 bulb · bright electric light',cls:'alt',fn:()=>{S.inv.bulb--;L.type='elec';spawnLamp(L);toast('Electric street lamp! It lights up at night while the generator has fuel.');refresh();}}:{label:'Make it electric',sub:'Install a groupe électrogène first',off:true});}}
 function lampSheet(){$('#sheetTitle').textContent='Lamp colour';const L=lampTarget;if(!L)return'';
-  return`<p class="small-note">Choose a shade for this lamp. It shows at night.</p>`+Object.entries(LAMPCOL).filter(([k,C])=>!C.secret||(C.secret==='faarumai'?!!S.flags.faarumaiDone:C.secret==='sea'?S.flags.seaCaveFound:C.secret==='volcano'?!!S.volcano:S.flags.caveFound)).map(([k,C])=>{const cur=L.col===k||(!L.col&&k==='warm'),ok=!C.cost||hasAll(C.cost);
+  return`<p class="small-note">Choose a shade for this lamp. It shows at night.</p>`+Object.entries(LAMPCOL).filter(([k,C])=>!C.secret||(C.secret==='faarumai'?!!S.flags.faarumaiDone:C.secret==='sea'?S.flags.seaCaveFound:C.secret==='volcano'?!!S.volcano:C.secret==='pai'?!!S.flags.paiDone:C.secret==='faie'?!!S.flags.faieDone:S.flags.caveFound)).map(([k,C])=>{const cur=L.col===k||(!L.col&&k==='warm'),ok=!C.cost||hasAll(C.cost);
     return`<div class="recipe"><div class="rinfo"><div class="name"><span class="swatch-dot" style="background:${C.c}"></span> ${C.n}</div><div class="tah">${C.cost?`${C.t} · ${Object.entries(C.cost).map(([i,v])=>`${v} ${nm(i)}`).join(' + ')}`:'Plain glass'}</div></div><button data-lcol="${k}" ${cur||!ok?'disabled':''}>${cur?'Now':'Use'}</button></div>`;}).join('');}
 function lampClick(b){const k=b.dataset.lcol,L=lampTarget;if(!k||!L)return;const C=LAMPCOL[k];if(C.cost){if(!hasAll(C.cost))return;take(C.cost);}
   L.col=k;spawnLamp(L);stat('lampcol');floatAtPlayer(`${C.n} shade`);openSheet(null);refresh();}
@@ -4041,6 +4100,9 @@ const DAILY_POOL=[
  {k:'songs',n:1,lv:9,t:n=>LG(`Jouer ${n} chant`,`Play ${n} song`)},
  {k:'tours',n:1,lv:13,t:n=>LG(`Faire ${n} tour en vaʻa`,`Run ${n} canoe tour`)},
  {k:'honey',n:1,lv:16,t:n=>LG(`Récolter ${n} miel`,`Harvest ${n} honey`)},
+ {k:'voyages',n:1,lv:12,t:n=>LG('Naviguer vers une autre île','Sail to another island')},
+ {k:'species',n:1,lv:12,t:n=>LG(`Découvrir ${n} espèce dans les îles`,`Discover ${n} species on the islands`)},
+ {k:'litter',n:2,lv:3,t:n=>LG(`Ramasser ${n} déchets`,`Pick up ${n} pieces of litter`)},
 ];
 function dailyGen(){const r=mulberry32(S.day*131+7),pool=DAILY_POOL.filter(d=>d.lv<=S.level),T=[];
   while(T.length<3&&pool.length){const i=Math.floor(r()*pool.length),d=pool.splice(i,1)[0];T.push({k:d.k,n:d.n,base:S.stats[d.k]||0});}
@@ -4685,13 +4747,13 @@ const SPECIES=[
  {k:'fai',isl:'moorea',kind:'animal',n:()=>LG('Fai (raie pastenague)','Fai (stingray)'),sci:'Pateobatis fai',t:()=>LG('Elle glisse sur le sable du lagon. On l’admire sans la nourrir ni la toucher.','It glides over the lagoon sand. Admire it without feeding or touching.'),protect:true,at:()=>MOOP_SB},
  {k:'blacktip',isl:'moorea',kind:'animal',n:()=>LG('Requin à pointes noires','Blacktip reef shark'),sci:'Carcharhinus melanopterus',t:()=>LG('Petit requin timide du lagon. Il fait le tour du banc de sable.','A shy little lagoon shark. It circles the sandbank.'),protect:true,at:()=>MOOP_SB,rad:10},
  {k:'moorea_gecko',isl:'moorea',kind:'animal',n:()=>LG('Lézard jaune','Yellow lizard'),sci:'Lepidodactylus',t:()=>LG('Un petit gecko doré qui se chauffe sur les rochers… comme le lézard de la légende.','A little golden gecko warming up on the rocks… like the lizard of the legend.'),at:()=>MOOP.gecko}];
-function spWorld(sp){const p=sp.at(),C=sp.isl==='moorea'?MOO:ISL;return{x:C.x+p.x,z:C.z+p.z};}
+function spWorld(sp){const p=sp.at(),C=sp.isl==='moorea'?MOO:sp.isl==='huahine'?HUA:ISL;return{x:C.x+p.x,z:C.z+p.z};}
 const SPKIND={plant:()=>LG('Plante','Plant'),flower:()=>LG('Fleur','Flower'),bird:()=>LG('Oiseau','Bird'),animal:()=>LG('Animal','Animal'),insect:()=>LG('Insecte','Insect')};
 function discover(sp){S.species=S.species||{};if(S.species[sp.k])return;S.species[sp.k]=S.day;stat('species');
   toast(`🔎 ${LG('Nouvelle espèce','New species')} · ${sp.n()} (${sp.sci})`);if(sp.protect)setTimeout(()=>manuSay(LG('Celle-là, on la regarde sans la déranger : elle est protégée.','That one we watch without disturbing it: it’s protected.'),5),1200);pendingSave=true;}
 /* visuals for species that are not plants */
 const spMeshes=[];
-function buildSpeciesFor(k){const G=k==='moorea'?mooGroup:islGroup;if(!G||G.userData.species)return;G.userData.species=1;const H2=k==='moorea'?mooH:islH;
+function buildSpeciesFor(k){const G=k==='moorea'?mooGroup:k==='huahine'?huaGroup:islGroup;if(!G||G.userData.species)return;G.userData.species=1;const H2=k==='moorea'?mooH:k==='huahine'?huaH:islH;
   for(const sp of SPECIES){if(sp.isl!==k)continue;const p=sp.at();let o=null;
     if(sp.kind==='plant'||sp.kind==='flower'){const obj=bakeObj(makeCropObj({type:sp.k,seed:900+sp.k.length*13}));o=obj.group;o.scale.setScalar(sp.k==='pample'?1:1.1);}
     else if(sp.k==='otatare'){o=new THREE.Group();const br=cyl(0.05,2.2,MAT.barkG,0,1.6,0,6);br.rotation.z=1.2;o.add(br);const post=cyl(0.09,1.7,MAT.barkG,-0.6,0.85,0,6);o.add(post);
@@ -4704,13 +4766,14 @@ function buildSpeciesFor(k){const G=k==='moorea'?mooGroup:islGroup;if(!G||G.user
       fly.position.y=1.1;o.add(fly);o.userData.hover=fly;}
     else if(sp.k==='partula'){o=new THREE.Group();o.add(cyl(0.14,2.4,MAT.barkG,0,1.2,0,7));for(let i=0;i<3;i++){const sh=mesh(new THREE.ConeGeometry(0.035,0.09,8),std(0xd9b27a,{flatShading:false}),Math.cos(i*2.1)*0.15,0.7+i*0.4,Math.sin(i*2.1)*0.15,false);sh.rotation.x=Math.PI;o.add(sh);}
       const leaves=new THREE.Group();blobCrown(leaves,6,0.9,0.7,[MAT.leafUru,MAT.bushDark],77,0);leaves.position.y=2.5;o.add(leaves);bakeGroup(leaves);}
+    if(!o&&sp.isl==='huahine')o=huaSpeciesMesh(sp);
     if(!o)continue;o.position.set(p.x,H2(p.x,p.z)-(sp.k==='oura'?0.05:0),p.z);if(sp.k==='oura')o.position.y=Math.max(H2(p.x,p.z),-0.2)+0.12;G.add(o);spMeshes.push({sp,o});}}
 const _buildIsland0=buildIsland;buildIsland=function(){_buildIsland0();buildSpeciesFor('tahiti');};
 const _buildMoorea0=buildMoorea;buildMoorea=function(){_buildMoorea0();buildSpeciesFor('moorea');};
 if(islGroup)buildSpeciesFor('tahiti');if(mooGroup)buildSpeciesFor('moorea');
 function speciesActions(A){if(!S.away||S.boat)return;const px=player.position.x,pz=player.position.z;
   for(const sp of SPECIES){if(sp.isl!==S.away.k)continue;const w=spWorld(sp);if(dist(px,pz,w.x,w.z)>(sp.rad||3.2))continue;
-    const known=S.species&&S.species[sp.k];
+    const known=S.species&&S.species[sp.k];if(sp.quest&&!known)continue;
     if(sp.seed){S.cuts=S.cuts||{};const ok=S.cuts[sp.k]!==S.day;A.push(ok?{label:LG(`Prendre une bouture : ${sp.n()}`,`Take a cutting: ${sp.n()}`),sub:LG('À replanter sur ton motu','To plant back on your motu'),fn:()=>{discover(sp);S.cuts[sp.k]=S.day;give({[sp.seed]:1});chopT=0.3;toast(LG(`+1 ${ITEMS[sp.seed].n} · plante-la chez toi !`,`+1 ${ITEMS[sp.seed].n} · plant it at home!`));actSig='';refresh();}}
         :{label:sp.n(),sub:LG('Une bouture par jour, pour laisser la plante repousser','One cutting a day, so the plant can grow back'),off:true});}
     else if(!known)A.push({label:LG(`Observer : ${sp.n()}`,`Watch: ${sp.n()}`),sub:SPKIND[sp.kind](),fn:()=>{discover(sp);actSig='';refresh();}});
@@ -4724,14 +4787,14 @@ function updateSpecies(dt,t){if(!S.away)return;const px=player.position.x,pz=pla
     if(!(S.species&&S.species[m.sp.k])&&!m.sp.seed){const w=spWorld(m.sp);if(dist(px,pz,w.x,w.z)<(m.sp.rad||2.2))discover(m.sp);}}}
 /* notebook tab */
 function carnetSpecies(){const n=SPECIES.filter(s=>S.species&&S.species[s.k]).length;let h=`<div class="sec">${LG('Espèces découvertes','Species discovered')} · ${n}/${SPECIES.length}</div>`;
-  for(const isl of['tahiti','moorea']){h+=`<div class="sec">${placeName(isl)}</div>`;
+  for(const isl of Object.keys(PLACES)){h+=`<div class="sec">${placeName(isl)}</div>`;
     for(const sp of SPECIES.filter(s=>s.isl===isl)){const got=S.species&&S.species[sp.k];
       h+=`<div class="recipe${got?'':' dim'}"><div class="rinfo"><div class="name">${got?(ICON[sp.seed]||'')+' '+sp.n():'❔ ???'} <span class="tah">${got?'<i>'+sp.sci+'</i> · ':''}${SPKIND[sp.kind]()}</span></div><div class="tah">${got?sp.t():LG('Pas encore observée…','Not seen yet…')}</div>${got&&sp.seed?`<div class="why">${LG('Bouture possible · à planter au motu','Cutting possible · plant it on your motu')}</div>`:''}${got&&sp.protect?`<div class="why">${LG('Espèce protégée','Protected species')}</div>`:''}</div></div>`;}}
   return h;}
 CARNET_TABS.splice(CARNET_TABS.length-1,0,['species',()=>LG('Espèces','Species'),'tiare']);
 ACH.push(['species6',()=>LG('Naturaliste en herbe','Budding naturalist'),()=>LG('Découvrir 6 espèces dans les îles','Discover 6 species on the islands'),()=>S.species&&Object.keys(S.species).length>=6],
   ['species12',()=>LG('Carnet de naturaliste','Naturalist’s notebook'),()=>LG('Découvrir toutes les espèces des îles','Discover every species on the islands'),()=>S.species&&Object.keys(S.species).length>=SPECIES.length],
-  ['garden',()=>LG('Jardin des îles','Island garden'),()=>LG('Faire pousser au motu une plante rapportée d’une île','Grow a plant brought back from an island'),()=>S.crops.some(c=>['auti','rea','ape','ginger','pample'].includes(c.type)&&c.g>=1)]);
+  ['garden',()=>LG('Jardin des îles','Island garden'),()=>LG('Faire pousser au motu une plante rapportée d’une île','Grow a plant brought back from an island'),()=>S.crops.some(c=>['auti','rea','ape','ginger','pample','melon','pitate'].includes(c.type)&&c.g>=1)]);
 
 /* =====================================================================
    v26: cyclones (season Nov–Apr) and how to get ready · floating pontoon on drums
@@ -4829,11 +4892,11 @@ function cycloneSheet(){$('#sheetTitle').textContent=LG('Plan cyclone','Cyclone 
   const lab={avis:LG('Avis de cyclone','Cyclone watch'),orange:LG('Alerte orange','Orange alert'),rouge:LG('Alerte rouge','Red alert'),sauvegarde:LG('Phase de sauvegarde','Recovery phase')}[ph]||LG('Pas d’alerte','No alert');
   let h=`<div class="cycband ${ph||'none'}">${S.cyc?`<b>${lab}</b> · ${LG('cyclone','cyclone')} ${S.cyc.name}`:`<b>${lab}</b>`}</div>`;
   h+=`<p class="small-note">${LG('Saison des cyclones : de novembre à avril. Prépare ton fare avant l’alerte rouge.','Cyclone season: November to April. Get your fare ready before the red alert.')}</p>`;
-  h+=cycChecklist().map(([ok,n,w])=>`<div class="recipe${ok===false?' dim':''}"><div class="rinfo"><div class="name">${ok===null?'⚠️':ok?'✅':'⬜'} ${n}</div><div class="tah">${w}</div></div></div>`).join('');
+  h+=cycChecklist().map(([ok,n,w])=>`<div class="recipe${ok===true?' dim':''}"><div class="rinfo"><div class="name">${ok===null?'⚠️':ok?'✅':'⬜'} ${n}</div><div class="tah">${w}</div></div></div>`).join('');
   return h;}
 const _v7Sheet3=v7Sheet;v7Sheet=function(mode){if(mode==='cyclone')return cycloneSheet();return _v7Sheet3(mode);};V7S.cyclone=1;
 /* banner */
-const cycBan=document.createElement('button');cycBan.id='cycBan';cycBan.hidden=true;cycBan.setAttribute('data-notr','');document.body.appendChild(cycBan);cycBan.onclick=()=>openSheet(sheetMode==='cyclone'?null:'cyclone');
+const cycBan=document.createElement('button');cycBan.id='cycBan';cycBan.hidden=true;cycBan.setAttribute('data-notr','');{const inv=$('#inv');inv.parentNode.insertBefore(cycBan,inv.nextSibling);}cycBan.onclick=()=>openSheet(sheetMode==='cyclone'?null:'cyclone');
 const cycVeil=document.createElement('div');cycVeil.id='cycVeil';document.body.appendChild(cycVeil);
 let cycSig='';
 function cycAnnounce(ph){const c=S.cyc;if(c.said[ph])return;c.said[ph]=1;pendingSave=true;
@@ -4880,7 +4943,7 @@ function cycActions(A){if(S.away||S.boat)return;const px=player.position.x,pz=pl
   if(S.canoeBroken&&S.canoe&&dist(px,pz,S.canoe.x,S.canoe.z)<3){const need={plank:3,rope:2},ok=hasAll(need);A.push({label:LG('Réparer le vaʻa','Repair the vaʻa'),sub:'3 '+LG('planches','planks')+' · 2 '+LG('cordes','ropes'),off:!ok,fn:()=>{take(need);S.canoeBroken=false;chopT=0.6;toast(LG('Le vaʻa est comme neuf.','The vaʻa is as good as new.'));actSig='';refresh();}});}
   for(const d of debrisMeshes)if(dist(px,pz,d.x,d.z)<2.4){A.push({label:LG('Dégager le tronc tombé','Clear the fallen trunk'),sub:'+2 '+LG('bûches','logs')+' · +2 '+LG('palmes','fronds'),fn:()=>clearDebris(d)});break;}
   if(alert&&!document.querySelector('#cycBan[hidden]'))A.push({label:LG('Plan cyclone','Cyclone plan'),sub:LG('Ce qu’il reste à préparer','What’s left to prepare'),fn:()=>openSheet('cyclone')});}
-const _board0=board;board=function(){if(S.canoeBroken){toast(LG('Le vaʻa est abîmé : répare-le d’abord (3 planches, 2 cordes).','The vaʻa is damaged: repair it first (3 planks, 2 ropes).'));return;}if(cycloneBlocks())return;if(S.canoeSafe){S.canoeSafe=false;}return _board0();};
+const _board0=board;board=function(){if(S.level>=12&&S.sail&&!S.flags.voyageHint){S.flags.voyageHint=1;setTimeout(()=>manuSay(LG('Avec ta voile, on peut aller plus loin : sors du récif et choisis « Naviguer vers une autre île » !','With your sail we can go further: paddle past the reef and choose “Sail to another island”!'),8),1500);}if(S.canoeBroken){toast(LG('Le vaʻa est abîmé : répare-le d’abord (3 planches, 2 cordes).','The vaʻa is damaged: repair it first (3 planks, 2 ropes).'));return;}if(cycloneBlocks())return;if(S.canoeSafe){S.canoeSafe=false;}return _board0();};
 const _islActions2=islActions;islActions=function(A){_islActions2(A);cycActions(A);};
 function updateCyclone(dt,t){const ph=cycPhase();
   if(!ph||S.away){cycBan.hidden=!ph||ph==='fin'?true:cycBan.hidden;cycVeil.style.opacity=0;if(ph==='fin')cycEnd();if(!ph)return;}
@@ -4967,7 +5030,7 @@ function placeCascade(){if(!S.cascade)return;if(cascMesh)scene.remove(cascMesh);
   for(let i=0;i<5;i++){const s=mesh(rockGeo,MAT.basalt2,(i-2)*0.45,0.08,0.75+Math.abs(i-2)*0.15);s.scale.set(0.3,0.18,0.3);stones.add(s);}
   for(let i=0;i<3;i++){const b=cyl(0.05,1.6,MAT.bambooMat,-0.7+i*0.15,0.9,-0.9,6);b.rotation.z=0.1*(i-1);stones.add(b);}
   g.add(stones);bakeGroup(stones);
-  cascTex=streakTex();cascTex.repeat.set(0.6,0.6);const sheet=new THREE.Mesh(new THREE.PlaneGeometry(0.55,1.7),new THREE.MeshBasicMaterial({map:cascTex,color:0xeaf8ff,transparent:true,opacity:0.9,depthWrite:false,side:THREE.DoubleSide}));sheet.position.set(0,1.0,-0.15);sheet.rotation.x=-0.2;g.add(sheet);
+  cascTex=streakTex();cascTex.repeat.set(0.6,0.6);const sheet=new THREE.Mesh(new THREE.PlaneGeometry(0.55,1.7),new THREE.MeshBasicMaterial({map:cascTex,color:0xeaf8ff,transparent:true,opacity:0.9,depthWrite:false,side:THREE.DoubleSide}));sheet.position.set(0,1.0,-0.15);g.add(sheet);g.userData.sheet=sheet;
   const pool=mesh(new THREE.CircleGeometry(0.85,24),std(0x3fa7b4,{roughness:0.15,transparent:true,opacity:0.88,flatShading:false}),0,0.1,0.55,false);pool.rotation.x=-Math.PI/2;pool.scale.set(1.2,1,1);g.add(pool);
   const fern=mesh(fernGeo,MAT.bush,0.9,0.05,0.2,false);g.add(fern);const fern2=mesh(fernGeo,MAT.bushDark||MAT.bush,-0.9,0.05,0.4,false);fern2.scale.setScalar(0.8);g.add(fern2);
   g.position.set(C.x,Math.max(H(C.x,C.z),0),C.z);g.rotation.y=C.rot+Math.PI;scene.add(g);cascMesh=g;}
@@ -4986,12 +5049,12 @@ function placeSpear(){if(!S.paiSpear||spearMesh)return;const g=new THREE.Group()
   for(let i=0;i<3;i++){const band=cyl(0.04,0.06,std(0x3a2a1a),-0.6+i*0.12,0,0,6);band.rotation.z=Math.PI/2;g.add(band);}
   g.position.set(1.7,Y0+2.0,2.46);site.add(g);bakeGroup(g);spearMesh=g;}
 if(S.cascade)placeCascade();if(S.nursery)placeNursery();if(S.paiSpear)placeSpear();
-function updateVisitorBuilds(dt,t){if(cascTex)cascTex.offset.y-=dt*1.2;
+function updateVisitorBuilds(dt,t){if(cascTex)cascTex.offset.y-=dt*1.2;if(cascMesh&&cascMesh.userData.sheet){const sh=cascMesh.userData.sheet,w=new THREE.Vector3();sh.getWorldPosition(w);const a=Math.atan2(camera.position.x-w.x,camera.position.z-w.z)-cascMesh.rotation.y;sh.rotation.y=Math.max(-0.9,Math.min(0.9,Math.atan2(Math.sin(a),Math.cos(a))));}
   if(S.nursery&&S.nursery.day!==S.day){S.nursery.day=S.day;S.nursery.ready=Math.min(3,(S.nursery.ready||0)+1);}
   if(AC&&S.cascade&&!S.flags.mute&&noiseB){if(!cascSnd){const n=AC.createBufferSource();n.buffer=noiseB;n.loop=true;const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1100;bp.Q.value=0.6;const g=AC.createGain();g.gain.value=0;n.connect(bp);bp.connect(g);g.connect(master);n.start();cascSnd=g;}
     const d=S.away?99:dist(player.position.x,player.position.z,S.cascade.x,S.cascade.z);cascSnd.gain.setTargetAtTime(0.12*(1-smooth(1.5,12,d)),AC.currentTime,0.5);}}
 ACH.push(['visitors',()=>LG('On se souvient de toi','They remember you'),()=>LG('Recevoir la visite de quelqu’un que tu as aidé','Get a visit from someone you helped'),()=>S.visit&&Object.values(S.visit).some(v=>v.state==='here'||v.state==='helping'||v.state==='leaving'||v.state==='done')],
-  ['allvisitors',()=>LG('Le motu des amis','The motu of friends'),()=>LG('Terminer les trois visites','Finish all three visits'),()=>S.visit&&Object.keys(VISITORS).every(k=>S.visit[k]&&S.visit[k].state==='done')]);
+  ['allvisitors',()=>LG('Le motu des amis','The motu of friends'),()=>LG('Terminer toutes les visites','Finish every visit'),()=>S.visit&&Object.keys(VISITORS).every(k=>S.visit[k]&&S.visit[k].state==='done')]);
 
 /* =====================================================================
    v28: UV index and a light sunburn (prevention, not punishment)
@@ -5053,6 +5116,269 @@ $('#goal').addEventListener('click',e=>{if(e.target.closest('[data-daily]')){S.f
 /* keyboard hint (desktop): fades away after a while, tap to hide */
 (function(){const h=$('#hint');if(!h)return;h.style.pointerEvents='auto';h.title=LG('Toucher pour masquer','Tap to hide');h.addEventListener('click',()=>{h.hidden=true;S.flags.hintOff=1;});if(S.flags.hintOff)h.hidden=true;
   setTimeout(()=>{if(!coarse){h.classList.add('fade');setTimeout(()=>{h.hidden=true;},1200);}},150000);})();
+
+/* ----- v30: sun disc and glow in the sky ----- */
+const sunDisc=(function(){const g=new THREE.Group();const disc=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xfff6d8,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:1}));disc.scale.set(7,7,1);g.add(disc);
+  const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xffd9a0,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0.55}));glow.scale.set(56,56,1);g.add(glow);
+  const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xff9a5a,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0}));halo.scale.set(260,110,1);g.add(halo);
+  g.userData={disc,glow,halo};scene.add(g);return g;})();
+function updateSunDisc(){const ang=(S.tod-0.25)*Math.PI*2,elev=Math.sin(ang),cl=S.weather.c,set=Math.max(0,1-Math.abs(elev-0.03)/0.25);
+  const d=new THREE.Vector3(Math.cos(ang)*30,Math.max(elev,-0.3)*40,14).normalize();sunDisc.position.copy(camera.position).addScaledVector(d,380);
+  const up=smooth(-0.08,0.06,elev),vis=up*(1-cl*0.85)*(S.inCave?0:1),u=sunDisc.userData;
+  u.disc.material.opacity=vis;u.glow.material.opacity=0.3*vis;u.halo.material.opacity=0.6*set*(1-cl*0.8)*(S.inCave?0:1);
+  u.disc.material.color.copy(C.sunDay).lerp(new THREE.Color(0xff9a3a),set*set);u.glow.material.color.setHex(0xffd9a0).lerp(new THREE.Color(0xff8a4a),set);sunDisc.visible=vis>0.01||u.halo.material.opacity>0.01;}
+/* =====================================================================
+   v31: tree ferns (nahe) + Huahine (lake Fauna Nui, Maeva marae and its stone
+   fish traps, the sacred blue-eyed eels of Faie, the sleeping woman ridge),
+   Papa Marama's legends, new species, a grateful visitor who teaches the stone fish trap.
+   Huahine lives at x≈-1000, z≈-900 (H() sends z<-450 there).
+   ===================================================================== */
+/* ----- tree ferns ----- */
+MAT.naheTrunk=std(0x4a3a2a,{roughness:1});MAT.naheFrond=std(0x3f8a3a,{roughness:0.9,side:THREE.DoubleSide});MAT.naheFrond2=std(0x2f7033,{roughness:0.9,side:THREE.DoubleSide});
+function makeNahe(seed,sc){const r=mulberry32(seed),g=new THREE.Group(),h=1.6+r()*1.2;g.add(cyl(0.11,h,MAT.naheTrunk,0,h/2,0,7));
+  const n=7+Math.floor(r()*3);for(let i=0;i<n;i++){const a=i/n*Math.PI*2+r()*0.4,f=mesh(fernGeo,i%2?MAT.naheFrond:MAT.naheFrond2,0,h-0.05,0,false);f.scale.setScalar(2.1+r()*0.8);f.rotation.set(0.3+r()*0.25,a,0,'YXZ');g.add(f);}
+  for(let i=0;i<3;i++){const f=mesh(fernGeo,MAT.naheFrond2,0,h*0.45,0,false);f.scale.setScalar(1.2);f.rotation.y=i*2.1;f.rotation.x=0.9;g.add(f);}
+  g.scale.setScalar(sc||1);g.rotation.y=r()*6;return g;}
+function naheGrove(G,r,n,Hf,test,seed){const grove=new THREE.Group();let k=0,t=0;while(k<n&&t++<n*40){const x=(r()-0.5)*190,z=(r()-0.5)*190,h=Hf(x,z);if(!test(x,z,h))continue;const f=makeNahe(seed+k*7,0.8+r()*0.5);f.position.set(x,h-0.05,z);grove.add(f);k++;}
+  G.add(grove);bakeGroup(grove);return grove;}
+/* on the motu: a shaded corner on the jungle side, below the mountain */
+(function(){const r=mulberry32(3131),grove=new THREE.Group();let k=0,t=0;while(k<(LOWQ?5:8)&&t++<400){const a=r()*Math.PI*2,d=9+r()*8,x=-19+Math.cos(a)*d,z=-25+Math.sin(a)*d,h=H(x,z);if(h<2.4||h>7||!clearGround(x,z,1.4))continue;const f=makeNahe(500+k,0.75+r()*0.4);f.position.set(x,h-0.05,z);grove.add(f);k++;}
+  world.add(grove);bakeGroup(grove);})();
+/* on Tahiti: around the Faarumai falls and in the Papenoo valley · on Moorea: the wet slopes */
+const _bIsl31=buildIsland;buildIsland=function(){_bIsl31();if(!islGroup||islGroup.userData.nahe)return;islGroup.userData.nahe=1;const r=mulberry32(4141);
+  naheGrove(islGroup,r,LOWQ?14:22,islH,(x,z,h)=>h>1&&h<8&&(islFallNear(x,z,9)&&!islFallNear(x,z,3.5)||Math.abs(x-ISLP.river(z))<7&&z<-30&&z>-85&&Math.abs(x-ISLP.river(z))>2.5),900);};
+const _bMoo31=buildMoorea;buildMoorea=function(){_bMoo31();if(!mooGroup||mooGroup.userData.nahe)return;mooGroup.userData.nahe=1;const r=mulberry32(4242);
+  naheGrove(mooGroup,r,LOWQ?12:20,mooH,(x,z,h)=>h>4&&h<9.4&&Math.hypot(x-MOOP.belv.x,z-MOOP.belv.z)>4,1300);};
+if(islGroup&&!islGroup.userData.nahe)buildIsland();
+if(mooGroup&&!mooGroup.userData.nahe)buildMoorea();
+
+/* ----- Huahine: terrain ----- */
+var HUA={x:-1000,z:-900},HUA_R=58;
+function huaRm(th){return 50-14*Math.pow(Math.abs(Math.sin(th)),1.6)+3*Math.sin(3*th+1)+2*Math.sin(5*th-0.4);}
+var HUAP_LAKE={x:18,z:16,rx:8,rz:12};
+function huaH(lx,lz){
+  const r=Math.hypot(lx,lz),th=Math.atan2(lx,lz),Rm=huaRm(th),dr=Rm-r;let h;
+  if(dr<0){const out=-dr;h=out<20?Math.max(-1.5,dr*0.22):-1.5-Math.min(2.5,(out-20)*0.6);}
+  else if(dr<4)h=dr*0.15;
+  else{h=0.6+(dr-4)*0.07;if(dr>16){const m=dr-16;h+=m*0.12*Math.min(1,m/14);}}
+  const pk=(x,z,s,a)=>a*Math.exp(-((lx-x)**2+(lz-z)**2)/(2*s*s));
+  // the Maeva plain
+  {const dp=Math.hypot((lx-10)/16,(lz-12)/18),wp=1-smooth(0.85,1.3,dp);h=h*(1-wp)+1.2*wp;}
+  // Huahine Nui: mount Turi · Huahine Iti: the sleeping woman (head, chest, belly, knees, feet)
+  h+=pk(-8,38,6,11)+pk(-19,-30,4,9)+pk(-8,-31,5,13)+pk(5,-33,6,19)+pk(17,-31,4,12)+pk(27,-29,3,6);
+  // the lake Fauna Nui, a brackish lagoon-lake behind the Maeva shore
+  const L=HUAP_LAKE,dl=Math.hypot((lx-L.x)/L.rx,(lz-L.z)/L.rz),wl=1-smooth(0.75,1.0,dl);h=h*(1-wl)+(-0.7)*wl;
+  // the Faie stream pool
+  const df=Math.hypot(lx+20,lz-24),wf=1-smooth(2.2,4,df);h=h*(1-wf)+(-0.35)*wf;
+  const ds=Math.abs(lx+20-Math.sin(lz*0.3)*1.2);if(lz>24&&lz<44){const ws=(1-smooth(0.9,2,ds))*smooth(24,27,lz);h=h*(1-ws)+(-0.2)*ws;}
+  return h;}
+const HUAP=(function(){const p={},at=(th,dr)=>{const R=huaRm(th)-dr;return{x:Math.sin(th)*R,z:Math.cos(th)*R};};
+  p.land=at(-0.5,1.5);p.canoe=at(-0.5,-4);p.marama=at(-0.42,8);p.fare=at(-0.36,10);
+  p.faie={x:-20,z:24};p.pile={x:11,z:9};p.marae={x:7,z:6};p.potee={x:9,z:0};
+  p.traps=[{x:11.7,z:13.5,a:0.6},{x:17,z:25.8,a:-0.3},{x:24.2,z:13,a:1.4}];
+  p.melon={x:-6,z:10};p.pitate={x:4,z:11};p.heron={x:13,z:24};p.kaveu=at(-0.7,7);p.tupa=at(-0.62,1.2);p.ridge={x:3,z:-14};
+  return p;})();
+function huaWalkable(x,z){const lx=x-HUA.x,lz=z-HUA.z,r=Math.hypot(lx,lz);if(r>huaRm(Math.atan2(lx,lz))+19)return false;const h=huaH(lx,lz);return h<9.6&&h>-0.5;}
+var huaGroup=null,huaDepth=null,huaFX={eels:[],traps:[],heron:null,marama:null,crabs:[]};
+function buildHuahine(){if(huaGroup)return;const G=new THREE.Group();G.position.set(HUA.x,0,HUA.z);scene.add(G);huaGroup=G;const r=mulberry32(5151);
+  const N=LOWQ?120:170,geo=new THREE.PlaneGeometry(200,200,N,N);geo.rotateX(-Math.PI/2);const pos=geo.attributes.position,cols=[],cc=new THREE.Color(),rock=new THREE.Color(0.30,0.32,0.27);
+  for(let i=0;i<pos.count;i++){const x=pos.getX(i),z=pos.getZ(i),h=huaH(x,z);pos.setY(i,h);
+    const rr=Math.hypot(x,z),dr=huaRm(Math.atan2(x,z))-rr,sl=Math.abs(huaH(x+0.8,z)-huaH(x-0.8,z))+Math.abs(huaH(x,z+0.8)-huaH(x,z-0.8));
+    if(h<0.25&&h>-0.6)cc.setRGB(0.93,0.87,0.70);else if(h<=-0.6)cc.setRGB(0.80,0.75,0.60);
+    else{const t=smooth(14,34,dr);cc.setRGB(0.36-0.15*t,0.62-0.17*t,0.22-0.07*t);if(sl>2)cc.lerp(rock,smooth(2,4,sl));cc.offsetHSL(0,0,Math.sin(x*0.7)*Math.cos(z*0.6)*0.03);}
+    cc.convertSRGBToLinear();cols.push(cc.r,cc.g,cc.b);}
+  geo.setAttribute('color',new THREE.Float32BufferAttribute(cols,3));geo.computeVertexNormals();
+  const tm=new THREE.MeshToonMaterial({vertexColors:true,gradientMap:TOON_RAMP,map:groundDetail()});tm.__noAO=1;toonify(tm,{noAO:true});const terr=new THREE.Mesh(geo,tm);terr.receiveShadow=true;G.add(terr);
+  {const S2=256,c=document.createElement('canvas');c.width=c.height=S2;const g=c.getContext('2d'),img=g.createImageData(S2,S2);
+    for(let j=0;j<S2;j++)for(let i=0;i<S2;i++){const x=-110+(i+0.5)/S2*220,z=-110+(j+0.5)/S2*220,dd=clamp(-huaH(x,z)/4,0,1),k=(j*S2+i)*4;img.data[k]=img.data[k+1]=img.data[k+2]=dd*255;img.data[k+3]=255;}
+    g.putImageData(img,0,0);huaDepth=new THREE.CanvasTexture(c);huaDepth.flipY=false;huaDepth.minFilter=THREE.LinearFilter;}
+  /* forests, palms, grass, ferns */
+  const notLake=(x,z)=>Math.hypot((x-HUAP_LAKE.x)/HUAP_LAKE.rx,(z-HUAP_LAKE.z)/HUAP_LAKE.rz)>1.3;
+  mooTreeCrowns(G,r,LOWQ?450:700,(x,z,h)=>h>6&&(z>-20||h<10),0.27);
+  mooTreeCrowns(G,r,LOWQ?60:110,(x,z,h)=>h>1.2&&h<5&&notLake(x,z)&&dist(x,z,HUAP.marae.x,HUAP.marae.z)>10&&dist(x,z,HUAP.melon.x,HUAP.melon.z)>9&&dist(x,z,HUAP.faie.x,HUAP.faie.z)>6&&dist(x,z,HUAP.potee.x,HUAP.potee.z)>7&&dist(x,z,HUAP.pile.x,HUAP.pile.z)>5,0.22);
+  for(let i=0;i<(LOWQ?20:34);i++){const th=r()*Math.PI*2,R=huaRm(th)-(1.5+r()*7),x=Math.sin(th)*R,z=Math.cos(th)*R;const h=huaH(x,z);if(h<0.2||h>4||!notLake(x,z))continue;
+    if(dist(x,z,HUAP.land.x,HUAP.land.z)<3)continue;const p=makePalm(8000+i*11);p.group.position.set(x,h-0.05,z);p.group.scale.setScalar(0.85+r()*0.35);G.add(p.group);}
+  {const n=LOWQ?1000:1700,inst=new THREE.InstancedMesh(bladeGeo,swayMat(0xffffff,2.2),n),m4=new THREE.Matrix4(),q=new THREE.Quaternion(),s=new THREE.Vector3(),pp=new THREE.Vector3(),col=new THREE.Color();let k=0,t=0;
+    while(k<n&&t++<n*20){const x=(r()-0.5)*190,z=(r()-0.5)*190,h=huaH(x,z);if(h<0.7||h>8.5)continue;q.setFromEuler(new THREE.Euler(0,r()*6,0));s.setScalar(0.7+r()*0.9);pp.set(x,h-0.02,z);m4.compose(pp,q,s);inst.setMatrixAt(k,m4);col.setHSL(0.24+r()*0.07,0.6,0.25+r()*0.12);col.convertSRGBToLinear();inst.setColorAt(k,col);k++;}
+    inst.count=k;inst.receiveShadow=true;G.add(inst);}
+  {const n=LOWQ?160:280,inst=new THREE.InstancedMesh(fernGeo,std(0xffffff,{roughness:0.9,side:THREE.DoubleSide}),n),m4=new THREE.Matrix4(),q=new THREE.Quaternion(),s=new THREE.Vector3(),pp=new THREE.Vector3(),col=new THREE.Color();let k=0,t=0;
+    while(k<n&&t++<n*30){const x=(r()-0.5)*190,z=(r()-0.5)*190,h=huaH(x,z);if(h<2.5||h>9.5)continue;q.setFromEuler(new THREE.Euler(0,r()*6,0));s.setScalar(0.8+r()*1.1);pp.set(x,h-0.02,z);m4.compose(pp,q,s);inst.setMatrixAt(k,m4);col.setHSL(0.28+r()*0.06,0.55,0.22+r()*0.1);col.convertSRGBToLinear();inst.setColorAt(k,col);k++;}
+    inst.count=k;G.add(inst);}
+  naheGrove(G,r,LOWQ?8:14,huaH,(x,z,h)=>h>3&&h<8.5&&z<-10,1700);
+  /* reeds around the lake */
+  {const reeds=new THREE.Group(),L=HUAP_LAKE;for(let i=0;i<(LOWQ?40:70);i++){const a=r()*Math.PI*2,x=L.x+Math.cos(a)*L.rx*(1.08+r()*0.12),z=L.z+Math.sin(a)*L.rz*(1.08+r()*0.12),h=huaH(x,z);if(h<-0.3||h>1.2)continue;
+      for(let k=0;k<3;k++){const c=cyl(0.02,1.1+r()*0.6,k?MAT.stem:MAT.naheFrond2,x+(r()-0.5)*0.5,h+0.5,z+(r()-0.5)*0.5,4);c.rotation.z=(r()-0.5)*0.2;reeds.add(c);}}
+    G.add(reeds);bakeGroup(reeds);}
+  /* the marae of Maeva: stone platforms and standing stones, and the fare pōteʻe */
+  {const m=HUAP.marae,y=huaH(m.x,m.z),g=new THREE.Group();g.add(box(7,0.5,4.5,MAT.basalt,0,0.25,0));g.add(box(5,0.45,3,MAT.basalt2,0,0.72,-0.3));
+    for(let i=0;i<5;i++){const st=box(0.35,1.1+(i%2)*0.5,0.22,i%2?MAT.basalt2:MAT.basalt,-2.2+i*1.1,0.95+0.5,-1.9);st.rotation.y=(r()-0.5)*0.2;g.add(st);}
+    for(let i=0;i<10;i++){const a=r()*6,d=4+r()*2,s=mesh(rockGeo,MAT.basalt2,Math.cos(a)*d,0.1,Math.sin(a)*d*0.7);s.scale.set(0.3,0.2,0.3);g.add(s);}
+    g.position.set(m.x,y,m.z);g.rotation.y=0.3;G.add(g);bakeGroup(g);
+    const p=HUAP.potee,yp=huaH(p.x,p.z),fp=new THREE.Group();for(let i=0;i<10;i++){const a=i/10*Math.PI*2;fp.add(cyl(0.08,1.9,MAT.post,Math.cos(a)*2.4,0.95,Math.sin(a)*1.5,5));}
+    const roof=mesh(new THREE.ConeGeometry(3,2.2,12),MAT.thatch,0,2.9,0);roof.scale.z=0.68;fp.add(roof);fp.position.set(p.x,yp,p.z);G.add(fp);bakeGroup(fp);}
+  /* the stone fish traps in the lake: V-shaped stone walls, three of them with a gap to repair */
+  HUAP.traps.forEach((T,i)=>{const g=new THREE.Group(),gap=new THREE.Group();for(const sd of[-1,1]){for(let k=0;k<9;k++){const d=k*0.55,x=Math.cos(T.a+sd*0.45)*d,z=Math.sin(T.a+sd*0.45)*d;const broken=sd===1&&k>=3&&k<=5;const s=mesh(rockGeo,k%2?MAT.basalt:MAT.basalt2,x,broken?-0.75:-0.25,z);s.scale.set(0.32,0.28,0.32);s.rotation.y=r()*6;(broken?gap:g).add(s);}}
+    const fixed=new THREE.Group();for(let k=3;k<=5;k++){const d=k*0.55,s=mesh(rockGeo,MAT.basalt,Math.cos(T.a+0.45)*d,-0.25,Math.sin(T.a+0.45)*d);s.scale.set(0.32,0.28,0.32);fixed.add(s);}
+    g.add(gap);g.add(fixed);g.position.set(T.x,0,T.z);G.add(g);bakeGroup(gap);bakeGroup(fixed);huaFX.traps.push({g,gap,fixed,T});});
+  /* the stone pile near the lake */
+  {const p=HUAP.pile,y=huaH(p.x,p.z),g=new THREE.Group();for(let i=0;i<12;i++){const a=r()*6,d=r()*0.9,s=mesh(rockGeo,i%2?MAT.basalt:MAT.basalt2,Math.cos(a)*d,0.15+r()*0.3,Math.sin(a)*d);s.scale.set(0.3,0.25,0.3);s.rotation.y=r()*6;g.add(s);}g.position.set(p.x,y,p.z);G.add(g);bakeGroup(g);}
+  /* the Faie stream and its sacred eels */
+  {const f=HUAP.faie,pool=mesh(new THREE.CircleGeometry(3.2,24),std(0x2f8f9c,{roughness:0.15,transparent:true,opacity:0.8,flatShading:false}),f.x,-0.2,f.z,false);pool.rotation.x=-Math.PI/2;G.add(pool);
+    const stones=new THREE.Group();for(let i=0;i<16;i++){const a=r()*6,d=2.8+r()*1.2,s=mesh(rockGeo,i%2?MAT.basalt:MAT.basalt2,f.x+Math.cos(a)*d,huaH(f.x+Math.cos(a)*d,f.z+Math.sin(a)*d)+0.05,f.z+Math.sin(a)*d);s.scale.set(0.3+r()*0.2,0.22,0.3+r()*0.2);stones.add(s);}
+    for(let z=27;z<44;z+=1.5){const x=-20+Math.sin(z*0.3)*1.2;const w=mesh(new THREE.PlaneGeometry(1.6,1.7),std(0x3fa7b4,{roughness:0.2,transparent:true,opacity:0.7,flatShading:false}),x,-0.12,z,false);w.rotation.x=-Math.PI/2;stones.add(w);}
+    G.add(stones);bakeGroup(stones);
+    const eelM=std(0x8a9a6a,{flatShading:false,roughness:0.45}),eyeM=std(0x3ad0ff,{emissive:0x1a90c0});
+    for(let i=0;i<3;i++){const e=new THREE.Group();const segs=[];for(let k=0;k<9;k++){const s=mesh(new THREE.SphereGeometry(k?0.09-k*0.006:0.1,8,6),eelM,0,0,-k*0.22,false);s.scale.set(1,0.8,1.5);e.add(s);segs.push(s);}
+      for(const sd of[-1,1])e.add(mesh(new THREE.SphereGeometry(0.03,6,5),eyeM,sd*0.05,0.05,0.06,false));e.scale.setScalar(1.5);e.position.set(f.x+Math.cos(i*2.1)*1.2,-0.1,f.z+Math.sin(i*2.1)*1.2);G.add(e);huaFX.eels.push({g:e,segs,a:i*2.1,ph:r()*6,sp:0.5+r()*0.3,rad:0.8+r()*1.2});}}
+  /* Papa Marama and his fare on the beach */
+  {const fr=new THREE.Group(),f=HUAP.fare,y=huaH(f.x,f.z);fr.add(box(3.4,0.3,2.8,MAT.post,0,0.15,0));for(const[x,z]of[[-1.5,-1.2],[1.5,-1.2],[-1.5,1.2],[1.5,1.2]])fr.add(cyl(0.1,2,MAT.post,x,1.1,z,6));
+    for(const s of[-1,1]){const rf=box(3.9,0.14,1.9,MAT.thatch,0,2.55,s*0.75);rf.rotation.x=s*0.55;fr.add(rf);}fr.position.set(f.x,y,f.z);fr.rotation.y=Math.atan2(f.x,f.z);G.add(fr);bakeGroup(fr);
+    const P=makePerson(7351);P.group.position.set(HUA.x+HUAP.marama.x,huaH(HUAP.marama.x,HUAP.marama.z),HUA.z+HUAP.marama.z);scene.add(P.group);huaFX.marama=P;}
+  /* a melon field */
+  {const m=HUAP.melon,g=new THREE.Group();for(let row=0;row<4;row++)for(let c=0;c<6;c++){const x=m.x-3+c*1.2,z=m.z-2+row*1.3,h=huaH(x,z);if(h<0.6)continue;const v=makeCropObj({type:'melon',seed:300+row*7+c});v.group.position.set(x,h,z);v.group.scale.setScalar(0.8);g.add(v.group);}G.add(g);}
+  huaSetVisible(!!(S.away&&S.away.k==='huahine'));huaApplyTraps();}
+function huaSetVisible(on){if(!huaGroup)return;huaGroup.visible=on;if(huaFX.marama)huaFX.marama.group.visible=on;}
+function huaApplyTraps(){const fx=(S.hua&&S.hua.fixed)||{};huaFX.traps.forEach((t,i)=>{t.gap.visible=!fx[i];t.fixed.visible=!!fx[i];});}
+/* ----- water, voyages, walking ----- */
+const _placeWater31=placeWater;placeWater=function(k){if(k!=='huahine')return _placeWater31(k);
+  waterU.uOff.value.set(HUA.x,HUA.z);water.position.x=HUA.x;water.position.z=HUA.z;clouds.position.set(HUA.x,0,HUA.z);
+  waterU.uDepth.value=huaDepth;waterU.uScale.value=110;waterU.uR.value=HUA_R;waterU.uRing.value=1;waterU.uAway.value=0;};
+PLACES.huahine={n:()=>'Huahine',t:()=>LG('Le lac Fauna Nui et ses pièges à poissons en pierre, le marae de Maeva, les anguilles sacrées de Faie, la femme endormie.','Lake Fauna Nui and its stone fish traps, the Maeva marae, the sacred eels of Faie, the sleeping woman.')};
+const _sailTo31=sailTo;sailTo=function(k){if(k!=='huahine')return _sailTo31(k);
+  if(stormy()){toast(LG('Trop de houle pour traverser aujourd’hui.','The swell is too big to cross today.'));return;}if(typeof cycloneBlocks==='function'&&cycloneBlocks())return;
+  islFade(()=>{const prev=S.away;buildHuahine();
+    const home=prev?prev.home:(S.boat||!S.canoe?{x:player.position.x,z:player.position.z,rot:player.rotation.y}:{x:S.canoe.x,z:S.canoe.z,rot:S.canoe.rot||0});
+    S.away={k,home};const C=HUA,P=HUAP;
+    S.canoe={x:C.x+P.canoe.x,z:C.z+P.canoe.z,rot:Math.atan2(P.land.x-P.canoe.x,P.land.z-P.canoe.z)};S.boat=false;fishing=null;fishLine.visible=bobber.visible=false;
+    player.position.set(C.x+P.land.x,0,C.z+P.land.z);player.rotation.y=Math.atan2(-P.land.x,-P.land.z);cam.yaw=player.rotation.y+Math.PI;manu.pos.copy(player.position).add(new THREE.Vector3(0,3,0));
+    islSetVisible(false);mooSetVisible(false);huaSetVisible(true);placeWater(k);S.tod=Math.min(0.95,S.tod+0.08);
+    const first=!S.flags.isl_huahine_seen;S.flags.isl_huahine_seen=1;S.flags.islHuahine=1;stat('voyages');
+    toast(first?LG('Une longue journée de mer… Le vaʻa entre dans le lagon de Huahine. Au loin, la montagne a la forme d’une femme endormie. Ia ora na !','A long day at sea… The vaʻa enters Huahine’s lagoon. In the distance the mountain looks like a sleeping woman. Ia ora na!'):LG('Te revoilà à Huahine.','Back on Huahine.'));
+    if(first)setTimeout(()=>manuSay(LG('Le monsieur près du fare, c’est Papa Marama. Il garde le marae de Maeva et nourrit les anguilles de Faie !','The man by the fare is Papa Marama. He looks after the Maeva marae and feeds the eels of Faie!'),7),2200);
+    pendingSave=true;actSig='';refresh();});};
+const _sailHome31=sailHome;sailHome=function(){huaSetVisible(false);return _sailHome31();};
+v17BoatActions=function(A){_v17Boat0(A);if(!S.away&&S.sail&&S.level>=12&&outsideReef())A.push({label:LG('Naviguer vers une autre île','Sail to another island'),sub:LG('Tahiti Nui · Moorea · Huahine','Tahiti Nui · Moorea · Huahine'),fn:()=>openSheet('voyage')});};
+const _walk31=walkable;walkable=function(x,z){if(S.away&&S.away.k==='huahine'&&!S.inCave)return huaWalkable(x,z);return _walk31(x,z);};
+const _obst31=obstacles;obstacles=function(){if(S.away&&S.away.k==='huahine'){if(S.boat)return[];return[[HUA.x+HUAP.marama.x,HUA.z+HUAP.marama.z,0.6],[HUA.x+HUAP.fare.x,HUA.z+HUAP.fare.z,1.8],[HUA.x+HUAP.marae.x,HUA.z+HUAP.marae.z,3.6]];}return _obst31();};
+const _islActions31=islActions;islActions=function(A){if(S.away&&S.away.k==='huahine'){if(S.boat)return;huaActions(A);speciesActions(A);return;}_islActions31(A);};
+/* ----- legends of Huahine (summaries of public sources) ----- */
+const HUA_LEG={
+ hiro:()=>LG('Huahine était autrefois une seule île. Hiro, le dieu des voleurs et grand navigateur, y passa avec sa pirogue géante. En la poussant à travers l’île, sa proue fendit la terre en deux : au nord Huahine Nui, au sud Huahine Iti, séparées par les baies de Maroe et de Bourayne. On dit qu’en regardant les montagnes de Huahine Iti depuis la mer, on voit le profil d’une femme enceinte endormie : son front, son nez, sa poitrine et son ventre. Le nom de l’île viendrait de « vahine », la femme.',
+   'Huahine was once a single island. Hiro, god of thieves and a great navigator, came by with his giant canoe. Pushing it across the island, its prow split the land in two: Huahine Nui to the north, Huahine Iti to the south, separated by the bays of Maroe and Bourayne. They say that looking at the mountains of Huahine Iti from the sea, you see the profile of a sleeping pregnant woman: her brow, her nose, her chest and her belly. The island’s name is said to come from “vahine”, the woman.'),
+ tuna:()=>LG('À Faie, dans l’eau claire de la rivière, vivent des anguilles géantes aux yeux bleus. Les gens du village les nourrissent et les respectent : elles sont sacrées. Les anciens racontent l’histoire de Hina, qui se baignait chaque jour dans la rivière où vivait Tuna, le dieu-anguille. Tuna l’aimait. Quand on dut le tuer, il demanda à Hina de planter sa tête dans la terre. De sa tête poussa le premier cocotier : regarde la noix de coco, on y voit encore ses deux yeux et sa bouche. Depuis, l’anguille et le cocotier font partie de la même histoire.',
+   'At Faie, in the clear water of the river, live giant eels with blue eyes. The villagers feed and respect them: they are sacred. The elders tell the story of Hina, who bathed every day in the river where Tuna, the eel god, lived. Tuna loved her. When he had to be killed, he asked Hina to plant his head in the ground. From his head grew the first coconut tree: look at a coconut, you can still see his two eyes and his mouth. Since then the eel and the coconut tree have been part of the same story.')};
+LEGENDS.push(['isl_hiro',()=>LG('La pirogue de Hiro et la femme endormie','Hiro’s canoe and the sleeping woman'),HUA_LEG.hiro],['isl_tuna',()=>LG('Les anguilles sacrées de Faie','The sacred eels of Faie'),HUA_LEG.tuna]);
+let huaStory='hiro';
+function maramaSheet(){$('#sheetTitle').textContent=LG('Papa Marama raconte…','Papa Marama tells…');const k=huaStory;S.flags['isl_'+k]=1;pendingSave=true;
+  const title=k==='hiro'?LG('La pirogue de Hiro','Hiro’s canoe'):LG('Les anguilles de Faie','The eels of Faie');
+  const hint=k==='hiro'?LG('« Au bord du lac Fauna Nui, nos ancêtres pêchaient avec des pièges en pierre en forme de V. La dernière tempête en a ouvert trois. Si tu veux m’aider, il y a un tas de pierres près du lac : rebouche les brèches, et le lac nourrira encore le village. »','“On the shore of lake Fauna Nui, our ancestors fished with V-shaped stone traps. The last storm opened three of them. If you want to help, there is a pile of stones by the lake: close the gaps, and the lake will feed the village again.”')
+    :LG('« Les anguilles de Faie attendent qu’on leur apporte à manger. Si tu as du poisson, va les nourrir : elles sortiront de sous les pierres et tu verras leurs yeux bleus. »','“The eels of Faie wait for someone to bring them food. If you have fish, go and feed them: they will come out from under the stones and you will see their blue eyes.”');
+  return `<div class="legend"><b>${title}</b><p>${HUA_LEG[k]()}</p><p><i>${hint}</i></p></div><p class="small-note">${LG('Résumé d’après les sources publiques (Tahiti Tourisme, Tahiti Heritage). La légende est aussi dans ton carnet.','Summary from public sources (Tahiti Tourisme, Tahiti Heritage). The legend is also in your notebook.')}</p>`;}
+const _v7Sheet31=v7Sheet;v7Sheet=function(mode){if(mode==='marama')return maramaSheet();return _v7Sheet31(mode);};V7S.marama=1;
+/* ----- actions on Huahine ----- */
+function huaState(){S.hua=S.hua||{fixed:{},fed:0,stoneDay:0,stoneN:0};return S.hua;}
+function huaActions(A){const px=player.position.x-HUA.x,pz=player.position.z-HUA.z,st=huaState();
+  if(dist(px,pz,HUAP.canoe.x,HUAP.canoe.z)<7.5){A.push({label:LG('Rentrer au motu','Sail home to the motu'),sub:LG('Une longue journée de mer','A long day at sea'),cls:'alt',fn:sailHome});A.push({label:LG('Naviguer vers une autre île','Sail to another island'),sub:LG('Tahiti Nui · Moorea','Tahiti Nui · Moorea'),fn:()=>openSheet('voyage')});}
+  if(dist(px,pz,HUAP.marama.x,HUAP.marama.z)<3){const next=!S.flags.isl_hiro?'hiro':!S.flags.isl_tuna?'tuna':null;const opts=[['hiro',LG('La pirogue de Hiro','Hiro’s canoe')],['tuna',LG('Les anguilles de Faie','The eels of Faie')]];
+    for(const[k,n]of(next?[opts.find(o=>o[0]===next)]:opts))A.push({label:LG(`Écouter Papa Marama : ${n}`,`Listen to Papa Marama: ${n}`),sub:LG('Le gardien du marae de Maeva','The keeper of the Maeva marae'),fn:()=>{huaStory=k;openSheet('marama');}});}
+  if(dist(px,pz,HUAP.marae.x,HUAP.marae.z)<6)A.push({label:LG('Le marae de Maeva','The Maeva marae'),sub:LG('Plates-formes de pierre des anciens chefs · on ne monte pas dessus','Stone platforms of the old chiefs · we don’t climb on them'),off:true});
+  if(dist(px,pz,HUAP.pile.x,HUAP.pile.z)<3&&S.flags.isl_hiro&&!S.flags.maevaDone){if(st.stoneDay!==S.day){st.stoneDay=S.day;st.stoneN=0;}
+    A.push(st.stoneN<4?{label:LG('Ramasser des pierres','Gather stones'),sub:LG('+2 pierres · pour les pièges du lac','+2 stones · for the lake traps'),fn:()=>{give({stone:2});st.stoneN++;chopT=0.3;actSig='';refresh();}}:{label:LG('Le tas de pierres','The stone pile'),sub:LG('Assez pour aujourd’hui','Enough for today'),off:true});}
+  if(S.flags.isl_hiro)HUAP.traps.forEach((T,i)=>{if(dist(px,pz,T.x,T.z)>4.5)return;if(st.fixed[i])A.push({label:LG('Piège à poissons réparé','Fish trap repaired'),off:true});
+    else A.push(hasAll({stone:2})?{label:LG('Reboucher la brèche du piège','Close the trap’s gap'),sub:LG('2 pierres','2 stones'),fn:()=>huaFixTrap(i)}:{label:LG('Piège à poissons ouvert','Open fish trap'),sub:LG('Il te faut 2 pierres · tas près du lac','You need 2 stones · pile by the lake'),off:true});});
+  if(dist(px,pz,HUAP.faie.x,HUAP.faie.z)<5){if(st.fed>=3)A.push({label:LG('Les anguilles de Faie','The eels of Faie'),sub:LG('Rassasiées · on regarde sans toucher','Well fed · look, don’t touch'),off:true});
+    else A.push(hasAll({fish:1})?{label:LG('Nourrir les anguilles sacrées','Feed the sacred eels'),sub:LG(`1 poisson · ${st.fed}/3`,`1 fish · ${st.fed}/3`),fn:huaFeed}:{label:LG('Les anguilles se cachent sous les pierres','The eels hide under the stones'),sub:LG('Apporte-leur du poisson','Bring them fish'),off:true});}
+  if(dist(px,pz,HUAP.ridge.x,HUAP.ridge.z)<5)A.push({label:LG('La femme endormie','The sleeping woman'),sub:LG('Regarde la crête depuis ici : front, nez, poitrine, ventre','Look at the ridge from here: brow, nose, chest, belly'),off:true});}
+function huaFixTrap(i){const st=huaState();take({stone:2});st.fixed[i]=1;huaApplyTraps();chopT=0.4;const n=Object.keys(st.fixed).length;
+  if(n>=3){S.flags.maevaDone=1;stat('maeva');toast(LG('Les trois pièges sont refermés. À marée descendante, les poissons du lac resteront pris dans la pointe du V, comme au temps des ancêtres.','The three traps are closed. On the falling tide the lake fish will be caught in the point of the V, as in the ancestors’ time.'));manuSay(LG('Papa Marama n’oubliera pas ça !','Papa Marama won’t forget this!'),6);}
+  else toast(LG(`La brèche est rebouchée. (${n}/3)`,`The gap is closed. (${n}/3)`));pendingSave=true;actSig='';refresh();}
+function huaFeed(){const st=huaState();take({fish:1});st.fed++;chopT=0.3;huaFX.eelT=3;
+  if(st.fed>=3){S.flags.faieDone=1;stat('faie');const sp=SPECIES.find(s=>s.k==='puhi');if(sp)discover(sp);toast(LG('Les trois anguilles sortent de sous les pierres et tournent autour de tes pieds. Leurs yeux bleus brillent dans l’eau claire.','The three eels come out from under the stones and circle your feet. Their blue eyes shine in the clear water.'));}
+  else toast(LG(`Une anguille vient manger dans ta main… (${st.fed}/3)`,`An eel comes to eat from your hand… (${st.fed}/3)`));pendingSave=true;actSig='';refresh();}
+function huaHint(){if(!S.flags.isl_hiro)return LG('Va voir Papa Marama près du fare : il te dira pourquoi l’île est coupée en deux.','Go and see Papa Marama by the fare: he’ll tell you why the island is cut in two.');
+  if(!S.flags.maevaDone)return LG('Les pièges à poissons sont dans le lac, derrière le marae de Maeva. Prends des pierres au tas près du lac, puis rebouche les trois brèches.','The fish traps are in the lake behind the Maeva marae. Take stones from the pile by the lake, then close the three gaps.');
+  if(!S.flags.isl_tuna)return LG('Papa Marama a une autre histoire : celle des anguilles sacrées.','Papa Marama has another story: the sacred eels.');
+  if(!S.flags.faieDone)return LG('La rivière de Faie est au nord-ouest, pas loin de la plage. Apporte du poisson aux anguilles.','The Faie river is to the north-west, not far from the beach. Bring fish to the eels.');
+  return LG('Cherche les espèces de l’île : les kaveu sous les cocotiers, le héron au bord du lac, les pastèques et le pitate près du marae.','Look for the island’s species: kaveu under the palms, the heron by the lake, watermelons and pitate near the marae.');}
+const _askManu31=askManu;askManu=function(){if(S.away&&S.away.k==='huahine'){manuSay(huaHint(),7);return;}return _askManu31();};
+/* ----- per frame ----- */
+function updateHuahine(dt,t){if(!huaGroup||!S.away||S.away.k!=='huahine')return;const px=player.position.x-HUA.x,pz=player.position.z-HUA.z,f=HUAP.faie;
+  if(huaFX.eelT>0)huaFX.eelT-=dt;const excited=huaFX.eelT>0||(S.hua&&S.hua.fed>=3&&dist(px,pz,f.x,f.z)<5);
+  huaFX.eels.forEach(e=>{e.a+=dt*e.sp*(excited?2.2:1);const rad=excited?0.9:e.rad;const x=f.x+Math.cos(e.a)*rad,z=f.z+Math.sin(e.a)*rad;e.g.position.set(x,-0.06+Math.sin(t*2+e.ph)*0.03,z);e.g.rotation.y=-e.a-Math.PI/2;
+    e.segs.forEach((s,k)=>{s.position.x=Math.sin(t*6+e.ph-k*0.7)*0.06*k;});});
+  if(huaFX.heron){huaFX.heron.rotation.y=Math.sin(t*0.25)*0.5;huaFX.heron.position.y=huaH(HUAP.heron.x,HUAP.heron.z)+(Math.sin(t*0.5)>0.95?0.05:0);}
+  huaFX.crabs.forEach((c,i)=>{c.position.x=c.userData.x+Math.sin(t*0.7+i*2)*0.6;c.rotation.y=Math.cos(t*0.7+i*2)>0?0:Math.PI;});
+  if(huaFX.marama)huaFX.marama.group.rotation.y=Math.atan2(px-HUAP.marama.x,pz-HUAP.marama.z)*0.6;}
+/* ----- species of Huahine ----- */
+Object.assign(ICON,{
+  melseed:svgI(`<path d="M12 22v-6" stroke="#3f7d34" stroke-width="2"/><path d="M12 16c-4-1-6-5-5-9 4 1 6 5 5 9Z" fill="#4f9a3a" ${SKI}/><circle cx="16" cy="9" r="3" fill="#3c7f3a" ${SKI}/>`),
+  melon:svgI(`<ellipse cx="12" cy="13" rx="9" ry="7" fill="#3c7f3a" ${SKI}/><path d="M6 9c2 2 2 6 0 8M12 7c1 3 1 9 0 12M18 9c-2 2-2 6 0 8" stroke="#8fd05e" stroke-width="1.3" fill="none"/>`),
+  pitcut:svgI(`<path d="M12 22v-8" stroke="#3f7d34" stroke-width="2"/><circle cx="12" cy="9" r="2" fill="#fff8e8" ${SKI}/><circle cx="9" cy="12" r="2" fill="#fff8e8" ${SKI}/><circle cx="15" cy="12" r="2" fill="#fff8e8" ${SKI}/>`),
+  pitate:svgI(`<circle cx="12" cy="12" r="2.2" fill="#ffd96a" ${SKI}/><g fill="#fff8e8" ${SKI}><ellipse cx="12" cy="6" rx="2" ry="3.2"/><ellipse cx="17.5" cy="10" rx="2" ry="3.2" transform="rotate(72 17.5 10)"/><ellipse cx="15.5" cy="17" rx="2" ry="3.2" transform="rotate(144 15.5 17)"/><ellipse cx="8.5" cy="17" rx="2" ry="3.2" transform="rotate(216 8.5 17)"/><ellipse cx="6.5" cy="10" rx="2" ry="3.2" transform="rotate(288 6.5 10)"/></g>`)});
+Object.assign(ITEMS,{
+  melseed:{n:LG('Plant de pastèque','Watermelon seedling'),t:LG('pastèque de Huahine · à planter au motu','Huahine watermelon · plant it on your motu'),cat:'plant'},
+  melon:{n:LG('Pastèque','Watermelon'),t:LG('la célèbre pastèque de Huahine, sucrée et fraîche','Huahine’s famous watermelon, sweet and cool'),food:30,cat:'food'},
+  pitcut:{n:LG('Bouture de pitate','Pitate cutting'),t:LG('jasmin de Huahine · à planter au motu','Huahine jasmine · plant it on your motu'),cat:'plant'},
+  pitate:{n:LG('Pitate','Pitate'),t:LG('petites fleurs de jasmin, pour les couronnes du soir','little jasmine flowers, for evening crowns'),cat:'misc'}});
+ORDER.push('melseed','melon','pitcut','pitate');Object.assign(PRICES,{melon:300,pitate:140});
+Object.assign(CROPS,{melon:{n:LG('pastèque','watermelon'),grow:85,regrow:55,yield:{melon:2},shoot:'melseed',shootCd:160,place:'low',verb:LG('Cueillir des pastèques','Pick watermelons'),flowers:0.3},
+  pitate:{n:'pitate',grow:70,regrow:40,yield:{pitate:3},shoot:'pitcut',shootCd:120,place:'low',verb:LG('Cueillir du pitate','Pick pitate'),cutting:true,flowers:1}});
+Object.assign(SEEDS,{melseed:'melon',pitcut:'pitate'});
+MAT.melonF=std(0x3c7f3a,{flatShading:false,roughness:0.5});MAT.melonS=std(0x8fd05e,{flatShading:false});
+const _mkV31=makeV10Crop;makeV10Crop=function(c){const T=c.type,s=c.seed||1,r=mulberry32(s),g=new THREE.Group(),crown=new THREE.Group(),bunch=new THREE.Group();g.add(crown);g.add(bunch);
+  if(T==='melon'){for(let k=0;k<6;k++){const a=k*1.05+r()*0.4,L=0.6+r()*0.8;const v=cyl(0.02,L,MAT.stem,Math.cos(a)*L/2,0.05,Math.sin(a)*L/2,4);v.rotation.z=Math.PI/2;v.rotation.y=-a;crown.add(v);
+      for(let i=0;i<3;i++){const l=mesh(smallLeafGeo,MAT.bush,Math.cos(a)*L*(0.3+i*0.3),0.08,Math.sin(a)*L*(0.3+i*0.3),false);l.rotation.set(-1.2,r()*6,0);l.scale.setScalar(1.3);crown.add(l);}}
+    for(let i=0;i<3;i++){const a=i*2.1+r(),m=mesh(new THREE.SphereGeometry(0.22,10,8),MAT.melonF,Math.cos(a)*0.55,0.18,Math.sin(a)*0.55);m.scale.set(1.4,0.9,1);m.rotation.y=a;bunch.add(m);
+      for(let k=0;k<3;k++){const st=mesh(new THREE.TorusGeometry(0.2,0.012,4,10),MAT.melonS,m.position.x,0.18,m.position.z,false);st.rotation.set(0,a,0);st.rotation.y+=k*0.35;st.scale.set(1.4,0.9,1);bunch.add(st);}}}
+  else if(T==='pitate'){for(let k=0;k<7;k++){const a=k/7*Math.PI*2+r()*0.3,h=0.5+r()*0.5,x=Math.cos(a)*0.3,z=Math.sin(a)*0.3;const st=cyl(0.02,h,MAT.stem,x,h/2,z,4);st.rotation.z=Math.cos(a)*0.35;st.rotation.x=-Math.sin(a)*0.35;crown.add(st);
+      for(let i=0;i<3;i++){const l=mesh(smallLeafGeo,MAT.bushDark,x*1.6,h*(0.4+i*0.2),z*1.6,false);l.rotation.y=a+i*2;l.rotation.z=0.5;l.scale.setScalar(0.7);crown.add(l);}}
+    flowerDots(bunch,14,MAT.petalW,0.5,0.45,0.95,0.075,s+1,null,'small');}
+  else return _mkV31(c);
+  return{group:g,crown,bunch,phase:r()*6};};
+SPECIES.push(
+ {k:'melon',isl:'huahine',kind:'plant',n:()=>LG('Pastèque de Huahine','Huahine watermelon'),sci:'Citrullus lanatus',t:()=>LG('Les pastèques et melons de Huahine sont les plus réputés de Polynésie : les sols sablonneux et le soleil les rendent très sucrés.','Huahine’s watermelons and melons are the most famous in Polynesia: sandy soils and sun make them very sweet.'),seed:'melseed',at:()=>({x:HUAP.melon.x+4,z:HUAP.melon.z+1})},
+ {k:'pitate',isl:'huahine',kind:'flower',n:()=>LG('Pitate (jasmin)','Pitate (jasmine)'),sci:'Jasminum sambac',t:()=>LG('Ses petites fleurs blanches parfument le soir. On en fait des couronnes et des colliers.','Its little white flowers scent the evening. They are woven into crowns and leis.'),seed:'pitcut',at:()=>HUAP.pitate},
+ {k:'puhi',isl:'huahine',kind:'animal',n:()=>LG('Puhi (anguille aux yeux bleus)','Puhi (blue-eyed eel)'),sci:'Anguilla marmorata',t:()=>LG('Les anguilles géantes de la rivière de Faie. Sacrées pour le village, nourries par les habitants. On regarde, on ne pêche pas.','The giant eels of the Faie river. Sacred to the village, fed by the locals. Watch, don’t fish.'),protect:true,at:()=>HUAP.faie,rad:5,quest:true},
+ {k:'kaveu',isl:'huahine',kind:'animal',n:()=>LG('Kaveu (crabe de cocotier)','Kaveu (coconut crab)'),sci:'Birgus latro',t:()=>LG('Le plus gros crabe terrestre du monde. Il grimpe aux cocotiers et ouvre les noix avec ses pinces. Devenu rare : on le protège.','The largest land crab in the world. It climbs coconut palms and opens nuts with its claws. Now rare: protected.'),protect:true,at:()=>HUAP.kaveu},
+ {k:'tupa',isl:'huahine',kind:'animal',n:()=>LG('Tupa (crabe de terre)','Tupa (land crab)'),sci:'Cardisoma carnifex',t:()=>LG('Il creuse ses trous dans le sable derrière la plage et se sauve de côté quand on approche.','It digs its holes in the sand behind the beach and scuttles sideways when you come near.'),at:()=>HUAP.tupa},
+ {k:'otuu',isl:'huahine',kind:'bird',n:()=>LG('ʻŌtuʻu (héron vert)','ʻŌtuʻu (green heron)'),sci:'Butorides striata',t:()=>LG('Le petit héron des lacs et des rivières. Immobile au bord de l’eau, il guette les petits poissons.','The little heron of lakes and rivers. Motionless at the water’s edge, it watches for small fish.'),at:()=>HUAP.heron});
+function huaSpeciesMesh(sp){const o=new THREE.Group();
+  if(sp.k==='otuu'){const b=mesh(new THREE.SphereGeometry(0.16,10,8),std(0x4a5a52,{flatShading:false}),0,0.55,0,false);b.scale.set(0.8,0.9,1.3);o.add(b);const nk=cyl(0.04,0.4,std(0x6a4a3a),0,0.85,0.12,5);nk.rotation.x=-0.5;o.add(nk);
+    const hd=mesh(new THREE.SphereGeometry(0.08,10,8),std(0x2a3a3a,{flatShading:false}),0,1.05,0.26,false);o.add(hd);const bk=mesh(new THREE.ConeGeometry(0.025,0.22,5),std(0xd9c04a),0,1.03,0.42,false);bk.rotation.x=Math.PI/2;o.add(bk);
+    for(const sd of[-0.06,0.06])o.add(cyl(0.012,0.5,std(0xd9c04a),sd,0.25,0,4));huaFX.heron=o;}
+  else if(sp.k==='puhi'){return null;}
+  else if(sp.k==='kaveu'||sp.k==='tupa'){const big=sp.k==='kaveu',cm=std(big?0x5a3a6a:0x9a6a3a,{flatShading:false,roughness:0.6});const n=big?1:3;
+    for(let i=0;i<n;i++){const c=new THREE.Group();const b=mesh(new THREE.SphereGeometry(big?0.22:0.11,10,8),cm,0,0.1,0,false);b.scale.set(1.3,0.6,1);c.add(b);
+      for(const sd of[-1,1]){const cl=mesh(new THREE.SphereGeometry(big?0.1:0.05,8,6),cm,sd*(big?0.3:0.15),0.08,0.18,false);cl.scale.set(1,0.8,1.8);c.add(cl);for(let k=0;k<3;k++){const lg=cyl(big?0.02:0.01,big?0.3:0.16,cm,sd*(big?0.28:0.14),0.05,-0.05+k*0.08,4);lg.rotation.z=sd*1.2;c.add(lg);}}
+      c.position.set(i*0.9-0.9,0,Math.sin(i)*0.5);c.userData.x=c.position.x;o.add(c);if(!big)huaFX.crabs.push(c);}
+    if(big){o.children[0].scale.setScalar(1.6);const p=makePalm(8700);p.group.scale.setScalar(0.8);p.group.position.set(0.8,0,-0.4);o.add(p.group);}}
+  return o;}
+/* ----- Papa Marama comes to the motu: the stone fish trap ----- */
+VISITORS.marama={n:()=>'Papa Marama',seed:7351,from:()=>'Huahine',cond:()=>!!S.flags.maevaDone,
+  hello:()=>LG('Ia ora na ! Le lac de Maeva nourrit à nouveau le village grâce à toi. Je suis venu te rendre la pareille : je vais t’apprendre à monter un piège à poissons en pierre dans ton lagon, comme ceux de nos ancêtres. Chaque matin, à marée basse, il y aura du poisson dedans.','Ia ora na! The Maeva lake feeds the village again thanks to you. I came to return the favour: I’ll teach you to build a stone fish trap in your lagoon, like our ancestors’. Every morning at low tide there will be fish in it.'),
+  offer:()=>LG('Apprendre à construire le piège à poissons','Learn to build the fish trap'),unlock:'fishtrap',
+  thanks:()=>LG('Regarde : la marée descend et les poissons restent dans la pointe du V. Plus besoin de canne les jours de pluie ! Māuruuru, je rentre à Maeva.','Look: the tide goes out and the fish stay in the point of the V. No need for a rod on rainy days! Māuruuru, I’m going home to Maeva.'),done:()=>!!S.fishtrap};
+RECIPES.push({id:'fishtrap',lv:1,secret:'unlock_fishtrap',n:LG('Monter un piège à poissons en pierre','Build a stone fish trap'),t:LG('appris de Papa Marama · du poisson chaque matin · dans l’eau peu profonde, face au lagon','taught by Papa Marama · fish every morning · in shallow water, facing the lagoon'),in:{stone:14,rope:2},special:'fishtrap',cat:'build'});
+const _specCheck31=specialCheck;specialCheck=function(sp){if(sp==='fishtrap'){if(S.fishtrap)return{ok:false,why:LG('Tu as déjà un piège à poissons','You already have a fish trap')};if(!nurserySpot())return{ok:false,why:LG('Va au bord de l’eau, face au lagon','Go to the water’s edge, facing the lagoon')};}return _specCheck31(sp);};
+const _doSpec31=doSpecial;doSpecial=function(sp){if(sp==='fishtrap'){const n=nurserySpot();S.fishtrap={x:n.x,z:n.z,rot:player.rotation.y,ready:1,day:S.day};placeFishtrap();stat('fishtrap');toast(LG('Les pierres sont posées en V dans le lagon. À la prochaine marée basse, viens voir ce qui est resté dedans !','The stones are set in a V in the lagoon. At the next low tide, come and see what stayed inside!'));return;}return _doSpec31(sp);};
+let trapMesh=null;
+function placeFishtrap(){if(!S.fishtrap)return;if(trapMesh)scene.remove(trapMesh);const T=S.fishtrap,g=new THREE.Group(),r=mulberry32(99);
+  for(const sd of[-1,1])for(let k=0;k<9;k++){const d=k*0.5,s=mesh(rockGeo,k%2?MAT.basalt:MAT.basalt2,Math.sin(sd*0.42)*d,-0.25+Math.sin(k*1.3)*0.04,Math.cos(sd*0.42)*d);s.scale.set(0.3,0.26,0.3);s.rotation.y=r()*6;g.add(s);}
+  const pole=cyl(0.04,1.6,MAT.bambooMat,0,0.4,0.2,6);g.add(pole);const buoy=mesh(new THREE.SphereGeometry(0.14,10,8),std(0xe0402e,{flatShading:false}),0,1.1,0.2);g.add(buoy);
+  g.position.set(T.x,0,T.z);g.rotation.y=T.rot+Math.PI;bakeGroup(g);scene.add(g);trapMesh=g;}
+if(S.fishtrap)placeFishtrap();
+function fishtrapActions(A){if(!S.fishtrap||S.away||S.boat)return;const T=S.fishtrap;if(dist(player.position.x,player.position.z,T.x,T.z)>5)return;
+  A.push(T.ready>0?{label:LG('Relever le piège à poissons','Lift the fish trap'),sub:LG(`${T.ready*2} poissons pris à marée basse`,`${T.ready*2} fish caught at low tide`),fn:()=>{give({fish:T.ready*2});stat('fishcaught',T.ready*2);T.ready=0;chopT=0.3;toast(LG('Des poissons frétillent dans la pointe du V !','Fish wriggle in the point of the V!'));actSig='';refresh();}}
+    :{label:LG('Le piège à poissons','The fish trap'),sub:LG('Vide · il se remplit à la marée du matin','Empty · it fills with the morning tide'),off:true});}
+const _islActions32=islActions;islActions=function(A){_islActions32(A);fishtrapActions(A);};
+const _updVB31=updateVisitorBuilds;updateVisitorBuilds=function(dt,t){_updVB31(dt,t);if(S.fishtrap&&S.fishtrap.day!==S.day){S.fishtrap.day=S.day;S.fishtrap.ready=Math.min(2,(S.fishtrap.ready||0)+1);}};
+const _buildHua1=buildHuahine;buildHuahine=function(){_buildHua1();buildSpeciesFor('huahine');};
+/* restore after reload */
+if(S.away&&S.away.k==='huahine'){buildHuahine();huaSetVisible(true);placeWater('huahine');}
+ACH.push(['huahine',()=>LG('Ia ora na Huahine','Ia ora na Huahine'),()=>LG('Naviguer jusqu’à Huahine','Sail to Huahine'),()=>!!S.flags.islHuahine],
+  ['maeva',()=>LG('Les pièges de Maeva','The traps of Maeva'),()=>LG('Réparer les trois pièges à poissons du lac Fauna Nui','Repair the three fish traps of lake Fauna Nui'),()=>!!S.flags.maevaDone],
+  ['faie',()=>LG('Les yeux bleus de Faie','The blue eyes of Faie'),()=>LG('Nourrir les anguilles sacrées','Feed the sacred eels'),()=>!!S.flags.faieDone]);
+LAMPCOL.faie={n:LG('Yeux de Faie','Faie eyes'),c:'#4ad8ff',cost:{pitate:1},t:LG('le bleu des yeux des anguilles sacrées','the blue of the sacred eels’ eyes'),secret:'faie'};
 
 /* =========================================================
    Main loop
@@ -5222,7 +5548,7 @@ function tick(){
   updateV17(dt,t);
   updateV18(dt,t);
   updateV19(dt,t);
-  updateFps(dt);updateRainbow(dt,day);updateSunRays(day,t);updateV21(dt,t);updateV22(dt);updateIsland(dt,t);updateMoorea(dt,t);updateSpecies(dt,t);updatePflot(dt,t);updateCyclone(dt,t);updateVisitors(dt,t);updateVisitorBuilds(dt,t);if(!paused)updateSun(dt);updateActFold();
+  updateFps(dt);updateRainbow(dt,day);updateSunRays(day,t);updateV21(dt,t);updateV22(dt);updateIsland(dt,t);updateMoorea(dt,t);updateHuahine(dt,t);updateSpecies(dt,t);updatePflot(dt,t);updateCyclone(dt,t);updateVisitors(dt,t);updateVisitorBuilds(dt,t);if(!paused)updateSun(dt);updateActFold();updateSunDisc();
   /* fire, lamp */
   if(fireMesh){const u=fireMesh.userData,f=0.85+Math.sin(t*13)*0.08+Math.sin(t*7.3)*0.06,damp=1-S.weather.r*0.45;
     u.flame.scale.set(f*damp,(f+0.1)*damp,f*damp);u.light.intensity=(0.4+1.8*(1-day))*f*damp;}
@@ -5254,6 +5580,6 @@ renderTop();renderGoal();renderWx();
 actions=computeActions();renderActions();
 addEventListener('pagehide',()=>{if(!wiping)save();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&!wiping)save();});
-if(location.hash==='#debug')window.__fare={scene,renderer,bushes,save,camera,sun:{uvIndex,inShade,get sunT(){return S.sunT}},vis:{VISITORS,get meshes(){return visMeshes}},cyc:{scheduleCyclone,cycPhase,cycT,cycHit,pflotSpot,dive,onPflot,SPECIES,discover},moo:{MOO,MOOP,MOOP_SB,mooH,sailTo,crow,get fx(){return mooFX}},isl:{ISL,ISLP,sailToTahiti,sailHome,buildIsland,offerFlower,greetMoo,islH,get falls(){return islFalls},get moo(){return islMoo},get blow(){return islBlow}},v22:{dailyGen,updateDaily,checkAch,ACH,photoMode,savePhoto,AMB,get AC(){return AC;}},stageGroups,gStages,applyPaint,build,v21:{month,startHatch,get hatch(){return hatch;},EVENTS,calendarDay},v18:{hinaPereSong,ERUPT},v17:{enterSea,leaveSea,seaRespect,seaSong,DIVE_AT,freeHonu,spawnTangled,plantCoral},v16:{enterCave,leaveCave,crownSectors,mountainSong,CAVE_FRONT,MTN},v15:{summonButterflies,SWARM},v14:{lightSpots,lightsC:()=>lightsC,BFLY:()=>BFLY,GECKOS:()=>GECKOS,flowersC:()=>flowersC},v13:{summonMermaid,mer:()=>mermaid,playSong,SONGS},v10:{spawnCrop,spawnLamp,v10Sim,v10Place,checkMilestones,lampActs,genActs,lampClick,makeV10Crop},v9:{v9Place,v9DoSpecial,pfarmActs,portActs,helipadActs,hiveActs,PONTON_C,tillCheck,till,S_fields:()=>S.fields,plantField,graft,harvestPearls,rollPearl,PFARM_AT,PORT_AT,startHeli,HELI,flowersNear,treat,canSellHere,pearlClick},v8:{FLY,startFly,stopFly,RINGS,TOUR_STOPS,startTour,board,TOUR_DOCK,computeActions,placeCanoeMesh},v7:{openLook,startExc,whales,smartHint,buildPlayer,clock,cam},S,give,refresh,checkLevel,player,openSheet,doCraft,simStep,v6:{startTornado,TOR,launchShooter,flocks,honus,crabs}};
+if(location.hash==='#debug')window.__fare={scene,renderer,bushes,save,camera,hua:{HUA,HUAP,HUAP_LAKE,huaH,buildHuahine,fx:huaFX,huaFixTrap,huaFeed,huaHint,makeNahe},fl:{makeTiare,makeHibiscus,makeParterre,flower,MAT,mesh,THREE},sun:{uvIndex,inShade,get sunT(){return S.sunT}},vis:{VISITORS,get meshes(){return visMeshes}},cyc:{scheduleCyclone,cycPhase,cycT,cycHit,pflotSpot,dive,onPflot,SPECIES,discover},moo:{MOO,MOOP,MOOP_SB,mooH,sailTo,crow,get fx(){return mooFX}},isl:{ISL,ISLP,sailToTahiti,sailHome,buildIsland,offerFlower,greetMoo,islH,get falls(){return islFalls},get moo(){return islMoo},get blow(){return islBlow}},v22:{dailyGen,updateDaily,checkAch,ACH,photoMode,savePhoto,AMB,get AC(){return AC;}},stageGroups,gStages,applyPaint,build,v21:{month,startHatch,get hatch(){return hatch;},EVENTS,calendarDay},v18:{hinaPereSong,ERUPT},v17:{enterSea,leaveSea,seaRespect,seaSong,DIVE_AT,freeHonu,spawnTangled,plantCoral},v16:{enterCave,leaveCave,crownSectors,mountainSong,CAVE_FRONT,MTN},v15:{summonButterflies,SWARM},v14:{lightSpots,lightsC:()=>lightsC,BFLY:()=>BFLY,GECKOS:()=>GECKOS,flowersC:()=>flowersC},v13:{summonMermaid,mer:()=>mermaid,playSong,SONGS},v10:{spawnCrop,spawnLamp,v10Sim,v10Place,checkMilestones,lampActs,genActs,lampClick,makeV10Crop},v9:{v9Place,v9DoSpecial,pfarmActs,portActs,helipadActs,hiveActs,PONTON_C,tillCheck,till,S_fields:()=>S.fields,plantField,graft,harvestPearls,rollPearl,PFARM_AT,PORT_AT,startHeli,HELI,flowersNear,treat,canSellHere,pearlClick},v8:{FLY,startFly,stopFly,RINGS,TOUR_STOPS,startTour,board,TOUR_DOCK,computeActions,placeCanoeMesh},v7:{openLook,startExc,whales,smartHint,buildPlayer,clock,cam},S,give,refresh,checkLevel,player,openSheet,doCraft,simStep,v6:{startTornado,TOR,launchShooter,flocks,honus,crabs}};
 requestAnimationFrame(tick);
 })();
