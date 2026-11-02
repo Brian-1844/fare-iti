@@ -180,7 +180,7 @@ button:focus-visible{outline:3px solid var(--lagoon);outline-offset:2px}
 .bubble::after{content:"";position:absolute;left:50%;bottom:-8px;width:10px;height:10px;background:var(--paper);border-right:2.5px solid var(--ink);border-bottom:2.5px solid var(--ink);transform:translateX(-50%) rotate(45deg)}
 .bubble svg{width:26px;height:26px}
 .bubble.done{border-color:var(--hibiscus)}
-#bubbles{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+#bubbles{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:3}
 .hud{z-index:2}
 
 /* ---- v5: Manu ---- */
@@ -297,3 +297,81 @@ body.flying #actions,body.flying .goal,body.flying .exc,body.flying .inv,body.fl
 #installNote{background:var(--paper-2);border:2px solid var(--ink);border-radius:12px;padding:8px 10px;margin-top:10px;font-weight:700}
 .songnotes{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
 .songnotes b{min-width:24px;padding:2px 6px;border-radius:7px;border:2px solid var(--ink);background:var(--lagoon);color:#fff;font:800 13px var(--body);text-align:center}
+#fps{position:fixed;left:8px;bottom:8px;z-index:40;background:rgba(20,49,58,.8);color:#fff;font:700 11px var(--body);padding:3px 7px;border-radius:8px;pointer-events:none}
+#updateBtn{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:45}
+.recipe.dim{opacity:.55}.recipe.dim2 .name{opacity:.75}.unk{display:inline-block;min-width:18px;text-align:center;border-radius:6px;background:var(--paper-2);border:1.5px solid var(--ink);font-weight:800}
+.legend{padding:8px 0;border-bottom:1.5px dashed var(--line,#d9ccb0)}.legend p{margin:4px 0 0;font-size:13.5px}.legend.dim{opacity:.55}
+#mapCv{width:100%;max-width:340px;display:block;margin:6px auto;border:2.5px solid var(--ink);border-radius:14px;background:#1d6f9c}
+
+/* v22: daily tasks, photo mode */
+.daily{border-top:2px dashed rgba(20,49,58,.18);margin-top:2px;padding-top:6px}
+.daily .dhead{padding:0 11px 4px;font-size:12px;font-weight:800;color:var(--manu,#1fa9b0);text-transform:uppercase;letter-spacing:.04em}
+.daily.done .dhead{color:#2e8b57}
+.daily .glist em{margin-left:auto;font-style:normal;font-weight:800;color:var(--manu,#1fa9b0);font-size:12px}
+#photoBar{position:fixed;left:50%;bottom:max(16px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:10px;z-index:40}
+#photoBar[hidden]{display:none}
+.ctab .emo{font-size:22px;line-height:26px;height:26px}
+
+/* v25-26: cyclone banner, veil, plan */
+#cycBan{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 64px);transform:translateX(-50%);z-index:25;border:2.5px solid var(--ink);border-radius:999px;padding:7px 16px;font:800 14px/1 Nunito,system-ui,sans-serif;background:#ffd166;color:#14313a;box-shadow:0 3px 0 var(--ink);cursor:pointer}
+#cycBan[hidden]{display:none}
+#cycBan.orange{background:#ff9a3c}#cycBan.rouge{background:#e0402e;color:#fff;animation:cycPulse 1s ease-in-out infinite}#cycBan.sauvegarde{background:#7fd6db}
+@keyframes cycPulse{50%{transform:translateX(-50%) scale(1.06)}}
+#cycVeil{position:fixed;inset:0;pointer-events:none;z-index:4;opacity:0;transition:opacity 3s;background:radial-gradient(ellipse at center,rgba(20,30,40,0) 30%,rgba(10,18,26,.9) 100%)}
+.cycband{border:2.5px solid var(--ink);border-radius:12px;padding:8px 12px;margin:0 0 8px;font-weight:800;background:#e9f3f2}
+.cycband.avis{background:#ffe08a}.cycband.orange{background:#ffb070}.cycband.rouge{background:#ff8a7a}.cycband.sauvegarde{background:#bfeef0}
+
+/* overlays scroll easily on phones (welcome, intro, level-up, menu) */
+.overlay{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;align-items:flex-start}
+.overlay *{touch-action:pan-y}
+.overlay .card{max-height:none;overflow:visible;margin:auto 0}
+
+/* the main button of each overlay stays reachable at the bottom */
+.overlay .card > .row:last-of-type{position:sticky;bottom:-18px;background:var(--paper);padding:10px 0 12px;margin-bottom:-6px;z-index:1;box-shadow:0 -10px 12px -8px rgba(20,49,58,.18)}
+.overlay.welcome .card > .row:last-of-type{position:static;box-shadow:none}
+.sheet .card{overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.sheet .card *{touch-action:pan-y}
+.sheet .card .pads, .sheet .card .pads *{touch-action:none}
+#menu .card > .row:last-of-type{position:static;box-shadow:none;padding:0;margin:0}
+
+/* v29: a lighter screen */
+.act.slim{padding:6px 14px;font-size:15px}
+.act.more{background:var(--paper);color:var(--ink);font-size:14px;padding:6px 14px}
+.daily .dhead{display:flex;align-items:center;gap:6px;width:100%;background:none;border:0;padding:2px 11px 6px;font:inherit;font-size:12px;font-weight:800;color:var(--manu,#1fa9b0);text-transform:uppercase;letter-spacing:.04em;cursor:pointer;pointer-events:auto}
+.daily .dhead .chev{margin-left:auto;font-size:14px;color:var(--ink)}
+.tray-btn{display:none}
+.hint.fade{opacity:0;transition:opacity 1.2s}
+.hint{cursor:pointer}
+body.coarse .tray-btn{display:grid}
+body.coarse .bar .icon-btn.sec{display:none}
+body.coarse.trayOpen .bar .icon-btn.sec:not([hidden]){display:grid}
+body.coarse .bar .icon-btn{width:36px;height:36px;border-radius:11px}
+body.coarse .bar .icon-btn svg{width:20px;height:20px}
+body.coarse .act{font-size:14.5px;padding:7px 13px;min-width:0;box-shadow:0 3px 0 var(--ink)}
+body.coarse .act small{font-size:10.5px}
+body.coarse .act.slim,body.coarse .act.more{font-size:13.5px;padding:5px 12px}
+body.coarse .actions{gap:6px;max-width:58vw}
+body.coarse .goal{max-width:min(250px,62vw);font-size:12px}
+body.coarse .goal b{font-size:14px}
+body.coarse .glist li{font-size:12px}
+body.coarse .chip{font-size:13px;padding:1px 6px 1px 2px}
+body.coarse .chip svg,body.coarse .meter svg{width:19px;height:19px}
+body.coarse .meter .track{width:44px}
+body.coarse .say{max-width:190px;font-size:12.5px;padding:6px 9px}
+body.coarse .toast{font-size:12.5px;padding:6px 12px;top:30%}
+body.coarse .joy{width:108px;height:108px}
+body.coarse .knob{width:46px;height:46px;margin:-23px 0 0 -23px}
+body.coarse #cycBan{font-size:12px;padding:5px 12px}
+body.coarse .top{gap:6px}
+
+.goal .gcount{display:none}
+body.coarse .goal .gsub{display:none}
+body.coarse .goal .gcount{display:inline;margin-left:6px;font-weight:800;color:var(--muted);font-size:12px}
+body.coarse .brand{display:none}
+body.coarse .bar{gap:5px;flex-wrap:nowrap}
+body.coarse .wx{padding:2px 8px 2px 4px;font-size:12px;min-width:0;flex:0 1 auto;white-space:nowrap;overflow:hidden}
+body.coarse .wx svg{width:22px;height:22px}
+
+/* horizontal tab rows stay swipeable */
+.sheet .card .ctabs,.sheet .card .ctabs *{touch-action:pan-x pan-y}
+.ctabs{-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}

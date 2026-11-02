@@ -74,7 +74,12 @@ var standalone=(window.matchMedia&&matchMedia('(display-mode: standalone)').matc
 var iOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferred=e;});
 window.addEventListener('appinstalled',function(){deferred=null;standalone=true;showInstallNote(T2('Fare Iti est installé ! Tu le trouveras sur ton écran d’accueil.','Fare Iti is installed! You’ll find it on your home screen.'));});
-if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){try{navigator.serviceWorker.register('sw.js').catch(function(){});}catch(e){}}
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){try{navigator.serviceWorker.register('sw.js').then(function(reg){
+  function offer(w){var b=document.getElementById('updateBtn');if(!b||!w)return;b.textContent=T2('Nouvelle version · toucher pour recharger','New version · tap to reload');b.hidden=false;b.onclick=function(){w.postMessage('skipWaiting');};}
+  if(reg.waiting&&navigator.serviceWorker.controller)offer(reg.waiting);
+  reg.addEventListener('updatefound',function(){var w=reg.installing;if(!w)return;w.addEventListener('statechange',function(){if(w.state==='installed'&&navigator.serviceWorker.controller)offer(w);});});
+  var reloading=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(reloading)return;reloading=true;location.reload();});
+}).catch(function(){});}catch(e){}}
 function T2(fr,en){return (window.FARE_LANG==='fr')?fr:en;}
 function showInstallNote(txt){var n=document.getElementById('installNote');if(n){n.textContent=txt;n.hidden=false;}}
 function install(){
@@ -100,4 +105,20 @@ var ib=document.getElementById('installBtn');if(ib)ib.addEventListener('click',i
 var lb=document.getElementById('langBtn');if(lb)lb.addEventListener('click',function(){var m=document.getElementById('menu');if(m)m.hidden=true;showWelcome();});
 var mi=document.getElementById('menuInstallBtn');if(mi){mi.hidden=standalone;mi.addEventListener('click',function(){var m=document.getElementById('menu');if(m)m.hidden=true;showWelcome();install();});}
 if(!lang)showWelcome();
+
+/* ---------- 5. finger scrolling that works everywhere (some app viewers block native scrolling) ---------- */
+function dragScroll(el){if(!el||el.__drag)return;el.__drag=1;var y0=null,s0=0,last=0,vel=0,raf=0,manual=false;
+  el.addEventListener('touchstart',function(e){if(e.touches.length!==1)return;cancelAnimationFrame(raf);y0=e.touches[0].clientY;last=y0;s0=el.scrollTop;vel=0;manual=false;},{passive:true});
+  el.addEventListener('touchmove',function(e){if(y0===null||e.touches.length!==1)return;var y=e.touches[0].clientY,want=s0-(y-y0);vel=last-y;last=y;if(Math.abs(el.scrollTop-want)>2){el.scrollTop=want;manual=true;}},{passive:true});
+  el.addEventListener('touchend',function(){if(y0===null)return;y0=null;if(!manual)return;var v=vel;(function glide(){v*=0.92;if(Math.abs(v)<0.5)return;el.scrollTop+=v;raf=requestAnimationFrame(glide);})();},{passive:true});}
+function wireScroll(){document.querySelectorAll('.overlay, .sheet .card, #lookBody, #sheetBody').forEach(dragScroll);}
+wireScroll();new MutationObserver(wireScroll).observe(document.body,{childList:true});
+/* sideways swipe on tab rows (crafting, notebook), even where native scrolling is blocked */
+(function(){var el=null,x0=0,y0=0,s0=0,horiz=null,last=0,vel=0,manual=false;
+  document.addEventListener('touchstart',function(e){var t=e.target.closest&&e.target.closest('.ctabs');if(!t||e.touches.length!==1){el=null;return;}el=t;x0=last=e.touches[0].clientX;y0=e.touches[0].clientY;s0=el.scrollLeft;horiz=null;vel=0;manual=false;},{passive:true,capture:true});
+  document.addEventListener('touchmove',function(e){if(!el||e.touches.length!==1)return;var x=e.touches[0].clientX,y=e.touches[0].clientY;if(horiz===null){if(Math.abs(x-x0)+Math.abs(y-y0)<6)return;horiz=Math.abs(x-x0)>Math.abs(y-y0);}if(!horiz)return;
+    var want=s0-(x-x0);vel=last-x;last=x;if(Math.abs(el.scrollLeft-want)>2){el.scrollLeft=want;manual=true;}},{passive:true,capture:true});
+  document.addEventListener('touchend',function(){if(!el)return;var t=el,v=vel;el=null;if(!manual||!horiz)return;(function glide(){v*=0.9;if(Math.abs(v)<0.5)return;t.scrollLeft+=v;requestAnimationFrame(glide);})();
+    t.__swiped=performance.now();},{passive:true,capture:true});
+  document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('.ctabs');if(t&&t.__swiped&&performance.now()-t.__swiped<300){e.stopPropagation();e.preventDefault();}},true);})();
 })();

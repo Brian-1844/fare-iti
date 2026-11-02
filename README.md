@@ -392,6 +392,83 @@ Progress saves automatically in the browser. Saves from earlier versions carry o
 - Once installed, the game also works **offline**. This needs the HTTPS address of GitHub Pages; it doesn't work when you open the file from your computer.
 - **When you upload a new version**, change `VERSION` at the top of `sw.js` (for example `fare-iti-v12`). Installed phones then fetch the new files.
 
+## The island year, the notebook, daily tasks and achievements
+
+- **Calendar.** Each game day is a month (day 1 = January, day 12 = December, then it starts again). The weather chip shows the day and the month; the newspaper announces tomorrow's event.
+  - **Matariʻi i niʻa** (November): watch the Pleiades rise at dusk — for two days everything grows faster and fish are plentiful.
+  - **Matariʻi i raro** (May): the season of scarcity — fish are rarer, think of your reserves.
+  - **Heiva** (July): a bonfire by the wharf; play music there (+XPF), and race your vaʻa around the tour stops in under 100 seconds.
+  - **Honu season** (February): a nest hatches one night on the beach — keep the crabs away from the sixteen babies, and the sea leaves a gift.
+- **Island notebook** (📓 button or **J**): plants, animals, recipes, songs, legends heard, a map of the island and your **achievements** (24 of them, five of which are secret).
+- **Daily tasks.** Three little jobs each day, under your level goals. Finish all three for a reward (bananas and coconuts at first, XPF from level 7).
+- **Photo mode** (pause menu or **P**): hides the interface; drag to turn and pinch or scroll to zoom, then **Save** downloads a PNG.
+- **Sounds** (pause menu): procedural waves, wind, rain, daytime birds and night crickets, all generated in the browser — nothing to download. Off by one tap.
+
+## Voyages: Tahiti Nui, east coast
+
+From level 12, with the open-sea sail, paddle out past the reef and choose **Sail to Tahiti Nui**. After a few hours at sea the vaʻa lands on the black sand of Tiarei. Choose **Sail home to the motu** next to the vaʻa to come back. The island is only built the first time you go, and only one island is shown at a time, so phones are not slowed down.
+
+- **Papa Teiki**, the ʻorero (storyteller) by the fare on the beach, tells the legends of the coast one by one. They then go into your notebook.
+- **The three waterfalls of Faarumai** (Vaimahuta, Haamaremare Rahi, Haamaremare Iti) at the end of the valley behind the beach. Lay a flower (tiare, pua, taina, ʻaute…) at the foot of each one: Faùai and Ivi are reunited, a rainbow rises over the falls and the lamp colour *Vaimahuta* unlocks.
+- **The Arahoho blowhole**, on the basalt point to the west (Anahoho, "the cave that howls"). It blows more often and higher when the swell is big. It is fenced, as the real site is.
+- **The Papenoo valley**, far west, with its river. At night, once you know her story, Mo'o tua raha waits in the ravine.
+- Manu gives hints for the island when you ask him there.
+
+Legend sources (summarised, not invented): the Service du tourisme page on the three waterfalls of Faarumai; Tahiti Heritage, *Légende de Mo'o tua raha, le lézard de Papenoo*; Tahiti Tourisme, *Trou du souffleur Arahoho*.
+
+## Moorea
+
+Choose **Sail to another island** past the reef, then *Moorea*. The vaʻa glides over the turquoise lagoon to a beach on the north-west coast.
+
+- **Mama Hinano**, the storyteller, tells two legends: *Pai and the pierced mountain* (the thieves of Hiro, Mount Rotui, Pai's hibiscus-wood spear) and *the yellow lizard who gave Moorea its name*.
+- **Mouaputa**, the pierced mountain, **Rotui** between the two bays (Opunohu and Cook's), the **belvédère** in the Opunohu caldera and its **pineapple fields**.
+- **The sandbank** in the lagoon, where stingrays and a little blacktip shark circle around you (look, don't touch), and a small motu with palms.
+- **The night of Pai**: once you know the legend, torches sometimes appear on Rotui at night. Find the three roosters and crow like them: the thieves flee and the lamp colour *Moorea dawn* unlocks.
+
+## Species to discover, plants to bring home
+
+Twelve species live on the islands. Animals are noted in your notebook (new **Species** tab) as soon as you get close; plants need a cutting (one a day).
+
+- Tahiti: ʻautī, rea (turmeric), ʻape (giant taro), red ginger, the ʻōtātare (Tahiti kingfisher, protected), the ʻōura pape (freshwater prawn), the wandering glider dragonfly.
+- Moorea: the pomelo tree, the Partula tree snail (protected), the fai stingray, the blacktip reef shark, the yellow gecko.
+- Cuttings grow on your motu: ʻautī leaves wrap **fish in ʻautī leaf**, rea makes **rea monoʻi**, red ginger makes **tropical bouquets** (and counts as an offering flower), ʻape gives huge leaves, the pomelo tree gives fruit.
+
+## Cyclones
+
+From November to April a cyclone may be announced. A banner shows the alert level: **cyclone watch** the day before, **orange alert**, **red alert** while it passes, then the **recovery phase**. Tap the banner for the **cyclone plan**:
+
+- Roof lashed down (ropes and stones), **ground anchors** (stakes and cables from the roof to the ground), **cyclone shutters** closed.
+- Palms near the fare pruned (falling coconuts punch holes in roofs), vaʻa pulled up and tied, stall packed away, floating pontoon with doubled moorings, supplies of water and meals.
+- During the red alert, stay inside the fare. Afterwards, clear the fallen trunks (logs and fronds) and the litter washed up on the beaches.
+- Get through a cyclone without any damage for the *Cyclone-ready* achievement.
+
+## Floating pontoon
+
+Buy float drums from the goélette, then **Build a floating pontoon** while standing on the beach facing the lagoon. It floats on blue drums, rides the swell and is linked to the beach by a gangway. Walk on it to dive into the lagoon or fish seaward.
+
+## Grateful visitors
+
+People you helped come to visit you on the motu, the day after:
+
+- **Papa Teiki** (after the falls of Faarumai) teaches you to build a **little stone waterfall**: fresh water all year, fill your cups there.
+- **Mama Hinano** (after the night of Pai) asks for three pineapples for the village feast and gives you a copy of **Pai's spear**, hung on your fare.
+- **Hereiti**, a reef biologist (after saving honu hatchlings or replanting coral), helps you set up a **coral nursery** in the lagoon: a coral cutting every morning, to replant on the reef.
+
+## Sun and UV
+
+The weather chip shows the UV index (it peaks around noon, often 11–12 "extreme" in Polynesia, lower under clouds). Staying a long time in full sun at UV 8+ without your taupoʻo makes Manu warn you; stay longer and you get a mild sunburn: you get hungry a bit faster until you cool off in the shade (trees, the fare, the guest fare, the fare pōteʻe), in the water, or after sunset. The taupoʻo slows it down a lot.
+
+## Look of the game
+
+A toon look: four-step lighting, a soft rim light and darker ground contact, shared by every material. After rain a rainbow stands over the lagoon; in the morning sun rays fall through the jungle; at night the moon glitters on the water. Trees, bushes, bamboo, clouds, the fare and the caves are merged into a handful of meshes each, so phones draw far fewer objects.
+
+## Quality, saving your island
+
+- **Quality** (pause menu): *low* on phones by default, *normal* on computers, *high* for powerful machines. It sets the pixel ratio (1.25 / 1.5 / 2), the shadow map (1024 / 1536 / 2048), the terrain detail, the amount of grass and the number of lit street lamps. The game reloads when you change it.
+- **Export my island** writes your whole save to a file (`fare-iti-jourN-niveauN.json`). **Import an island** loads such a file and replaces the current island after a confirmation. Keep an export before clearing your browser or changing phone.
+- With `#debug` in the address, a small counter shows the frames per second, draw calls and triangles.
+- Installed phones get a **"New version · tap to reload"** button when a new version is online.
+
 ## Run it
 
 No build step: plain HTML, CSS and JavaScript.
@@ -426,6 +503,8 @@ To add a recipe or change a level, edit `data.js`. Every recipe has a `lv` (the 
 ## Spoilers: the very secret quest
 
 <details><summary>Only open this if you are stuck</summary>
+
+- **Mo'o tua raha**: hear her story from Papa Teiki, then go to the Papenoo valley (far west of the landing) after sunset. She lies on a rock near the river. Greet her with respect.
 
 1. Meet the mermaid (the moon song: C D E G A G E D C, at night, under a clear sky, by the lagoon). She whispers: “Crown the mountain with flowers, all the way around…”
 2. Plant flowering plants (tiare, bougainvillea, taina, pua…) or flower beds all around the mountain, 9–22 m from the summit, in at least 6 of 8 directions. Flowers can be planted higher than usual on the slopes. Let them grow.

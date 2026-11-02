@@ -1541,4 +1541,7 @@ window.FARE_FR={"data":{"ITEMS.coconut.n":"Coco",
 "Street lamp built! It burns coconut oil at night. Tap it to change its colour.":"Lampadaire construit ! Il brûle de l’huile de coco la nuit. Touche-le pour changer sa couleur.",
 "A flower bed brightens the garden. Your guests will notice.":"Un parterre de fleurs égaye le jardin. Tes clients le remarqueront.",
 "The groupe électrogène is installed. Fill it with fuel, then wire lamps with bulbs.":"Le groupe électrogène est installé. Remplis-le de carburant, puis branche des lampadaires avec des ampoules.",
-"Install on my phone":"Installer sur mon téléphone"}};
+"Install on my phone":"Installer sur mon téléphone",
+"Export my island":"Exporter mon île",
+"Import an island":"Importer une île",
+"New version · tap to reload":"Nouvelle version · toucher pour recharger"}};
