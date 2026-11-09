@@ -74,10 +74,12 @@ var standalone=(window.matchMedia&&matchMedia('(display-mode: standalone)').matc
 var iOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferred=e;});
 window.addEventListener('appinstalled',function(){deferred=null;standalone=true;showInstallNote(T2('Fare Iti est installé ! Tu le trouveras sur ton écran d’accueil.','Fare Iti is installed! You’ll find it on your home screen.'));});
-if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){try{navigator.serviceWorker.register('sw.js').then(function(reg){
+var inFrame=false;try{inFrame=window.self!==window.top;}catch(e){inFrame=true;}
+if(!inFrame&&'serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){try{navigator.serviceWorker.register('sw.js').then(function(reg){
   function offer(w){var b=document.getElementById('updateBtn');if(!b||!w)return;b.textContent=T2('Nouvelle version · toucher pour recharger','New version · tap to reload');b.hidden=false;b.onclick=function(){w.postMessage('skipWaiting');};}
   if(reg.waiting&&navigator.serviceWorker.controller)offer(reg.waiting);
   reg.addEventListener('updatefound',function(){var w=reg.installing;if(!w)return;w.addEventListener('statechange',function(){if(w.state==='installed'&&navigator.serviceWorker.controller)offer(w);});});
+  window.FARE_REG=reg;
   var reloading=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(reloading)return;reloading=true;location.reload();});
 }).catch(function(){});}catch(e){}}
 function T2(fr,en){return (window.FARE_LANG==='fr')?fr:en;}
@@ -88,6 +90,16 @@ function install(){
   if(iOS)showInstallNote(T2('Sur iPhone ou iPad (Safari) : touche le bouton Partager ⬆︎, puis « Sur l’écran d’accueil ».','On iPhone or iPad (Safari): tap the Share button ⬆︎, then “Add to Home Screen”.'));
   else showInstallNote(T2('Ouvre le menu du navigateur (⋮ ou ☰) et choisis « Installer l’application » ou « Ajouter à l’écran d’accueil ».','Open your browser menu (⋮ or ☰) and choose “Install app” or “Add to Home screen”.'));}
 window.FARE_INSTALL=install;
+/* ---------- check for updates by hand (menu) ---------- */
+function gameVersion(cb){try{fetch('sw.js',{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){var m=t.match(/VERSION='fare-iti-v(\d+)'/);cb(m?m[1]:null);}).catch(function(){cb(null);});}catch(e){cb(null);}}
+function checkUpdates(){var b=document.getElementById('menuUpdateBtn');if(!b)return;var say=function(t){b.textContent=t;b.dataset.t=Date.now();};
+  if(!navigator.onLine){say(T2('📴 Pas de connexion · réessaie plus tard','📴 Offline · try again later'));return;}
+  say(T2('🔄 Recherche…','🔄 Checking…'));var reg=window.FARE_REG;
+  if(!reg){location.reload();return;}
+  reg.update().then(function(){setTimeout(function(){if(reg.waiting||reg.installing){say(T2('⬇️ Nouvelle version trouvée · le jeu va se recharger','⬇️ New version found · the game will reload'));var w=reg.waiting||reg.installing;var go=function(){try{(reg.waiting||w).postMessage('skipWaiting');}catch(e){location.reload();}};if(reg.waiting)go();else w.addEventListener('statechange',function(){if(w.state==='installed')go();});}
+    else gameVersion(function(v){say(T2('✅ Le jeu est à jour','✅ The game is up to date')+(v?' · v'+v:''));});},1200);}).catch(function(){say(T2('⚠️ Vérification impossible','⚠️ Could not check'));});}
+(function(){var b=document.getElementById('menuUpdateBtn');if(!b)return;var lab=function(){if(b.dataset.t&&Date.now()-b.dataset.t<8000)return;gameVersion(function(v){if(b.dataset.t&&Date.now()-b.dataset.t<8000)return;b.textContent=T2('🔄 Vérifier les mises à jour','🔄 Check for updates')+(v?' · v'+v:'');});};lab();
+  b.addEventListener('click',checkUpdates);var m=document.getElementById('menu');if(m&&window.MutationObserver)new MutationObserver(function(){if(!m.hidden)lab();}).observe(m,{attributes:true,attributeFilter:['hidden']});})();
 
 /* ---------- 4. welcome screen ---------- */
 function setLang(l){try{localStorage.setItem(LANG_KEY,l);}catch(e){}

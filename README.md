@@ -476,6 +476,10 @@ People you helped come to visit you on the motu, the day after:
 
 The sky is drawn in three bands (horizon, middle, zenith) that change with the sun's height, with a glow around the sun and a soft pink band opposite it at dusk (the "belt of Venus"). Phases: night → violet blue hour → orange-red sunset → golden hour → blue day. Dawns are pinker and softer than sunsets, clouds take the sunset tint, and the sun itself is drawn with a halo that reddens as it sets. Colours were set from photographs of Polynesian skies. At sunrise and sunset the sun's colour is reflected on the sea as a glittering path that follows the sun; the sun disc itself is small, like in photographs, with a wide soft halo near the horizon.
 
+## Clouds
+
+Clouds follow the real types of French Polynesian skies, by altitude and weather: small flat-based trade-wind cumulus (about 600 to 2,000 m) on fine days; a cap cloud clinging to the summit on cloudy days and in the afternoon; a low grey nimbostratus ceiling when it rains; towering cumulonimbus with a flat anvil in storms, cyclone alerts and on wet-season afternoons (they glow gold at sunset); and when the weather is about to change, a mid-level "mackerel sky" of altocumulus and more high cirrus. The weather forecast names the clouds you see. All of it costs only a few draw calls.
+
 ## Golden hour
 
 At sunrise and sunset the undersides of the clouds turn orange then pink, their tops grey-violet; high thin cirrus catch the last light; faint sun rays fan out when there are clouds; shadows turn violet and the backlit edges of palms, leaves and the mountain glow warm. From your motu you can see the silhouettes of Tahiti (west) and Moorea (north-west) on the horizon: hazy blue by day, dark violet at sunset, the sun sinking beside them. The sun disc flattens and reddens right at the horizon. All of this is done in the shaders, at almost no cost.
@@ -584,3 +588,69 @@ To add a recipe or change a level, edit `data.js`. Every recipe has a `lv` (the 
 6. The legend is told the way people tell it: Pere, goddess of fire, left Tahiti to find a land for her fire, and Hina, in the moon, watches over night travellers.
 
 </details>
+
+## v51 · Friends’ vaʻa (mutual help between players)
+
+Menu › 🛶 Friends’ vaʻa. Needs the internet; the island keeps working without it.
+- **Friend code**: each player gets a 6-letter code. Friends are added by code only. A new player (below level 6) can mark the friend as their sponsor (parrain / marraine): both receive welcome gifts.
+- **Daily gift**: once a day per friend, give up to 3 of something from your own bag (it leaves your bag), with a ready-made message.
+- **Help requests**: ask your friends for something you lack (up to 10), or "after a cyclone". Friends see it and can help with up to 5 at a time; the request closes when filled.
+- **Guest book**: friends sign it once a day with a ready-made message.
+- **Objectif du fenua**: a shared good deed each week (litter, coral, planting, dead leaves). Everyone’s actions add up; when the goal is reached, every helper gets a gift. No ranking.
+- **Safety**: no free text anywhere (20 kind ready-made messages), friends by code only, only first names, gifts limited to everyday items and small amounts. All rules are checked on the server (`supabase.sql`, security-definer functions; tables are closed).
+- **Server**: Supabase project `fare-iti` (us-west-1). `config.js` holds its URL and publishable key. Players sign in anonymously (no email, no password).
+
+## v48–v50 · A living garden, clean energy, bungalows and treetops
+
+**v48 · Offline growth and dead leaves.** Plants keep growing while the game is closed or the phone is in the background (up to 24 h): palms, crops, taro trenches, garden beds, bamboo, and the compost keeps turning. On your return a message says how long you were away and how many plants are ready. Dead leaves fall under the big trees: rake them up and put them in the compost (2 leaves = 1 garden scrap), they become fertiliser (engrais), which already exists: it makes plants grow much faster or gives +1 at harvest.
+
+**v49 · Clean energy and water.**
+- *Solar panel* (level 10, panel and battery from the goélette): charges by day; at night electric street lamps run on it instead of the generator’s fuel. Battery light: green, orange, red.
+- *Solar still* (level 6, glass pane from the goélette): a low-tech desalinator on the beach. The sun evaporates sea water under the glass and fresh water drips into the jar (up to 6 cups a day). No electricity, no fuel. Fill your empty coconut cups there.
+- *Hydroponic garden* (level 9, bamboo pipes): lettuce, tomatoes and cucumbers grow in water without soil. Fill it with water (one cup = one harvest); the solar panel runs the pump; compost doubles the next 3 harvests.
+All three can be moved in creation mode and keep working while you’re away.
+
+**v50 · Bungalows and treetops.**
+- *More overwater bungalows* (level 12): up to 3 more (4 in all), each one more room for the pension and a little more rating.
+- *Treetop course* (acrobranche, level 8): stand by a big grown tree (coconut palm, ʻuru, mango, tamanu, mape) with 3 or 4 more big trees in a row; platforms, rope bridges, a ladder and a zipline appear. Do the course for a burst of energy (hunger drops more slowly for a while), or take a guest of the pension (once a day per guest, +2,000 XPF). If one of its trees is cut down, the course closes until rebuilt.
+
+## v47 · Creation mode
+
+Menu › 🏗️ Creation mode (on foot on your motu). The view rises above the motu and time stands still. Drag to look around, pinch or scroll to zoom. Tap a building (or its chip at the bottom) to pick it, then tap the ground where you want it: a green ring means it’s placed, a red ring explains why not (water, slope, too close to the fare, the wharf, the spring, a tree or another building). ⟳ turns the buildings that can be turned (coop, store, dispensary, generator, fare pōteʻe, lamps), ↶ undoes, Done saves.
+Movable: fire pit, coop, pen, fruit stand, compost, ahimaʻa, store, hive, dispensary, generator, fare pōteʻe, street lamps, flower beds. Achievement: Architect of the motu.
+
+**Fix:** the goélette arrived lying on its side (as if shipwrecked): its bow rotation was applied to the whole ship. It now sails in upright.
+
+## v44–v46 · Values in play, the assembly, bird companions
+
+**v44.** Charte du fenua accepted on arrival; lagoon health with a daily fishing limit, small fish let go, and the rāhui (a zone put to rest, marked by a pou rāhui); win-win trade between islands at a fair value, with trust and the custom of the return gift.
+
+**v45.** Te ʻĀpoʻoraʻa, the assembly of the neighbouring motu: proposals, amendments, one person one vote, shared buildings; "What you bring": sincere thanks and roles, no ranking.
+
+**v46 · Bird companions.** Menu › 🪶 Bird companions. The bird you choose becomes your guide, with its own name (you can rename it), and keeps Manu’s levels, abilities and gear. One guide at a time; switch freely and lose nothing. Colours are purely cosmetic.
+- **Manu**: your first guide; tips for the next step; colours chosen in the menu.
+- **ʻItatae** (white tern, *Gygis alba*), default name Teatea: meets you once the lagoon is thriving (health 80). In your vaʻa inside the reef, a white tern circles above the best shoal. Colours: white, mother of pearl (Manu lv 4), moon silver (lv 7).
+- **ʻŌmamao** (Tahiti monarch, *Pomarea nigra*), default name ʻEreʻere: settles once you have planted 5 trees of the Polynesian forest (tamanu, mape, sandalwood, nono, pua). A very rare protected bird: no bonus, its presence is the honour. Colours: young (rufous), adult (glossy black, lv 3).
+New achievements: Feathered friend, Keeper of the forest.
+
+## v43 · Friends, time and adventure
+
+**Intro story.** A new game opens with a short story in five pages: the navigators who crossed the ocean reading the stars and the swell, the fenua as a family to look after, three values (aroha, tauturu, fēti’i), the evening stories of the elders, and your arrival on the motu. No gods in it. Replay it from the menu (📜).
+
+**Your character.** Choose your name (required), woman / man / other with clearly different bodies (shoulders, waist, hips, jaw, eyes, lashes, lips, brows), build, skin, eyes, hair and beard. Five equipment slots, each with several models unlocked during the adventure:
+- Head: tiare, flower crown (lv 2), pandanus hat (lv 4), fisher's bandana (10 fish), lagoon cap (lv 6) — with colours
+- Top: tank top, T-shirt, flower shirt (open the guesthouse), striped vaʻa jersey (build a vaʻa), Heiva T-shirt ✦ limited edition (July only, then yours forever)
+- Bottom: pāreu, shorts, boardshorts (lv 5), fisher's trousers (lv 8)
+- Feet: barefoot, sandals (savates), sneakers (lv 7)
+- Shoulder: blue vini (lv 4), ʻura lorikeet (5 species), ʻōtatare warbler (sail to Tahiti), little white tern (make a wish)
+Drag the character or use ⟲ / ⟳ / "Turn 360°" to see the back.
+
+**Animals are friends, not resources.** Win an animal's trust, then give it a name (ideas offered; rename any time). Pet it, give it treats it likes (3 a day) and play together to raise its friendship level from 1 to 10. Gifts grow with love — hen: one egg every 2 days (lv 1), every 1.5 days (lv 2), … 2 big eggs a day (lv 5); at level 10 a baby is born and you name it too. Animals roam free by day and go home at night. A friendship needs tending: after two days without a visit a friend feels lonely and stops bringing gifts (never any harm). Craft accessories (flower crown, flower collar, pandanus hat, shell bell) with small bonuses. Tap an animal or open Menu › 🐾 My animal friends.
+
+**Manu grows.** Levels 1–10 as you play, with new abilities (spots species, morning gift, flying, senses cyclones, makes animals more loving, golden plumage) and one piece of gear (bell, little bag, navigator's feather). Menu › 🐦 Manu.
+
+**Tutorial.** New games start with a short guided tutorial: moving, the food bar (at 0 % you don't die but you walk slowly until you eat), gathering and eating, opening the menu and what each page does, the top buttons, friends, and time.
+
+**Time.** Building (house stages, buildings, furniture, boats, special builds) takes real time and keeps going when the game is closed: 1.5 min at level 1, about 9 min at level 5, 1 h 15 at level 10, up to 8 h. One building site at a time. Plants grow more slowly as you level up (×1 at level 1, up to ×4).
+
+**Adventure mode: vaʻa expeditions.** Same islands and rules for every player. From level 5 with a vaʻa, gather food, water, ropes (and planks for far trips) and send a crew to one of ten far islands, from Tetiaroa to Mangareva. Each voyage raises that island's exploration up to 100 % and brings back its goods (vanilla from Taha'a, pearls from the Tuamotu, sandalwood and tapa from the Marquesas…). Farther islands take longer (30 min to about 11 h), need more supplies and carry more risk; you must reach 30 % on an island before sailing to the next one. Storms keep the vaʻa ashore, the cyclone season raises the risk, and the lean months (August to October in the game) need 50 % more food.
