@@ -431,3 +431,8 @@ body.coarse #vignette{background:radial-gradient(ellipse at center,rgba(0,0,0,0)
 /* v51: friends' vaʻa */
 .fcode{font-family:var(--display);font-size:22px;letter-spacing:2px;color:var(--ink)}
 #sheetBody select[data-cmmsg]{width:100%;font:inherit;font-weight:700;padding:6px;border-radius:10px;border:2px solid var(--ink);background:#fff}
+/* v55 */
+.csearch{margin:6px 0 4px}.csearch input{width:100%;box-sizing:border-box;font:inherit;font-weight:700;padding:9px 12px;border-radius:12px;border:2.5px solid var(--ink);background:#fff}
+.fpsask{position:fixed;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:70;max-width:520px;margin:0 auto;background:var(--paper);border:2.5px solid var(--ink);border-radius:16px;padding:10px 14px;box-shadow:0 4px 0 rgba(20,49,58,.35)}
+.fpsask p{margin:0 0 8px;font-weight:700}
+.mapwrap{display:flex;justify-content:center}.mapwrap canvas{width:min(100%,520px);aspect-ratio:1;border-radius:16px;border:2.5px solid var(--ink);background:#1a5c96}

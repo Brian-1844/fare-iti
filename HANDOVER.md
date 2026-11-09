@@ -3,12 +3,35 @@
 Upload this whole folder (or `fare-iti.zip`) at the start of the next session and say: "Continue Fare Iti from HANDOVER.md".
 
 ## State
-- Version: **v51** (`sw.js` VERSION `fare-iti-v51`). Live on GitHub Pages: https://brian-1844.github.io/fare-iti/ once these files are uploaded. Preview artifact: https://claude.ai/artifact/9Ec7YmhELs6LGAw9bGC6dM
+- Version: **v56** (`sw.js` VERSION `fare-iti-v56`). Live on GitHub Pages: https://brian-1844.github.io/fare-iti/ once these files are uploaded. Preview artifact: https://claude.ai/artifact/9Ec7YmhELs6LGAw9bGC6dM
 - Stack: plain HTML/CSS/JS, three.js r128 (`lib/three.min.js`), no build step. `game.js` = everything (blocks appended before the `Main loop` marker), `data.js` = base data, `fr.js` = French strings (built from English), `lang.js` = language, welcome, PWA install/updates, scroll helpers.
 - Bilingual pattern: new text uses `LG(fr,en)`; containers with `data-notr` are not auto-translated.
 - Override pattern: `const _f0=f; f=function(...){...; return _f0(...)}`.
 - Debug: open `index.html#debug` → `window.__fare` (S, give, openSheet, fr.*, expe.*, …).
 - Save: `localStorage['fare-iti-v3']`.
+
+## Done in v55–v56
+- Performance audit (2026-11-09, low quality, phone viewport): ~200 draw calls, ~130k triangles, 1,450 meshes (830 visible), 395 shadow casters, 7 lights (4 point lights computed even at 0 intensity), 365 materials, 109 sprites. JS per frame is small (~3% of a frame on desktop); the cost is on the GPU: shadow pass, pixel count, lights, transparent sprites.
+- Done: quality levels `eco`/`ultra` (`ECO`, `ULTRA` flags; `LOWQ` includes eco, `HIQ` includes ultra), shadow-map throttling, half-rate rendering behind sheets, eco point lights off, FPS advisor (`FPSA`), PCF (not soft) shadows on low.
+- Not done yet (next perf steps): merge static meshes of buildings (draw calls), `matrixAutoUpdate=false` on static objects, fewer shadow casters (only big objects), cheaper materials in eco (Toon → Lambert needs care with `toonify`), texture atlas for sprites.
+- Craft search (`CRAFT_Q`, `craftMatch`), trade specialities (`SPEC`, `specOK`), every recipe without `cat` now goes to 'crafts' (the fireworks recipe was invisible).
+- Map: `mapSheet`/`drawMap` (sheet `carte`, M key). No HUD button on purpose: the top bar is already full on narrow phones.
+- Fixed: trade tools ʻō and toʻi reused the item keys of the basic tools `oo`/`toi`; now `oometier`/`toimetier`.
+
+## Done in v54
+Paths `S.paths` {a,b,m,deco} (`PATHS` 5 materials, `PDECO`), walking speed via `pathSpeed()` patched into the main-loop speed line, wooden boardwalk walkable over shallow water (walkable/groundY wrappers). Cables `S.cables` {a,b,k,broken} (`CABLE`), wired lamps −25% use, overhead lines may break in `cycHit`. Team `S.team` {home, list} (`STAFF_R`), daily `teamDay()`, staff bodies via `makePerson`. Secret trade `plombier`. Debug `__fare.v54`.
+
+## Done in v53
+Craft menu (`craftSheet`) shows only recipes with `lv <= S.level`, tabs appear when they have one, and a teaser line gives the count for the next level (Brian: showing everything from the start is confusing).
+
+## Done in v52 · Trades
+`MET` (15 trades, 9 secret), `S.met` {k, xp, quest, bld, day, found}; XP comes from `stat()` keys (wrapper); capacities wrap finishCast, growBonus, harvest, workDur, finishWork, addLove, v10Rating, priceOf, addTrust, expeHours, expeRisk, v10Sim, lagLimit; buildings `metbld` (recipe, one per trade, daily action), quests `MQ`, fireworks `fireShow()`. Debug `__fare.v52`.
+
+## Brian's long-term vision (2026-11-09)
+- Players develop ports, villages and market towns that stay ecological and respectful of people, nature, resources and animals; a place for public debate.
+- Trade between players, each specialised in a trade (done locally in v52; trade between players still to do, same fair-value rule as island trade).
+- Special buildings (vet clinic, police post, weather station, school: done as trade buildings) and, at some level of development, inhabitants living on your island.
+- Suggested order: trade between friends → shared village + real assembly between players → port market → town with a central fare pōteʻe; inhabitants on the island.
 
 ## Done in v51 · Friends’ vaʻa (Supabase)
 - Supabase project **fare-iti** (ref `zzghnxjcddawcwfwvvus`, us-west-1, org "Pièce Fenua", separate from the `piece-fenua` project). Schema = `supabase.sql` (applied as migration `fare_iti_entraide`). Tables closed (RLS, no policies); everything goes through `fi_*` security-definer RPCs (advisor warnings about this are intentional).

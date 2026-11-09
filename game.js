@@ -164,9 +164,9 @@ function save(){
   try{S.player.x=player.position.x;S.player.z=player.position.z;S.player.yaw=cam.yaw;
     localStorage.setItem(SAVE_KEY,JSON.stringify(saveClean(S)));}catch(e){}
 }
-/* quality: 'low' | 'normal' | 'high' (auto: low on phones) */
+/* quality: 'eco' | 'low' | 'normal' | 'high' | 'ultra' (auto: low on phones) */
 let QUAL='normal';try{QUAL=localStorage.getItem('fare-iti-quality')||(coarse?'low':'normal');}catch(e){}
-const LOWQ=QUAL==='low',HIQ=QUAL==='high';
+const ECO=QUAL==='eco',ULTRA=QUAL==='ultra',LOWQ=QUAL==='low'||ECO,HIQ=QUAL==='high'||ULTRA;
 const saved=load();
 const S=saved||newWorld();
 if(saved){$('#startBtn').textContent='Continue';$('#saveNote').textContent='Welcome back. Your island is as you left it.';}
@@ -174,9 +174,9 @@ if(saved){$('#startBtn').textContent='Continue';$('#saveNote').textContent='Welc
 /* =========================================================
    Renderer, sky, light
    ========================================================= */
-const renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,HIQ?2:LOWQ?1.25:1.5));
-renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const renderer=new THREE.WebGLRenderer({antialias:!ECO,powerPreference:ECO||LOWQ?'low-power':'high-performance'});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,ULTRA?3:HIQ?2:ECO?0.85:LOWQ?1.25:1.5));
+renderer.shadowMap.enabled=!ECO;renderer.shadowMap.type=LOWQ?THREE.PCFShadowMap:THREE.PCFSoftShadowMap;
 renderer.outputEncoding=THREE.sRGBEncoding;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
 $('#scene').appendChild(renderer.domElement);
@@ -202,7 +202,7 @@ scene.fog=new THREE.Fog(0xd6efe9,70,230);
 
 const hemi=new THREE.HemisphereLight(0xdff4ff,0x6f8a4a,0.7);scene.add(hemi);
 const sun=new THREE.DirectionalLight(0xfff1d6,1.2);
-sun.castShadow=true;sun.shadow.mapSize.set(LOWQ?1024:HIQ?2048:1536,LOWQ?1024:HIQ?2048:1536);
+sun.castShadow=!ECO;sun.shadow.mapSize.set(LOWQ?1024:ULTRA?4096:HIQ?2048:1536,LOWQ?1024:ULTRA?4096:HIQ?2048:1536);
 Object.assign(sun.shadow.camera,{left:-24,right:24,top:24,bottom:-24,near:1,far:110});
 sun.shadow.bias=-0.0008;scene.add(sun);scene.add(sun.target);
 const moon=new THREE.DirectionalLight(0x9db8ff,0);scene.add(moon);scene.add(moon.target);
@@ -1862,7 +1862,7 @@ function scatter(count,geo,mat,place,colorFn,shadow){
   inst.count=n;inst.instanceMatrix.needsUpdate=true;if(inst.instanceColor)inst.instanceColor.needsUpdate=true;
   inst.castShadow=!!shadow;inst.receiveShadow=true;scene.add(inst);return inst;}
 const rp=(rand,rmin,rmax)=>{const a=rand()*Math.PI*2,r=rmin+rand()*(rmax-rmin);return[Math.cos(a)*r,Math.sin(a)*r];};
-const GRASS_N=LOWQ?1800:HIQ?4200:3000;
+const GRASS_N=ECO?900:LOWQ?1800:ULTRA?6000:HIQ?4200:3000;
 scatter(GRASS_N,bladeGeo,swayMat(0xffffff,2.2),rand=>{const[x,z]=rp(rand,2,R-1.5),h=H(x,z);if(h<0.75||h>5.2||!clearGround(x,z,0.8))return null;return{x,y:h-0.02,z,s:0.7+rand()*0.9};},
   (rand,c)=>c.setHSL(0.25+rand()*0.07,0.62+rand()*0.2,0.24+rand()*0.12));
 const wildGeo=mergeGeos([{g:flg('small'),p:new THREE.Vector3(0,0.3,0),q:new THREE.Quaternion().setFromEuler(new THREE.Euler(0.35,0,0))},{g:new THREE.CylinderGeometry(0.006,0.008,0.3,4),p:new THREE.Vector3(0,0.15,0)}]);
@@ -2548,13 +2548,22 @@ $('#lookDone').onclick=()=>{S.look.set=true;lookOpen=false;document.body.classLi
 /* ----- craft menu with category tabs ----- */
 function craftSheet(){$('#sheetTitle').textContent='Craft';
   const ready=r=>{const c=recipeCheck(r);return c.ok&&hasAll(r.in);};
-  if(!craftTab){const f=CRAFT_CATS.find(([k])=>RECIPES.some(r=>r.cat===k&&ready(r)));craftTab=f?f[0]:'mat';}
-  let html=`<div class="ctabs">${CRAFT_CATS.map(([k,n,ic])=>{const cnt=RECIPES.filter(r=>r.cat===k&&ready(r)).length;
+  const seen=r=>!r.secret||(String(r.secret).startsWith('unlock_')?!!S.flags[r.secret]:r.secret==='faarumai'?!!S.flags.faarumaiDone:r.secret==='sea'?S.flags.seaCaveFound:r.secret==='volcano'?!!S.volcano:S.flags.caveFound);
+  const seen0=seen;const seenS=r=>seen0(r)&&specOK(r);
+  const tabs=CRAFT_CATS.filter(([k])=>RECIPES.some(r=>r.cat===k&&r.lv<=S.level&&seenS(r)));
+  if(!craftTab||!tabs.some(([k])=>k===craftTab)){const f=tabs.find(([k])=>RECIPES.some(r=>r.cat===k&&ready(r)))||tabs[0];craftTab=f?f[0]:'mat';}
+  let html=`<div class="ctabs">${tabs.map(([k,n,ic])=>{const cnt=RECIPES.filter(r=>r.cat===k&&seenS(r)&&ready(r)).length;
     return `<button class="ctab${k===craftTab?' on':''}" data-ctab="${k}">${ICON[ic]}<span>${n}</span>${cnt?`<b>${cnt}</b>`:''}</button>`;}).join('')}</div>`;
-  const list=RECIPES.filter(r=>r.cat===craftTab&&(!r.secret||(String(r.secret).startsWith('unlock_')?!!S.flags[r.secret]:r.secret==='faarumai'?!!S.flags.faarumaiDone:r.secret==='sea'?S.flags.seaCaveFound:r.secret==='volcano'?!!S.volcano:S.flags.caveFound))).slice().sort((a,b)=>a.lv-b.lv);
+  html+=`<div class="csearch"><input id="craftQ" type="search" autocomplete="off" placeholder="🔍 ${LG('Chercher : coco, corde, monoʻi…','Search: coconut, rope, monoʻi…')}" value="${CRAFT_Q.replace(/"/g,'')}"></div><div id="craftList">`;
+  const Q=CRAFT_Q.trim();const all=Q?RECIPES.filter(r=>seenS(r)&&craftMatch(r,Q)):RECIPES.filter(r=>r.cat===craftTab&&seenS(r)),list=all.filter(r=>r.lv<=S.level).slice().sort((a,b)=>a.lv-b.lv);
+  const later=Q?[]:all.filter(r=>r.lv>S.level),nx=later.length?Math.min(...later.map(r=>r.lv)):0,nN=later.filter(r=>r.lv===nx).length;
+  if(Q)html+=`<div class="small-note">${list.length?LG(`${list.length} résultat${list.length>1?'s':''}`,`${list.length} result${list.length>1?'s':''}`):LG('Rien trouvé à ton niveau. Essaie un autre mot.','Nothing found at your level. Try another word.')}</div>`;
   html+='<div class="tree">'+list.map(r=>{const c=recipeCheck(r),locked=r.lv>S.level,ik=r.place||r.furn||r.special||(r.gbed&&'gbed'),
       out=ik?ICON[ik]:Object.entries(r.out).map(([k,v])=>`${ICON[k]}${v}`).join(' '),ok=c.ok&&hasAll(r.in);
     return `<div class="recipe node${locked?' locked':ok?' ready':''}"><span class="lvchip">Lv ${r.lv}</span><div class="rinfo"><div class="name">${r.n}</div>${r.t?`<div class="tah">${r.t}</div>`:''}<div class="flow">${flowHtml(r.in,out)}${r.tool?` <span class="plus">· tool</span> ${ICON[r.tool]}`:''}</div>${c.why&&!locked?`<div class="why">${c.why}</div>`:''}${locked?`<div class="why muted">Unlocks at level ${r.lv}</div>`:''}</div>${locked?'':`<button data-id="${r.id}" ${ok?'':'disabled'}>${ik?'Build':'Craft'}</button>`}</div>`;}).join('')+'</div>';
+  if(nx)html+=`<div class="recipe node locked"><div class="rinfo"><div class="name">🔒 ${LG(`Au niveau ${nx}`,`At level ${nx}`)}</div><div class="tah">${LG(`${nN} nouveauté${nN>1?'s':''} à découvrir dans cette page`,`${nN} new thing${nN>1?'s':''} to discover on this page`)}</div></div></div>`;
+  if(!Q){const sp=RECIPES.filter(r=>r.cat===craftTab&&seen0(r)&&!specOK(r)&&r.lv<=S.level).length;if(sp)html+=`<div class="recipe node locked"><div class="rinfo"><div class="name">🧑‍🔧 ${LG(`${sp} spécialité${sp>1?'s':''} d’autres métiers`,`${sp} speciality${sp>1?'ies':''} of other trades`)}</div><div class="tah">${LG('Réservées à leur métier : à obtenir par le troc ou en entraide','Reserved for their trade: get them by trading or mutual help')}</div></div></div>`;}
+  html+='</div>';
   return html;}
 
 /* ----- Manu: tap the bird, get a precise clue ----- */
@@ -3980,9 +3989,9 @@ function updateV19(dt,t){if(S.inCave&&S.caveKind!=='sea')animateTube(dt,t);anima
 
 /* ----- quality, export / import, fps ----- */
 const QNAMES={low:'low',normal:'normal',high:'high'};
-function qualLabel(){return LG(`Qualité : ${{low:'basse',normal:'normale',high:'haute'}[QUAL]}`,`Quality: ${QUAL}`);}
+function qualLabel(){return LG(`Qualité : ${{eco:'économie',low:'basse',normal:'normale',high:'haute',ultra:'ultra (définition totale)'}[QUAL]||QUAL}`,`Quality: ${{eco:'economy',ultra:'ultra (full definition)'}[QUAL]||QUAL}`);}
 $('#qualBtn').textContent=qualLabel();
-$('#qualBtn').onclick=()=>{const order=['low','normal','high'],next=order[(order.indexOf(QUAL)+1)%3];try{localStorage.setItem('fare-iti-quality',next);}catch(e){}
+$('#qualBtn').onclick=()=>{const order=['eco','low','normal','high','ultra'],next=order[(order.indexOf(QUAL)+1)%order.length];try{localStorage.setItem('fare-iti-quality',next);}catch(e){}
   save();toast(LG('Qualité modifiée. Le jeu se recharge…','Quality changed. Reloading…'));setTimeout(()=>location.reload(),600);};
 function exportIsland(){save();let txt='';try{txt=localStorage.getItem(SAVE_KEY)||'';}catch(e){}if(!txt){toast(LG('Rien à exporter.','Nothing to export.'));return;}
   const blob=new Blob([txt],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`fare-iti-jour${S.day}-niveau${S.level}.json`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},2000);
@@ -7296,6 +7305,604 @@ ACH.push(['friend1',()=>LG('Tauturu','Tauturu'),()=>LG('Aider un ami qui l’a d
   ['fenuaGoal',()=>LG('Tous ensemble','All together'),()=>LG('Participer à un Objectif du fenua atteint','Take part in a reached Objectif du fenua'),()=>(S.stats.fenuaGoal||0)>=1]);
 const V51={rpc,commSync,CMV,goalNow,SB_ON};
 
+/* =====================================================================
+   v52: métiers (trades). From level 5 the player chooses a trade among
+   those they have unlocked by playing. Once chosen it can only be changed
+   at trade level 10 or player level 15 (progress in every trade is kept).
+   Trade levels 1–10 come from the trade's own gestures. Each step unlocks
+   a capacity (lv 2 and 10), a tool (lv 4), a building (lv 6) and a special
+   quest from an elder (lv 8). Bonuses stay gentle and never harm nature:
+   everyone can still do everything, the specialist just does it better.
+   ===================================================================== */
+const MET_XP=[0,40,110,220,380,600,900,1300,1800,2500];
+const MET={
+ pecheur:{ic:'🎣',n:()=>LG('Pêcheur · Pêcheuse','Fisher'),t:()=>LG('Vit avec le lagon et le large, pêche ce dont on a besoin.','Lives with the lagoon and the open sea, fishes what is needed.'),
+   ok:()=>(S.stats.fish||0)>=30,cond:()=>LG(`Pêcher 30 poissons (${Math.min(30,S.stats.fish||0)}/30)`,`Catch 30 fish (${Math.min(30,S.stats.fish||0)}/30)`),
+   xp:{fish:3,deepfish:2,fishtrap:3,released:4,rahui:6,honufree:5},
+   steps:[[2,()=>LG('Œil du pêcheur : parfois un poisson de plus','Fisher’s eye: sometimes one more fish')],[4,()=>LG('Outil : le filet traditionnel (ʻupenā)','Tool: the traditional net (ʻupenā)')],[6,()=>LG('Bâtiment : le séchoir à poisson','Building: the fish-drying rack')],[8,()=>LG('Quête : la pêche au caillou (tautai taora ʻōfaʻi)','Quest: stone fishing (tautai taora ʻōfaʻi)')],[10,()=>LG('Gardien du lagon : le lagon supporte 4 poissons de plus par jour','Keeper of the lagoon: the lagoon supports 4 more fish a day')]],
+   tool:'upena',bld:LG('Séchoir à poisson','Fish-drying rack'),col:0x2c7fb8},
+ jardinier:{ic:'🌱',n:()=>LG('Jardinier · Jardinière','Gardener'),t:()=>LG('Fait pousser la terre, du taro aux arbres de la forêt.','Makes the land grow, from taro to forest trees.'),
+   ok:()=>(S.stats.planted||0)>=20,cond:()=>LG(`Planter 20 fois (${Math.min(20,S.stats.planted||0)}/20)`,`Plant 20 times (${Math.min(20,S.stats.planted||0)}/20)`),
+   xp:{planted:4,fert:2,tilled:2,flooded:3,hydroharvest:4,leaves:1,parterre:5,taro:1},
+   steps:[[2,()=>LG('Main verte : tes plantes poussent 10 % plus vite','Green thumb: your plants grow 10% faster')],[4,()=>LG('Outil : le bâton à fouir (ʻō) · parfois une récolte de plus','Tool: the digging stick (ʻō) · sometimes one more harvest')],[6,()=>LG('Bâtiment : la pépinière · graines et boutures chaque jour','Building: the nursery · seeds and cuttings every day')],[8,()=>LG('Quête : le jardin des anciens','Quest: the elders’ garden')],[10,()=>LG('Maître jardinier : tout pousse 25 % plus vite','Master gardener: everything grows 25% faster')]],
+   tool:'oometier',bld:LG('Pépinière','Plant nursery'),col:0x55a83a},
+ charpentier:{ic:'🪚',n:()=>LG('Charpentier · Charpentière','Carpenter'),t:()=>LG('Bâtit les fare, les pirogues et répare après les tempêtes.','Builds fare and canoes, and repairs after storms.'),
+   ok:()=>S.stage>=5,cond:()=>LG('Terminer ton fare','Finish your fare'),
+   xp:{jobs:12,repairs:6,repair:6,decor:3,bungalow:20,acro:15},
+   steps:[[2,()=>LG('Gestes sûrs : chantiers 10 % plus courts','Sure hands: building jobs 10% shorter')],[4,()=>LG('Outil : l’herminette (toʻi) · parfois une planche rendue après un chantier','Tool: the adze (toʻi) · sometimes a plank back after a job')],[6,()=>LG('Bâtiment : l’atelier (fare tāmuta) · 1 bûche = 2 planches','Building: the workshop (fare tāmuta) · 1 log = 2 planks')],[8,()=>LG('Quête : la pirogue des anciens','Quest: the elders’ canoe')],[10,()=>LG('Maître charpentier : chantiers 30 % plus courts','Master carpenter: building jobs 30% shorter')]],
+   tool:'toimetier',bld:LG('Atelier','Workshop'),col:0x9a6a38},
+ tisserand:{ic:'🧺',n:()=>LG('Tisserand · Tisserande','Weaver'),t:()=>LG('Tresse le pandanus et le niau, coud les pāreu et les tīfaifai.','Plaits pandanus and niau, sews pāreu and tīfaifai.'),
+   ok:()=>(S.stats.weave||0)>=3,cond:()=>LG(`Tresser ou coudre 3 objets (${Math.min(3,S.stats.weave||0)}/3)`,`Weave or sew 3 items (${Math.min(3,S.stats.weave||0)}/3)`),
+   xp:{weave:8,shellhei:5,jewels:4},
+   steps:[[2,()=>LG('Doigts agiles : parfois une lanière rendue','Nimble fingers: sometimes a strip back')],[4,()=>LG('Outil : l’aiguille en os · parfois le double de l’ouvrage','Tool: the bone needle · sometimes twice the work')],[6,()=>LG('Bâtiment : le fare de tressage · lanières et palmes chaque jour','Building: the weaving fare · strips and fronds every day')],[8,()=>LG('Quête : le tīfaifai de la famille','Quest: the family tīfaifai')],[10,()=>LG('Mains d’or : tes ouvrages se vendent 30 % plus cher','Golden hands: your woven work sells for 30% more')]],
+   tool:'nina',bld:LG('Fare de tressage','Weaving fare'),col:0xd9b04a},
+ eleveur:{ic:'🐾',n:()=>LG('Ami des animaux','Friend of the animals'),t:()=>LG('Prend soin des animaux comme d’une famille.','Looks after animals like family.'),
+   ok:()=>(S.animals||[]).filter(a=>a.tamed).length>=2,cond:()=>LG('Devenir ami de 2 animaux','Befriend 2 animals'),
+   xp:{love:2,tamed:15,play:3,named:4,babies:25,animalLevels:6,hatchlings:3,honufree:4,foundpets:6},
+   steps:[[2,()=>LG('Voix douce : l’amitié des animaux grandit 15 % plus vite','Gentle voice: animal friendship grows 15% faster')],[4,()=>LG('Outil : la brosse en fibre de coco · +10 % d’amitié','Tool: the coconut-fibre brush · +10% friendship')],[6,()=>LG('Bâtiment : l’abri des animaux · une friandise chaque jour','Building: the animal shelter · a treat every day')],[8,()=>LG('Quête : le refuge','Quest: the refuge')],[10,()=>LG('Ami de tous : l’amitié grandit 40 % plus vite','Friend of all: friendship grows 40% faster')]],
+   tool:'brosse',bld:LG('Abri des animaux','Animal shelter'),col:0xe0663a},
+ guide:{ic:'🧭',n:()=>LG('Guide du fenua','Guide of the fenua'),t:()=>LG('Accueille les visiteurs et partage les légendes et la culture.','Welcomes visitors and shares the legends and the culture.'),
+   ok:()=>S.g2>=3,cond:()=>LG('Ouvrir ta pension de famille','Open your guesthouse'),
+   xp:{guests:6,tours:8,tourstops:2,passengers:3,excursions:6,acroGuest:8,heliflights:6,musicguest:4,glassfloor:2,maeva:3},
+   steps:[[2,()=>LG('Sourire d’accueil : la pension gagne un peu en note','Welcoming smile: the guesthouse rates a little higher')],[4,()=>LG('Outil : la carte des légendes · encore un peu de note','Tool: the map of legends · a little more rating')],[6,()=>LG('Bâtiment : le fare d’accueil · une chambre de plus','Building: the welcome fare · one more room')],[8,()=>LG('Quête : la légende pour les visiteurs','Quest: the legend for the visitors')],[10,()=>LG('Ambassadeur du fenua : la pension brille','Ambassador of the fenua: the guesthouse shines')]],
+   tool:'carte',bld:LG('Fare d’accueil','Welcome fare'),col:0xde4634}};
+const MET_TOOLS={upena:[LG('ʻUpenā · filet traditionnel','ʻUpenā · traditional net'),'#2c7fb8'],oometier:[LG('ʻŌ · bâton à fouir','ʻŌ · digging stick'),'#7a5530'],toimetier:[LG('Toʻi · herminette','Toʻi · adze'),'#5a6a72'],
+  nina:[LG('Aiguille en os','Bone needle'),'#f2ecd8'],brosse:[LG('Brosse en fibre de coco','Coconut-fibre brush'),'#c98a3a'],carte:[LG('Carte des légendes','Map of legends'),'#e9d7a8']};
+for(const k in MET_TOOLS){ITEMS[k]={n:MET_TOOLS[k][0],t:LG('outil de métier','trade tool'),cat:'tool'};ICON[k]=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 17 7l2 2L7 21Z" fill="${MET_TOOLS[k][1]}" stroke="#14313a" stroke-width="1.6" stroke-linejoin="round"/><circle cx="18" cy="6" r="3" fill="#ffc83d" stroke="#14313a" stroke-width="1.4"/></svg>`;if(!ORDER.includes(k))ORDER.push(k);}
+ITEMS.driedfish={n:LG('Poisson séché','Dried fish'),t:LG('se garde longtemps · bon pour le troc','keeps a long time · good for trading'),food:20,cat:'food'};PRICES.driedfish=450;
+ICON.driedfish=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12c4-5 10-5 14 0-4 5-10 5-14 0Z" fill="#c9a46a" stroke="#14313a" stroke-width="1.6" stroke-linejoin="round"/><path d="M17 12l4-3v6Z" fill="#c9a46a" stroke="#14313a" stroke-width="1.6" stroke-linejoin="round"/></svg>`;if(!ORDER.includes('driedfish'))ORDER.push('driedfish');
+function MS(){if(!S.met)S.met={k:null,xp:{},since:0,quest:{},bld:{},day:{}};return S.met;}
+function metLv(k){const x=MS().xp[k]||0;let L=1;while(L<10&&x>=MET_XP[L])L++;return L;}
+function myMet(){return MS().k;}
+function metHas(k,lv){return myMet()===k&&metLv(k)>=lv;}
+function metCanChoose(){return (S.level||1)>=5;}
+function metCanChange(){const k=myMet();return !k||metLv(k)>=10||(S.level||1)>=15;}
+function metChoose(k){const M=MS();if(!MET[k]||!MET[k].ok()||!metCanChoose()||(M.k&&!metCanChange())||M.k===k)return;M.k=k;M.since=S.day;stat('metier');pendingSave=true;
+  toast(LG(`Tu deviens ${MET[k].n()} ! Chaque geste de ton métier te fait progresser. Ton métier ne pourra changer qu’au niveau 10 du métier ou au niveau 15.`,`You become a ${MET[k].n()}! Every gesture of your trade makes you progress. You can only change trade at trade level 10 or player level 15.`));
+  manuSay(LG('Un métier, c’est un savoir qu’on partage. Les autres compteront sur toi, et toi sur eux.','A trade is knowledge you share. Others will count on you, and you on them.'),7);renderSheet();refresh();}
+function metGain(k,n){const M=MS();if(!M.k||n<=0)return;const per=MET[M.k].xp[k];if(!per)return;const L0=metLv(M.k);M.xp[M.k]=(M.xp[M.k]||0)+per*n;const L1=metLv(M.k);pendingSave=true;if(L1>L0)metLevelUp(M.k,L1);}
+function metLevelUp(k,L){const C=MET[k],st=C.steps.find(s=>s[0]===L);
+  toast(LG(`${C.ic} ${C.n()} : niveau ${L} !`,`${C.ic} ${C.n()}: level ${L}!`)+(st?' '+st[1]():''));
+  if(L===4&&!(S.inv[C.tool]>0)){give({[C.tool]:1});setTimeout(()=>manuSay(LG(`Un ancien t’offre son ${ITEMS[C.tool].n.toLowerCase()} : « Prends-en soin, il a déjà beaucoup servi. »`,`An elder gives you their ${ITEMS[C.tool].n.toLowerCase()}: “Take care of it, it has served a lot already.”`),7),1500);}
+  if(L===6)setTimeout(()=>manuSay(LG(`Tu peux construire ton ${C.bld.toLowerCase()} : regarde dans Fabriquer.`,`You can build your ${C.bld.toLowerCase()}: look in Craft.`),6),1500);
+  if(L===8)setTimeout(()=>manuSay(LG('Un ancien veut te transmettre un savoir : ouvre « Mon métier ».','An elder wants to pass on some knowledge: open “My trade”.'),6),1500);
+  stat('metLevel');}
+const _stat52=stat;stat=function(k,n){_stat52(k,n);const v=n===undefined?1:n;if(v>0)metGain(k,v);};
+/* weaving counts for the weaver */
+const WEAVE=new Set(RECIPES.filter(r=>!r.place&&!r.special&&!r.furn&&r.in&&(r.in.strips||r.in.frond>=2||r.in.ahu||r.in.thread||r.in.pandanus||/tress|weave|sew|coudre|natte|mat\b|pāreu|pareu|tīfaifai|tifai/i.test(r.n))).map(r=>r.id));
+const _doCraft52=doCraft;doCraft=function(id){const before=JSON.stringify(S.inv);_doCraft52(id);if(JSON.stringify(S.inv)===before||!WEAVE.has(id))return;stat('weave');
+  const r=RECIPES.find(x=>x.id===id);if(metHas('tisserand',2)&&Math.random()<0.25){give({strips:1});floatAtPlayer(LG('+1 lanière','+1 strip'));}
+  if(myMet()==='tisserand'&&S.inv.nina>0&&r&&r.out&&Math.random()<0.25){give(r.out);floatAtPlayer(LG('Ouvrage double !','Double work!'));}};
+/* ----- capacities ----- */
+const _finishCast52=finishCast;finishCast=function(){const b=(S.inv.fish||0)+(S.inv.aahi||0)+(S.inv.mahi||0);_finishCast52();const got=(S.inv.fish||0)+(S.inv.aahi||0)+(S.inv.mahi||0)-b;
+  if(got>0&&myMet()==='pecheur'){const p=(metLv('pecheur')>=2?0.15:0)+(S.inv.upena>0?0.2:0);if(Math.random()<p){give({fish:1});_stat52('fish');floatAtPlayer(LG('Œil du pêcheur +1','Fisher’s eye +1'));}}};
+if(typeof lagLimit==='function'){const _lagLimit52=lagLimit;lagLimit=function(){return _lagLimit52()+(metHas('pecheur',10)?4:0);};}
+const _growBonus52=growBonus;growBonus=function(){return _growBonus52()*(metHas('jardinier',10)?1.25:metHas('jardinier',2)?1.1:1);};
+const _harvest52=harvest;harvest=function(c){_harvest52(c);if(myMet()==='jardinier'&&S.inv.oometier>0&&Math.random()<0.2){const y=CROPS[c.type]&&Object.keys(CROPS[c.type].yield)[0];if(y){give({[y]:1});floatAtPlayer(LG('ʻŌ : +1','ʻŌ: +1'));}}};
+const _workDur52=workDur;workDur=function(){return _workDur52()*(metHas('charpentier',10)?0.7:metHas('charpentier',2)?0.9:1);};
+const _finishWork52=finishWork;finishWork=function(){_finishWork52();if(myMet()==='charpentier'&&S.inv.toimetier>0&&Math.random()<0.3){give({plank:1});toast(LG('Avec ton herminette, tu récupères une planche.','With your adze, you save a plank.'));}};
+const _addLove52=addLove;addLove=function(a,n){const m=myMet()==='eleveur'?(metLv('eleveur')>=10?1.4:metLv('eleveur')>=2?1.15:1)*(S.inv.brosse>0?1.1:1):1;return _addLove52(a,n*m);};
+const _v10R52=v10Rating;v10Rating=function(){let b=0;if(myMet()==='guide'){const L=metLv('guide');if(L>=2)b+=0.1;if(S.inv.carte>0)b+=0.1;if(L>=10)b+=0.25;}return _v10R52()+b;};
+const WOVEN=new Set(['mat','taupoo','pareu','tifai','tapa','heipupu','heiporeho','heiparau','heipua','heiupoo','heiani'].filter(k=>ITEMS[k]));
+const _priceOf52=priceOf;priceOf=function(k){const p=_priceOf52(k);return metHas('tisserand',10)&&WOVEN.has(k)?Math.round(p*1.3):p;};
+/* ----- trade buildings (level 6) ----- */
+RECIPES.push({id:'metbld',lv:5,n:LG('Construire le bâtiment de ton métier','Build your trade building'),t:LG('séchoir, pépinière, atelier, fare de tressage, abri des animaux ou fare d’accueil · niveau 6 du métier','drying rack, nursery, workshop, weaving fare, animal shelter or welcome fare · trade level 6'),in:{log:4,plank:6,thatch:4,rope:3},place:'metbld',cat:'build'});
+const _recipeCheck52=recipeCheck;recipeCheck=function(r){if(r&&r.id==='metbld'){const k=myMet();if(!k)return{ok:false,why:LG('Choisis d’abord un métier','Choose a trade first')};if(metLv(k)<6)return{ok:false,why:LG(`Niveau 6 de ton métier (${metLv(k)}/6)`,`Trade level 6 (${metLv(k)}/6)`)};if(MS().bld[k])return{ok:false,why:LG('Tu l’as déjà construit','Already built')};}return _recipeCheck52(r);};
+const metMeshes={};
+function placeMetBld(k){const B=MS().bld[k];if(!B)return;if(metMeshes[k])scene.remove(metMeshes[k]);const C=MET[k],g=new THREE.Group();
+  for(const[x,z]of[[-1.2,-0.9],[1.2,-0.9],[-1.2,0.9],[1.2,0.9]])g.add(cyl(0.08,2,MAT.post,x,1,z,6));
+  const roof=mesh(new THREE.ConeGeometry(1.95,1.1,4),MAT.thatch||std(0xc9a46a),0,2.45,0);roof.rotation.y=Math.PI/4;roof.scale.set(1,1,0.8);g.add(roof);g.add(box(2.6,0.12,2,MAT.plank||MAT.wood,0,0.06,0));
+  const em=std(C.col);if(k==='pecheur')for(let i=0;i<4;i++){const f=mesh(new THREE.SphereGeometry(0.12,6,4),std(0xc9a46a),-0.9+i*0.6,1.4,0,false);f.scale.set(1.8,0.6,0.5);g.add(f);}
+  else if(k==='jardinier')for(let i=0;i<6;i++){g.add(cyl(0.12,0.2,std(0x9a5a2a),-0.9+(i%3)*0.9,0.22,i<3?-0.4:0.4,8));g.add(mesh(new THREE.SphereGeometry(0.16,6,4),std(0x55a83a),-0.9+(i%3)*0.9,0.42,i<3?-0.4:0.4,false));}
+  else if(k==='charpentier'){g.add(box(1.6,0.7,0.6,MAT.plank||MAT.wood,0,0.45,0));g.add(box(1.2,0.08,0.3,std(0xe3b77c),0,0.84,0));}
+  else if(k==='tisserand'){const m=box(1.4,0.04,1,em,0,0.2,0);g.add(m);for(let i=0;i<5;i++)g.add(box(0.06,0.05,1,std(0xf6ecc8),-0.6+i*0.3,0.23,0));}
+  else if(k==='eleveur'){g.add(box(1.8,0.3,0.5,std(0xd9b04a),0,0.25,0));g.add(cyl(0.3,0.15,std(0x2c7fb8),0.6,0.15,0.6,10));}
+  else{g.add(box(1.0,0.9,0.5,em,0,0.55,0));g.add(cyl(0.05,1.5,MAT.post,0.9,0.75,0.8,5));g.add(box(0.6,0.4,0.03,std(0xf6ecc8),0.9,1.5,0.8));}
+  g.position.set(B.x,H(B.x,B.z),B.z);g.rotation.y=B.rot||0;scene.add(g);metMeshes[k]=g;}
+for(const k in (S.met&&S.met.bld)||{})placeMetBld(k);
+const _v10PC52=v10PlaceCheck;v10PlaceCheck=function(what){if(what!=='metbld')return _v10PC52(what);const{x,z}=ahead(2.4),h=H(x,z);if(h<0.35||h>4)return{ok:false,why:LG('Trouve un terrain plat et sec','Find flat, dry ground')};
+  if(occupied(x,z,2))return{ok:false,why:LG('Trop près de quelque chose','Too close to something')};return{ok:true,x,z};};
+const _v10P52=v10Place;v10Place=function(what,c){if(what!=='metbld')return _v10P52(what,c);const k=myMet();MS().bld[k]={x:c.x,z:c.z,rot:player.rotation.y+Math.PI};placeMetBld(k);stat('metBuilt');
+  if(k==='guide'&&S.pension){S.pension.beds++;}toast(LG(`Ton ${MET[k].bld.toLowerCase()} est construit !`,`Your ${MET[k].bld.toLowerCase()} is built!`));return true;};
+const _v10Occ52=v10Occupied;v10Occupied=function(x,z,d){return _v10Occ52(x,z,d)||Object.values(MS().bld).some(B=>dist(B.x,B.z,x,z)<d+1.6);};
+const _v10Obs52=v10Obstacles;v10Obstacles=function(list){_v10Obs52(list);for(const B of Object.values(MS().bld))list.push([B.x,B.z,1.4]);};
+function metDayLeft(k){return MS().day[k]!==S.day;}
+function metBldActs(k,A){const M=MS(),C=MET[k],used=!metDayLeft(k);const done=()=>{M.day[k]=S.day;chopT=0.4;pendingSave=true;refresh();};
+  if(myMet()!==k){A.push({label:C.bld,sub:LG('Ce n’est plus ton métier actuel','No longer your current trade'),off:true});return;}
+  if(k==='pecheur'){if(used)A.push({label:C.bld,sub:LG('Le poisson sèche… reviens demain','The fish is drying… come back tomorrow'),off:true});else A.push((S.inv.fish||0)>=3?{label:LG('Faire sécher 3 poissons','Dry 3 fish'),sub:LG('→ 3 poissons séchés, qui se gardent et se troquent bien','→ 3 dried fish, that keep and trade well'),fn:()=>{take({fish:3});give({driedfish:3});done();}}:{label:C.bld,sub:LG('Il faut 3 poissons','Needs 3 fish'),off:true});}
+  else if(k==='jardinier'){A.push(used?{label:C.bld,sub:LG('Les jeunes plants grandissent… demain','The young plants are growing… tomorrow'),off:true}:{label:LG('Prendre les plants du jour','Take today’s plants'),sub:LG('Graines et boutures de la pépinière','Seeds and cuttings from the nursery'),fn:()=>{const pool=['bshoot','taroshoot','papseed','pinetop','tcut','fshoot'].filter(q=>ITEMS[q]),got={};for(let i=0;i<3;i++){const q=pool[Math.floor(Math.random()*pool.length)];got[q]=(got[q]||0)+1;}give(got);floatAtPlayer(Object.entries(got).map(([q,n])=>`+${n} ${nm(q)}`).join(' '));done();}});}
+  else if(k==='charpentier'){const n=M.saw&&M.saw.d===S.day?M.saw.n:0;A.push(n>=5?{label:C.bld,sub:LG('Assez scié pour aujourd’hui','Enough sawing for today'),off:true}:(S.inv.log||0)>=1?{label:LG('Scier une bûche','Saw a log'),sub:LG(`1 bûche → 2 planches · ${5-n} aujourd’hui`,`1 log → 2 planks · ${5-n} today`),fn:()=>{take({log:1});give({plank:2});M.saw={d:S.day,n:n+1};chopT=0.5;floatAtPlayer('+2 '+nm('plank'));pendingSave=true;refresh();}}:{label:C.bld,sub:LG('Il faut une bûche','Needs a log'),off:true});}
+  else if(k==='tisserand'){A.push(used?{label:C.bld,sub:LG('Le pandanus sèche… demain','The pandanus is drying… tomorrow'),off:true}:{label:LG('Prendre les fibres du jour','Take today’s fibres'),sub:LG('+2 lanières, +1 palme','+2 strips, +1 frond'),fn:()=>{give({strips:2,frond:1});floatAtPlayer('+2 '+nm('strips'));done();}});}
+  else if(k==='eleveur'){const fr=(S.animals||[]).filter(a=>a.tamed);A.push(used?{label:C.bld,sub:LG('Tes amis ont eu leur friandise aujourd’hui','Your friends had their treat today'),off:true}:{label:LG('Donner la friandise du jour','Give today’s treat'),sub:LG(`À tes ${fr.length} amis animaux · +amitié`,`To your ${fr.length} animal friends · +friendship`),fn:()=>{fr.forEach(a=>{try{addLove(a,1);}catch(e){}});done();}});}
+  else if(k==='guide'){const gs=typeof guestsStaying==='function'?guestsStaying():0;A.push(used?{label:C.bld,sub:LG('Visite contée faite aujourd’hui','Story tour done today'),off:true}:gs?{label:LG('Raconter les légendes aux clients','Tell the legends to the guests'),sub:LG(`${gs} client${gs>1?'s':''} · +${fmtXPF(800*gs)}`,`${gs} guest${gs>1?'s':''} · +${fmtXPF(800*gs)}`),fn:()=>{earn(800*gs,_p.set(player.position.x,2.4,player.position.z));stat('maeva');done();}}:{label:C.bld,sub:LG('Pas de client à la pension pour l’instant','No guests at the pension right now'),off:true});}}
+const _v17C52=v17Candidates;v17Candidates=function(add){_v17C52(add);if(S.away||S.inCave)return;for(const k in MS().bld){const B=MS().bld[k];add('metbld_'+k,k,B.x,B.z,1.6);}};
+const _v17A52=v17Actions;v17Actions=function(t,o,A){if(String(t).startsWith('metbld_')){metBldActs(o,A);return;}_v17A52(t,o,A);};
+for(const k in MET)V17T['metbld_'+k]=1;
+const _creItems52=creItems;creItems=function(){const out=_creItems52();for(const k in MS().bld)if(metMeshes[k])out.push({id:'metbld_'+k,ic:MET[k].ic,n:MET[k].bld,obj:MS().bld[k],mesh:metMeshes[k],r:1.6});return out;};
+/* ----- quests from the elders (level 8) ----- */
+const MQ={pecheur:{need:{stone:10,rope:3},give:{fish:8,driedfish:4},t:()=>LG('À Bora Bora, on pêchait autrefois tous ensemble : les pirogues en ligne frappaient l’eau avec des pierres attachées à des cordes, et poussaient doucement les poissons vers la plage. Chacun repartait avec sa part. Apporte des pierres et des cordes, l’ancien va te montrer.','In Bora Bora people once fished all together: canoes in a line struck the water with stones tied to ropes and gently drove the fish towards the beach. Everyone went home with their share. Bring stones and ropes, the elder will show you.')},
+  jardinier:{need:{taro:3,banana:3,uru:2,papaya:2},give:{vanilla:3,fert:4},t:()=>LG('L’ancienne garde les plants de son grand-père. Elle veut voir si ton jardin est généreux : apporte-lui un peu de tout. En retour, elle te confie des boutures de vanille et son secret du compost.','The elder keeps her grandfather’s plants. She wants to see if your garden is generous: bring her a little of everything. In return she gives you vanilla cuttings and her compost secret.')},
+  charpentier:{need:{log:6,rope:6,strips:4},give:{plank:12},t:()=>LG('Le vieux charpentier répare la pirogue de son père. Aide-le avec des bûches, des cordes et des lanières ; il te montrera les assemblages sans clou, tenus par des ligatures.','The old carpenter is repairing his father’s canoe. Help him with logs, ropes and strips; he’ll show you joints with no nails, held by lashings.')},
+  tisserand:{need:{ahu:3,thread:2,strips:4},give:{tifai:1},t:()=>LG('Les femmes du village cousent un tīfaifai pour une naissance. Apporte du tissu, du fil et des lanières : on coud ensemble, en racontant des histoires. Elles t’en offrent un.','The village women are sewing a tīfaifai for a birth. Bring fabric, thread and strips: you sew together, telling stories. They give you one.')},
+  eleveur:{need:{coconut:5,banana:3,water:2},give:{fert:3,egg:4},t:()=>LG('Une vieille dame recueille les animaux perdus après les tempêtes. Apporte-lui de quoi les nourrir et les abreuver ; elle t’apprend à reconnaître quand un animal a besoin d’aide.','An old lady takes in animals lost after storms. Bring her food and water for them; she teaches you to recognise when an animal needs help.')},
+  guide:{need:{tiare:5,monoi:1},give:{},xpf:5000,t:()=>LG('L’ancien conteur veut que les visiteurs entendent les légendes comme il faut. Apporte des tiare pour les colliers d’accueil et un peu de monoʻi : il t’apprend à raconter la légende de Hina.','The old storyteller wants visitors to hear the legends properly. Bring tiare for welcome necklaces and some monoʻi: he teaches you to tell the legend of Hina.')}};
+for(const k in MQ){for(const q in MQ[k].need)if(!ITEMS[q])delete MQ[k].need[q];for(const q in MQ[k].give)if(!ITEMS[q])delete MQ[k].give[q];}
+function metQuestDo(k){const Q=MQ[k],M=MS();if(!metHas(k,8)||M.quest[k]||!hasAll(Q.need))return;take(Q.need);if(Object.keys(Q.give).length)give(Q.give);if(Q.xpf)earn(Q.xpf,null,true);M.quest[k]=S.day;stat('metQuest');M.xp[k]=(M.xp[k]||0)+150;
+  toast(LG('Māuruuru ! L’ancien te transmet son savoir. ','Māuruuru! The elder passes on their knowledge. ')+Object.entries(Q.give).map(([q,n])=>`+${n} ${nm(q)}`).join(', ')+(Q.xpf?` +${fmtXPF(Q.xpf)}`:''));pendingSave=true;renderSheet();refresh();}
+/* ----- the sheet ----- */
+function metSheet(){$('#sheetTitle').textContent=LG('Mon métier','My trade');const M=MS(),cur=M.k;
+  let h=`<p class="small-note">${LG('Chacun peut tout faire un peu ; avec un métier, tu le fais mieux et les autres peuvent compter sur toi. Choix possible dès le niveau 5. Une fois choisi, le métier ne change qu’au niveau 10 du métier ou au niveau 15 du joueur (ce que tu as appris reste acquis).','Everyone can do a bit of everything; with a trade you do it better and others can count on you. You can choose from level 5. Once chosen, it only changes at trade level 10 or player level 15 (what you learned is kept).')}</p>`;
+  if(!metCanChoose())h+=`<p class="why">${LG(`Encore un peu de patience : niveau 5 (tu es niveau ${S.level||1}).`,`A little more patience: level 5 (you are level ${S.level||1}).`)}</p>`;
+  if(cur){const C=MET[cur],L=metLv(cur),x=M.xp[cur]||0,a=MET_XP[L-1],b=MET_XP[L]||a,pc=L>=10?100:Math.round((x-a)/(b-a)*100);
+    h+=`<div class="afcard"><div class="afname">${C.ic} ${C.n()} · ${LG('niveau','level')} ${L}</div><div class="afbar"><span style="width:${pc}%;background:linear-gradient(90deg,#f0b23a,#e0663a)"></span></div><div class="small-note">${L>=10?LG('Maître de ton métier !','Master of your trade!'):LG(`${x-a} / ${b-a} pour le niveau ${L+1}`,`${x-a} / ${b-a} to level ${L+1}`)}</div>
+      <div class="msteps">${C.steps.map(([lv,t])=>`<div class="${L>=lv?'ok':''}">${L>=lv?'✓':'🔒'} <b>${LG('Niv.','Lv')} ${lv}</b> · ${t()}</div>`).join('')}</div>`;
+    if(L>=8){const Q=MQ[cur];h+=M.quest[cur]?`<div class="small-note">✓ ${LG('Quête de l’ancien accomplie','Elder’s quest done')}</div>`:`<div class="afcard"><div class="afname">📜 ${LG('Quête de l’ancien','The elder’s quest')}</div><p>${Q.t()}</p><div class="tflow"><span>${LG('Il faut','Needs')} :</span>${Object.entries(Q.need).map(([q,n])=>`<span class="tk${(S.inv[q]||0)>=n?' sur':''}">${ICON[q]||''}${n} ${ITEMS[q].n}</span>`).join('')}</div><div class="row"><button class="big" data-mq="${cur}" ${hasAll(Q.need)?'':'disabled'}>${LG('Apporter','Bring it')}</button></div></div>`;}
+    h+=`</div>`;}
+  h+=`<h3>${cur?LG('Les autres métiers','The other trades'):LG('Choisis ton métier','Choose your trade')}</h3>`;
+  if(cur&&!metCanChange())h+=`<p class="small-note">🔒 ${LG(`Tu pourras changer au niveau 10 de ton métier (${metLv(cur)}/10) ou au niveau 15 (${S.level||1}/15).`,`You can change at trade level 10 (${metLv(cur)}/10) or level 15 (${S.level||1}/15).`)}</p>`;
+  for(const k in MET){if(k===cur)continue;const C=MET[k],ok=C.ok(),x=M.xp[k]||0,hid=C.secret&&!ok&&!x;
+    if(hid){h+=`<div class="recipe locked"><div class="rinfo"><div class="name">❔ ${LG('Métier secret','Secret trade')}</div><div class="tah">${LG('Indice','Hint')} : ${C.cond()}</div></div><button disabled>?</button></div>`;continue;}
+    h+=`<div class="recipe${ok?'':' locked'}"><div class="rinfo"><div class="name">${ok?C.ic:'🔒'} ${C.n()}${C.secret?` <small>· ${LG('secret découvert','secret found')}</small>`:''}${x?` <small>· ${LG('niv.','lv')} ${metLv(k)}</small>`:''}</div><div class="tah">${C.t()}</div>${ok?'':`<div class="why">${C.cond()}</div>`}</div>
+      <button data-met="${k}" ${ok&&metCanChoose()&&metCanChange()?'':'disabled'}>${cur?LG('Changer','Switch'):LG('Choisir','Choose')}</button></div>`;}
+  return h;}
+document.addEventListener('click',e=>{if(sheetMode!=='metier')return;const b=e.target.closest('[data-met],[data-mq]');if(!b||b.disabled)return;if(b.dataset.met)metChoose(b.dataset.met);else metQuestDo(b.dataset.mq);});
+const _v7Sheet52=v7Sheet;v7Sheet=function(mode){if(mode==='metier')return metSheet();return _v7Sheet52(mode);};V7S.metier=1;
+(function(){const row=document.querySelector('#menu .row');if(!row)return;const b=document.createElement('button');b.className='big ghost';b.id='metBtn';b.setAttribute('data-notr','');b.textContent='🛠️ '+LG('Mon métier','My trade');b.onclick=()=>{$('#menu').hidden=true;openSheet('metier');};
+  const ref=document.getElementById('amisBtn')||document.getElementById('animalsBtn');row.insertBefore(b,ref||null);})();
+let metT=4;
+function updateV52(dt){metT-=dt;if(metT>0)return;metT=6;const M=MS();M.found=M.found||{};for(const k in MET){if(MET[k].secret&&!M.found[k]&&MET[k].ok()){M.found[k]=1;pendingSave=true;if((S.level||1)>=5)toast(LG(`Métier secret découvert : ${MET[k].ic} ${MET[k].n()} ! (Menu › Mon métier)`,`Secret trade discovered: ${MET[k].ic} ${MET[k].n()}! (Menu › My trade)`));}}if(!myMet()&&metCanChoose()&&!S.flags.metTip&&Object.values(MET).some(C=>C.ok())){S.flags.metTip=1;manuSay(LG('Tu peux maintenant choisir un métier ! Ouvre le menu › Mon métier.','You can now choose a trade! Open the menu › My trade.'),8);}}
+const _u38_52=updateV38;updateV38=function(dt){_u38_52(dt);updateV52(dt);};
+ACH.push(['metier',()=>LG('Un métier','A trade'),()=>LG('Choisir ton métier','Choose your trade'),()=>!!myMet()],
+  ['metier10',()=>LG('Maître artisan','Master of a trade'),()=>LG('Atteindre le niveau 10 d’un métier','Reach level 10 in a trade'),()=>Object.keys(MET).some(k=>metLv(k)>=10)],
+  ['metQuest',()=>LG('Le savoir des anciens','The elders’ knowledge'),()=>LG('Accomplir la quête d’un ancien','Complete an elder’s quest'),()=>(S.stats.metQuest||0)>=1]);
+
+/* ----- secret trades: hidden until the player discovers them by playing ----- */
+const sumS=(...k)=>k.reduce((s,q)=>s+(S.stats[q]||0),0);
+Object.assign(MET,{
+ mediateur:{secret:1,ic:'🕊️',n:()=>LG('Médiateur · Médiatrice','Mediator'),t:()=>LG('Aide les voisins et les îles à se comprendre et à trouver un accord juste.','Helps neighbours and islands understand each other and find a fair agreement.'),
+   ok:()=>sumS('govListen','govAmend','govCons')>=3,cond:()=>LG('Écouter et rapprocher les voisins à l’assemblée','Listen to and bring neighbours together at the assembly'),
+   xp:{govListen:5,govAmend:6,govCons:8,govYes:3,trocww:4,returngift:4,helpedFriend:5,friends:3},
+   steps:[[2,()=>LG('Écoute : chaque troc juste donne un peu plus de confiance','Listening: every fair trade builds a little more trust')],[4,()=>LG('Outil : le bâton de parole (tōʻoʻo)','Tool: the talking staff (tōʻoʻo)')],[6,()=>LG('Bâtiment : le fare de la parole · réconcilier chaque jour','Building: the fare of the word · reconcile every day')],[8,()=>LG('Quête : la parole partagée','Quest: the shared word')],[10,()=>LG('Artisan de paix : la confiance des îles grandit deux fois plus vite','Peacemaker: the islands’ trust grows twice as fast')]],
+   tool:'toko',bld:LG('Fare de la parole','Fare of the word'),col:0x7fb8e0},
+ mutoi:{secret:1,ic:'🛡️',n:()=>LG('Gardien de la paix · mūtoʻi','Peacekeeper · mūtoʻi'),t:()=>LG('Veille sur tout le monde sans violence : rondes, visiteurs perdus, sécurité pendant les cyclones et les fêtes.','Watches over everyone without violence: rounds, lost visitors, safety during cyclones and festivals.'),
+   ok:()=>sumS('cycPrepAll')>=1||sumS('cyclones')>=1,cond:()=>LG('Mettre tout le motu à l’abri avant un cyclone','Get the whole motu ready before a cyclone'),
+   xp:{cycPrepAll:15,cyclones:5,litter:1,helpedFriend:4,foundpets:6,repairs:2,honufree:2,patrol:6},
+   steps:[[2,()=>LG('Plages sûres : chaque déchet ramassé soigne un peu plus le lagon','Safe beaches: every piece of litter picked up heals the lagoon a little more')],[4,()=>LG('Outil : le sifflet et la lampe (mōrī)','Tool: the whistle and the lamp (mōrī)')],[6,()=>LG('Bâtiment : le poste du mūtoʻi · une ronde chaque jour','Building: the mūtoʻi post · a round every day')],[8,()=>LG('Quête : la sécurité du Heiva','Quest: keeping the Heiva safe')],[10,()=>LG('Gardien de la paix : les visiteurs se sentent en sécurité, la pension gagne en note','Peacekeeper: visitors feel safe, the guesthouse rates higher')]],
+   tool:'siffle',bld:LG('Poste du mūtoʻi','Mūtoʻi post'),col:0x2c4a6a},
+ soignant:{secret:1,ic:'⛑️',n:()=>LG('Soignant · Soignante','Carer'),t:()=>LG('Prend soin des gens : remèdes du fenua, premiers soins, bonne hygiène de vie.','Cares for people: remedies of the fenua, first aid, a healthy way of life.'),
+   ok:()=>!!S.disp||sumS('treated')>=2,cond:()=>LG('Ouvrir un dispensaire pour les visiteurs','Open a dispensary for visitors'),
+   xp:{treated:10,cooked:1,water:1,care:6},
+   steps:[[2,()=>LG('Bonne hygiène de vie : la faim baisse 10 % moins vite','Healthy living: hunger drops 10% more slowly')],[4,()=>LG('Outil : la trousse de soins','Tool: the first-aid kit')],[6,()=>LG('Bâtiment : le fare rāʻau · plantes qui soignent chaque jour','Building: the fare rāʻau · healing plants every day')],[8,()=>LG('Quête : les plantes qui soignent','Quest: the plants that heal')],[10,()=>LG('Gardien de la santé : les clients se sentent bien chez toi','Keeper of health: guests feel well at your place')]],
+   tool:'trousse',bld:LG('Fare rāʻau','Fare rāʻau'),col:0xde4634},
+ veto:{secret:1,ic:'🩺',n:()=>LG('Vétérinaire','Vet'),t:()=>LG('Soigne les animaux, de la poule aux tortues et aux oiseaux blessés.','Heals animals, from hens to turtles and injured birds.'),
+   ok:()=>sumS('honufree')>=2||sumS('hatchlings')>=6,cond:()=>LG('Sauver des honu prises dans les vieux filets','Save honu caught in old nets'),
+   xp:{honufree:15,hatchlings:3,foundpets:8,babies:10,love:1,released:3,vetcare:10},
+   steps:[[2,()=>LG('Appel des animaux : parfois un oiseau blessé vient se faire soigner','Animals call you: sometimes an injured bird comes to be healed')],[4,()=>LG('Outil : la trousse vétérinaire','Tool: the vet kit')],[6,()=>LG('Bâtiment : la clinique des animaux · un soin chaque jour','Building: the animal clinic · one treatment a day')],[8,()=>LG('Quête : la nurserie des honu','Quest: the honu nursery')],[10,()=>LG('Ange gardien : l’amitié de tous les animaux grandit 30 % plus vite','Guardian angel: every animal’s friendship grows 30% faster')]],
+   tool:'vetkit',bld:LG('Clinique des animaux','Animal clinic'),col:0x55c08a},
+ astronome:{secret:1,ic:'🔭',n:()=>LG('Astronome · navigateur des étoiles','Astronomer · star navigator'),t:()=>LG('Lit le ciel comme les anciens navigateurs, qui trouvaient les îles grâce aux étoiles.','Reads the sky like the ancient navigators, who found the islands by the stars.'),
+   ok:()=>sumS('wishes','showers','bolides','skyrings','matarii')>=2,cond:()=>LG('Observer le ciel la nuit (étoiles filantes, Matariʻi…)','Watch the night sky (shooting stars, Matariʻi…)'),
+   xp:{wishes:8,showers:10,bolides:10,skyrings:6,matarii:12,redstars:6,expeDone:6,stargaze:8},
+   steps:[[2,()=>LG('Chemin des étoiles : les expéditions durent 15 % moins longtemps','Star path: expeditions take 15% less time')],[4,()=>LG('Outil : le compas d’étoiles · moins de risque en mer','Tool: the star compass · less risk at sea')],[6,()=>LG('Bâtiment : l’observatoire · observer chaque nuit','Building: the observatory · watch every night')],[8,()=>LG('Quête : le ciel des navigateurs','Quest: the navigators’ sky')],[10,()=>LG('Grand navigateur : expéditions 30 % plus rapides','Great navigator: expeditions 30% faster')]],
+   tool:'kapehu',bld:LG('Observatoire','Observatory'),col:0x1f3a5a},
+ technicien:{secret:1,ic:'⚡',n:()=>LG('Technicien · Technicienne électricien','Electrician'),t:()=>LG('Installe et répare l’énergie propre : soleil, batteries, lampadaires, pompes.','Installs and repairs clean energy: sun, batteries, street lamps, pumps.'),
+   ok:()=>!!S.gen||!!S.solarp,cond:()=>LG('Installer un groupe électrogène ou un panneau solaire','Install a generator or a solar panel'),
+   xp:{solarp:30,solarfit:10,gennight:4,solarlamp:3,lampcol:2,still:15,hydro:15,stillwater:1,fixjob:8},
+   steps:[[2,()=>LG('Bon branchement : le panneau solaire charge 20 % plus vite','Good wiring: the solar panel charges 20% faster')],[4,()=>LG('Outil : le multimètre','Tool: the multimeter')],[6,()=>LG('Bâtiment : l’atelier électrique · réparer pour les voisins','Building: the electrical workshop · repairs for the neighbours')],[8,()=>LG('Quête : la lumière du village','Quest: light for the village')],[10,()=>LG('Énergie maîtrisée : la batterie ne baisse presque plus la nuit','Mastered energy: the battery barely drops at night')]],
+   tool:'multi',bld:LG('Atelier électrique','Electrical workshop'),col:0xf2c94c},
+ enseignant:{secret:1,ic:'📚',n:()=>LG('Enseignant · Enseignante','Teacher'),t:()=>LG('Transmet les savoirs : les chants, les légendes, la langue, la nature.','Passes on knowledge: songs, legends, language, nature.'),
+   ok:()=>sumS('songs')>=3||sumS('friends')>=2,cond:()=>LG('Apprendre 3 chants, ou parrainer et accueillir des amis','Learn 3 songs, or sponsor and welcome friends'),
+   xp:{songs:6,notes:2,friends:5,helpedFriend:4,giftsSent:2,metQuest:10,species:2,lessons:8},
+   steps:[[2,()=>LG('L’école du motu : chaque jour, un enfant passe t’aider','The motu school: every day a child drops by to help')],[4,()=>LG('Outil : l’ardoise','Tool: the slate')],[6,()=>LG('Bâtiment : le fare haʻapiʻiraʻa · une leçon chaque jour','Building: the fare haʻapiʻiraʻa · a lesson every day')],[8,()=>LG('Quête : les mots du fenua','Quest: the words of the fenua')],[10,()=>LG('Grand enseignant : les enfants t’aident deux fois plus','Great teacher: the children help you twice as much')]],
+   tool:'ardoise',bld:LG('Fare haʻapiʻiraʻa','Fare haʻapiʻiraʻa'),col:0x9b5cff},
+ artificier:{secret:1,ic:'🎆',n:()=>LG('Artificier · Artificière','Fireworks maker'),t:()=>LG('Prépare les feux d’artifice des fêtes, tirés au-dessus de la mer, loin des animaux et sans plastique.','Makes festival fireworks, fired over the sea, far from the animals and plastic-free.'),
+   ok:()=>sumS('showers','heiva')>=1||(S.level||1)>=10,cond:()=>LG('Vivre une grande fête ou une pluie d’étoiles','Live a great festival or a rain of stars'),
+   xp:{fireworks:6},
+   steps:[[2,()=>LG('Fusées maison : tu fabriques tes feux d’artifice (Fabriquer)','Home-made rockets: you make your own fireworks (Craft)')],[4,()=>LG('Outil : la mèche lente · bouquets plus grands','Tool: the slow fuse · bigger bouquets')],[6,()=>LG('Bâtiment : l’atelier d’artifice · 2 fusées chaque jour','Building: the fireworks workshop · 2 rockets every day')],[8,()=>LG('Quête : le bouquet du Heiva','Quest: the Heiva bouquet')],[10,()=>LG('Maître artificier : bouquets géants, les clients donnent le double','Master of fireworks: giant bouquets, guests give twice as much')]],
+   tool:'meche',bld:LG('Atelier d’artifice','Fireworks workshop'),col:0xe0473a}});
+Object.assign(MET_TOOLS,{toko:[LG('Tōʻoʻo · bâton de parole','Tōʻoʻo · talking staff'),'#9a6a38'],siffle:[LG('Sifflet et lampe','Whistle and lamp'),'#2c4a6a'],trousse:[LG('Trousse de soins','First-aid kit'),'#de4634'],vetkit:[LG('Trousse vétérinaire','Vet kit'),'#55c08a'],
+  kapehu:[LG('Kapehu · compas d’étoiles','Kapehu · star compass'),'#1f3a5a'],multi:[LG('Multimètre','Multimeter'),'#f2c94c'],ardoise:[LG('Ardoise','Slate'),'#3c4a52'],meche:[LG('Mèche lente','Slow fuse'),'#e0473a']});
+for(const k of['toko','siffle','trousse','vetkit','kapehu','multi','ardoise','meche']){ITEMS[k]={n:MET_TOOLS[k][0],t:LG('outil de métier','trade tool'),cat:'tool'};ICON[k]=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 17 7l2 2L7 21Z" fill="${MET_TOOLS[k][1]}" stroke="#14313a" stroke-width="1.6" stroke-linejoin="round"/><circle cx="18" cy="6" r="3" fill="#ffc83d" stroke="#14313a" stroke-width="1.4"/></svg>`;if(!ORDER.includes(k))ORDER.push(k);}
+ITEMS.fusee={n:LG('Fusée de feu d’artifice','Firework rocket'),t:LG('à tirer la nuit, au-dessus de la mer','to fire at night, over the sea'),cat:'tool'};if(!ORDER.includes('fusee'))ORDER.push('fusee');
+ICON.fusee=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 6v8H9V8Z" fill="#e0473a" stroke="#14313a" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 16l-2 4h10l-2-4" fill="#f2c94c" stroke="#14313a" stroke-width="1.4"/><path d="M12 20v3" stroke="#14313a" stroke-width="1.6"/></svg>`;
+Object.assign(MQ,{
+ mediateur:{need:{tiare:4,coconut:4},give:{},xpf:2500,t:()=>LG('Deux familles du motu voisin ne se parlent plus à cause d’une limite de jardin. Prépare des colliers de tiare et à boire pour les réunir au fare : chacun parle à son tour avec le bâton de parole, et ils trouvent ensemble un partage juste.','Two families on the next motu no longer speak because of a garden boundary. Prepare tiare necklaces and drinks to bring them together at the fare: each speaks in turn with the talking staff, and together they find a fair share.')},
+ mutoi:{need:{rope:4,plank:4,tiare:3},give:{},xpf:4000,t:()=>LG('Pour le Heiva du village, il faut des barrières de corde, une estrade sûre et des colliers pour accueillir. Apporte le matériel : grâce à toi, la fête se passe dans la joie et personne ne se perd.','For the village Heiva you need rope barriers, a safe stage and welcome necklaces. Bring the materials: thanks to you, the festival goes joyfully and nobody gets lost.')},
+ soignant:{need:{nono:3,coconut:3,water:2},give:{tamanuoil:1},t:()=>LG('La tahuʻa rāʻau du village t’apprend les plantes qui soignent : le nono, le tamanu, le monoʻi. Apporte-lui des fruits de nono, des cocos et de l’eau ; elle t’offre de l’huile de tamanu, qui apaise les petites blessures.','The village healer teaches you the healing plants: nono, tamanu, monoʻi. Bring her nono fruit, coconuts and water; she gives you tamanu oil, which soothes small wounds.')},
+ veto:{need:{coconut:4,frond:4,water:2},give:{fert:2},t:()=>LG('Sur la plage, des œufs de honu vont éclore. Construis avec l’ancienne un abri de palmes pour les protéger du soleil et des crabes : les bébés tortues rejoignent la mer sains et saufs.','On the beach, honu eggs are about to hatch. Build a frond shelter with the elder to protect them from the sun and the crabs: the baby turtles reach the sea safe and sound.')},
+ astronome:{need:{plank:4,rope:3},give:{},xpf:3000,t:()=>LG('Le vieux navigateur trace avec toi sur le sable le chemin des étoiles : où se lève Matariʻi, où se couche Ana-muri. Aide-le à construire une petite maquette de pirogue pour l’enseigner aux jeunes.','The old navigator draws the star path in the sand with you: where Matariʻi rises, where Ana-muri sets. Help him build a small model canoe to teach it to the young.')},
+ technicien:{need:{plank:2,rope:2},give:{},xpf:4000,t:()=>LG('L’école du village n’a plus de lumière le soir. Installe et branche des lampes solaires avec les planches et les cordes : les enfants peuvent lire à la nuit tombée.','The village school has no light in the evening any more. Install and wire solar lamps with planks and ropes: the children can read after dark.')},
+ enseignant:{need:{tiare:2,coconut:4,plank:2},give:{},xpf:3000,t:()=>LG('Les enfants veulent apprendre les mots du fenua : les noms des poissons, des vents, des étoiles. Prépare des cocos pour le goûter et une planche pour écrire : vous faites la classe sous le grand ʻuru.','The children want to learn the words of the fenua: names of fish, winds, stars. Prepare coconuts for a snack and a plank to write on: you teach under the big ʻuru.')},
+ artificier:{need:{bamboo:4,oil:2,tiare:5},give:{fusee:6},t:()=>LG('Pour le Heiva, le village veut un bouquet au-dessus du lagon. Prépare les tubes de bambou et l’huile ; les fusées sont tirées loin des animaux, qui sont à l’abri. Tu reçois les fusées du bouquet.','For the Heiva the village wants a bouquet over the lagoon. Prepare bamboo tubes and oil; the rockets are fired far from the animals, who are sheltered. You receive the bouquet’s rockets.')}});
+for(const k of['mediateur','mutoi','soignant','veto','astronome','technicien','enseignant','artificier']){const Q=MQ[k];for(const q in Q.need)if(!ITEMS[q])delete Q.need[q];for(const q in Q.give)if(!ITEMS[q])delete Q.give[q];}
+
+MET.meteo={secret:1,ic:'🌦️',n:()=>LG('Météorologue','Weather watcher'),t:()=>LG('Observe les nuages, le vent et la houle pour prévenir tout le monde avant les tempêtes.','Watches clouds, wind and swell to warn everyone before storms.'),
+  ok:()=>sumS('cyclones','waterspouts','redstars')>=1||sumS('rainbow')>=2,cond:()=>LG('Vivre un cyclone, une trombe marine… ou voir deux arcs-en-ciel','Live through a cyclone, a waterspout… or see two rainbows'),
+  xp:{cyclones:15,waterspouts:10,rainbow:4,redstars:8,bolts:2,cycPrepAll:10,forecast:6},
+  steps:[[2,()=>LG('Œil du ciel : chaque matin, tu sais le temps de la journée','Eye on the sky: every morning you know the day’s weather')],[4,()=>LG('Outil : le baromètre','Tool: the barometer')],[6,()=>LG('Bâtiment : la station météo · un bulletin chaque jour pour tes voisins','Building: the weather station · a bulletin every day for your neighbours')],[8,()=>LG('Quête : l’alerte des anciens','Quest: the elders’ warning')],[10,()=>LG('Prévisionniste : les expéditions sont 30 % moins risquées','Forecaster: expeditions are 30% less risky')]],
+  tool:'baro',bld:LG('Station météo','Weather station'),col:0x7fb8e0};
+MET_TOOLS.baro=[LG('Baromètre','Barometer'),'#7fb8e0'];
+MQ.meteo={need:{plank:3,rope:2,frond:4},give:{},xpf:3500,t:()=>LG('L’ancien reconnaît un cyclone trois jours avant : les oiseaux de mer rentrent, la houle change, le ciel rougit. Aide-le à monter un mât à fanions pour prévenir le village : tout le monde sera à l’abri à temps.','The elder recognises a cyclone three days ahead: seabirds come in, the swell changes, the sky turns red. Help him put up a flag mast to warn the village: everyone will be sheltered in time.')};
+ITEMS.baro={n:MET_TOOLS.baro[0],t:LG('outil de métier','trade tool'),cat:'tool'};ICON.baro=ICON.multi;if(!ORDER.includes('baro'))ORDER.push('baro');
+for(const q in MQ.meteo.need)if(!ITEMS[q])delete MQ.meteo.need[q];
+for(const k in MET)V17T['metbld_'+k]=1;
+/* capacities of the secret trades */
+if(typeof addTrust==='function'){const _addTrust52=addTrust;addTrust=function(k,n){let m=n;if(myMet()==='mediateur'){if(metLv('mediateur')>=10)m=n*2;else if(metLv('mediateur')>=2)m=n+1;}return _addTrust52(k,m);};}
+if(typeof expeHours==='function'){const _eh52=expeHours;expeHours=function(E){return _eh52(E)*(metHas('astronome',10)?0.7:metHas('astronome',2)?0.85:1);};}
+if(typeof expeRisk==='function'){const _er52=expeRisk;expeRisk=function(E){return _er52(E)*(myMet()==='astronome'&&S.inv.kapehu>0?0.7:1)*(metHas('meteo',10)?0.7:1);};}
+{const _addLove52b=addLove;addLove=function(a,n){return _addLove52b(a,n*(metHas('veto',10)?1.3:1));};}
+{const _v10R52b=v10Rating;v10Rating=function(){return _v10R52b()+(metHas('mutoi',10)?0.2:0)+(metHas('soignant',10)?0.2:0);};}
+{const _stat52b=stat;stat=function(k,n){_stat52b(k,n);if(k==='litter'&&metHas('mutoi',2)&&typeof lagBump==='function')lagBump(1);};}
+{const _v10Sim52=v10Sim;v10Sim=function(dt,q){const P=S.solarp,b0=P?P.bat:0;_v10Sim52(dt,q);if(!P||myMet()!=='technicien')return;const d=P.bat-b0;if(d>0&&metLv('technicien')>=2)P.bat=Math.min(1,P.bat+d*0.2);if(d<0&&metLv('technicien')>=10)P.bat=Math.min(1,P.bat-d*0.8);};}
+/* fireworks: rockets rise over the sea and burst in colours */
+RECIPES.push({id:'fusee',lv:5,n:LG('Fabriquer des fusées de feu d’artifice','Make firework rockets'),t:LG('artificier niveau 2 · bambou, huile de coco, lanières · à tirer la nuit au-dessus de la mer','fireworks maker level 2 · bamboo, coconut oil, strips · to fire at night over the sea'),in:{bamboo:1,oil:1,strips:1},out:{fusee:2}});
+{const _rc52b=recipeCheck;recipeCheck=function(r){if(r&&r.id==='fusee'&&!metHas('artificier',2))return{ok:false,why:LG('Réservé aux artificiers (niveau 2)','For fireworks makers (level 2)')};return _rc52b(r);};}
+const FW=[];const fwGeo=new THREE.SphereGeometry(0.09,5,4);
+function fireShow(){const big=myMet()==='artificier'&&S.inv.meche>0,n=(big?5:3)+(metHas('artificier',10)?3:0),px=player.position.x,pz=player.position.z,r=Math.hypot(px,pz)||1,ox=px/r,oz=pz/r;
+  for(let i=0;i<n;i++)setTimeout(()=>{const x=px+ox*(10+Math.random()*12)+(Math.random()-0.5)*10,z=pz+oz*(10+Math.random()*12)+(Math.random()-0.5)*10;FW.push({x,z,y:0.5,vy:13+Math.random()*4,t:0,burst:null,col:new THREE.Color().setHSL(Math.random(),0.9,0.6)});},i*650);}
+function fwBurst(f){const g=new THREE.Group(),m=new THREE.MeshBasicMaterial({color:f.col,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}),pts=[];
+  for(let i=0;i<60;i++){const s=mesh(fwGeo,m,0,0,0,false),u=Math.random()*2-1,a=Math.random()*6.28,q=Math.sqrt(1-u*u),sp=5+Math.random()*2;s.userData.v=new THREE.Vector3(q*Math.cos(a)*sp,u*sp,q*Math.sin(a)*sp);g.add(s);pts.push(s);}
+  g.position.set(f.x,f.y,f.z);scene.add(g);f.burst={g,m,pts,t:0};}
+function updateFW(dt){for(let i=FW.length-1;i>=0;i--){const f=FW[i];if(!f.burst){f.y+=f.vy*dt;f.vy-=6*dt;if(f.vy<2)fwBurst(f);continue;}
+    const B=f.burst;B.t+=dt;B.pts.forEach(s=>{s.userData.v.y-=3*dt;s.userData.v.multiplyScalar(1-dt*1.2);s.position.addScaledVector(s.userData.v,dt);});B.m.opacity=Math.max(0,1-B.t/2.2);if(B.t>2.3){scene.remove(B.g);FW.splice(i,1);}}}
+function fireAction(A){if(!(S.inv.fusee>0)||S.boat||S.away||S.inCave||!isNight())return;const h=H(player.position.x,player.position.z);if(h>0.8||Math.hypot(player.position.x,player.position.z)<R-6)return;
+  A.push({label:LG('Tirer un feu d’artifice','Fire a firework show'),sub:LG('Au-dessus de la mer, loin des animaux','Over the sea, far from the animals'),fn:()=>{S.inv.fusee--;fireShow();stat('fireworks');const gs=typeof guestsStaying==='function'?guestsStaying():0;
+    if(gs){const v=600*gs*(metHas('artificier',10)?2:1);setTimeout(()=>{earn(v,null,true);toast(LG(`Tes clients applaudissent le bouquet au-dessus du lagon ! +${fmtXPF(v)}`,`Your guests applaud the bouquet over the lagoon! +${fmtXPF(v)}`));},3500);}
+    else setTimeout(()=>toast(LG('Le ciel s’illumine au-dessus du lagon. Tes animaux dorment tranquilles, loin du bruit.','The sky lights up over the lagoon. Your animals sleep peacefully, far from the noise.')),3500);actSig='';refresh();}});}
+{const _isl52=islActions;islActions=function(A){_isl52(A);fireAction(A);};}
+/* buildings of the secret trades */
+const _metBldActs52=metBldActs;metBldActs=function(k,A){const M=MS(),C=MET[k];if(!['mediateur','mutoi','soignant','veto','astronome','technicien','enseignant','artificier','meteo'].includes(k))return _metBldActs52(k,A);
+  if(myMet()!==k){A.push({label:C.bld,sub:LG('Ce n’est plus ton métier actuel','No longer your current trade'),off:true});return;}
+  const used=!metDayLeft(k),done=()=>{M.day[k]=S.day;chopT=0.4;pendingSave=true;refresh();};if(used){A.push({label:C.bld,sub:LG('Déjà fait aujourd’hui · reviens demain','Already done today · come back tomorrow'),off:true});return;}
+  const at=_p.set(player.position.x,2.4,player.position.z);
+  if(k==='mediateur')A.push({label:LG('Réconcilier des voisins','Reconcile neighbours'),sub:LG('Au fare de la parole · la confiance grandit','At the fare of the word · trust grows'),fn:()=>{if(typeof trocIslands==='function'&&typeof addTrust==='function')trocIslands().forEach(q=>addTrust(q,1));stat('trocww');toast(LG('Chacun a parlé à son tour, chacun a été écouté : la paix revient entre les familles.','Everyone spoke in turn, everyone was heard: peace returns between the families.'));done();}});
+  if(k==='mutoi')A.push({label:LG('Faire la ronde','Do the round'),sub:LG('Plages, quai, sentiers','Beaches, wharf, paths'),fn:()=>{stat('patrol');const r=Math.random();if(r<0.5){give({coconut:2,rope:1});toast(LG('Pendant ta ronde, tu rends un sac oublié à un pêcheur ; il te remercie avec des cocos et une corde.','On your round you return a forgotten bag to a fisher; he thanks you with coconuts and a rope.'));}else{earn(1000,at);toast(LG('Tu raccompagnes un visiteur perdu jusqu’à sa pension. +1 000 XPF de remerciement.','You walk a lost visitor back to their guesthouse. +1,000 XPF as thanks.'));}done();}});
+  if(k==='soignant')A.push({label:LG('Préparer les remèdes du jour','Prepare today’s remedies'),sub:LG('Plantes qui soignent','Healing plants'),fn:()=>{const pool=['nono','tamanuoil','autileaf','apeleaf','monoi'].filter(q=>ITEMS[q]);const q=pool[Math.floor(Math.random()*pool.length)];give({[q]:1});stat('care');floatAtPlayer('+1 '+nm(q));done();}});
+  if(k==='veto')A.push({label:LG('Soigner un animal sauvage','Treat a wild animal'),sub:LG('Oiseaux, tortues, crabes blessés','Injured birds, turtles, crabs'),fn:()=>{stat('vetcare');(S.animals||[]).filter(a=>a.tamed).forEach(a=>{try{addLove(a,0.5);}catch(e){}});toast([LG('Tu soignes l’aile d’une ʻōtaha, une frégate. Elle repart planer au-dessus du lagon.','You heal the wing of an ʻōtaha, a frigatebird. It soars off over the lagoon again.'),LG('Une petite honu avait un hameçon : tu le retires doucement, elle retourne à la mer.','A little honu had a hook: you gently remove it and it returns to the sea.'),LG('Un crabe de cocotier coincé dans un filet : libéré !','A coconut crab stuck in a net: freed!')][Math.floor(Math.random()*3)]);done();}});
+  if(k==='astronome'){if(!isNight())A.push({label:C.bld,sub:LG('Reviens la nuit pour observer','Come back at night to watch'),off:true});else A.push({label:LG('Observer les étoiles','Watch the stars'),sub:LG('Matariʻi, la Croix du Sud, Ana-muri…','Matariʻi, the Southern Cross, Ana-muri…'),fn:()=>{stat('stargaze');if(typeof launchShooter==='function'&&Math.random()<0.6)launchShooter();toast(LG('Tu repères les étoiles qui guidaient les pirogues. Une étoile filante passe : fais un vœu !','You find the stars that guided the canoes. A shooting star passes: make a wish!'));done();}});}
+  if(k==='technicien')A.push({label:LG('Réparer un appareil des voisins','Repair a neighbour’s appliance'),sub:LG('Radio, lampe, pompe… · +1 200 XPF','Radio, lamp, pump… · +1,200 XPF'),fn:()=>{stat('fixjob');earn(1200,at);toast(LG('La radio de Mama Teura marche de nouveau ! Elle te remercie chaleureusement.','Mama Teura’s radio works again! She thanks you warmly.'));done();}});
+  if(k==='enseignant')A.push({label:LG('Donner une leçon','Give a lesson'),sub:LG('Les enfants du motu voisin · +800 XPF de la commune','The children of the next motu · +800 XPF from the commune'),fn:()=>{stat('lessons');earn(800,at);toast(LG('Aujourd’hui, les enfants ont appris les noms des vents du fenua. Māuruuru, e te orometua !','Today the children learned the names of the winds of the fenua. Māuruuru, e te orometua!'));done();}});
+  if(k==='meteo')A.push({label:LG('Préparer le bulletin du jour','Prepare today’s bulletin'),sub:LG('Pour tes voisins et les pêcheurs · +900 XPF','For your neighbours and the fishers · +900 XPF'),fn:()=>{stat('forecast');earn(900,at);toast(meteoText());done();}});
+  if(k==='artificier')A.push({label:LG('Préparer les fusées du jour','Prepare today’s rockets'),sub:'+2 '+LG('fusées','rockets'),fn:()=>{give({fusee:2});floatAtPlayer('+2 🎆');done();}});};
+function meteoText(){const w=S.weather,cyc=typeof expeCyc==='function'&&expeCyc();return LG('Bulletin : ','Bulletin: ')+(w.r>0.6?LG('pluie et vent fort, restez à terre.','rain and strong wind, stay ashore.'):w.r>0.3?LG('averses passagères, prévoyez un abri.','passing showers, keep a shelter nearby.'):w.c>0.5?LG('ciel nuageux mais calme.','cloudy but calm.'):LG('beau temps, mer calme, bonne pêche !','fine weather, calm sea, good fishing!'))+(cyc?LG(' Saison des cyclones : surveillez le ciel.',' Cyclone season: keep an eye on the sky.'):'');}
+/* daily little events: the child who helps the teacher, the injured bird for the vet, healthy living for the carer */
+let metDay=S.day;
+const _updateV52b=updateV52;updateV52=function(dt){_updateV52b(dt);if(metHas('soignant',2))S.hunger=Math.min(100,S.hunger+dt*HUNGER_DRAIN*0.1*6);if(S.day===metDay)return;metDay=S.day;
+  if(metHas('enseignant',2)){const pool=['coconut','banana','frond','strips','pupu'].filter(q=>ITEMS[q]),q=pool[Math.floor(Math.random()*pool.length)],n=metHas('enseignant',10)?4:2;give({[q]:n});toast(LG(`Un enfant de l’école passe te dire bonjour et t’aide : +${n} ${nm(q)}.`,`A child from the school drops by to say hello and helps you: +${n} ${nm(q)}.`));}
+  if(metHas('meteo',2))setTimeout(()=>manuSay(meteoText(),8),2000);
+  if(metHas('veto',2)&&Math.random()<0.5){stat('vetcare');toast(LG('Une petite sterne blanche blessée s’est posée près de ton fare. Tu la soignes, elle repart en chantant.','A small injured white tern landed near your fare. You heal it and it flies off singing.'));}};
+{const _u38fw=updateV38;updateV38=function(dt){_u38fw(dt);updateFW(dt);};}
+const V52={MET,MS,metLv,metChoose,metGain,metQuestDo,placeMetBld,fireShow,MQ};
+
+/* =====================================================================
+   v54: paths and a team.
+   - Paths (sentiers): in creation mode, trace stone paths between your
+     buildings (1 stone per 2 steps). Walking on a path is 25% faster, and
+     your team uses them.
+   - Your team (Mon équipe): from level 8, build a staff house (fare for the
+     team: everyone has a roof) and hire up to 3 people. Fair wage shown and
+     paid every day, a weekly rest day (still paid), a thank-you bonus. If you
+     can't pay, nobody works unpaid: they simply wait. Ending a contract pays
+     one more day. No penalties, ever.
+   ===================================================================== */
+S.paths=S.paths||[];
+const PATHS={
+ sable:{ic:'🏖️',n:()=>LG('Sentier de sable blanc','White sand trail'),lv:1,q:1,sp:1.1,cost:'coconut',per:4,t:()=>LG('bordé de bourre de coco · 1 coco pour 4 pas','edged with coconut husk · 1 coconut per 4 steps')},
+ pierre:{ic:'🪨',n:()=>LG('Pas de basalte','Basalt stepping stones'),lv:3,q:2,sp:1.25,cost:'stone',per:2,t:()=>LG('pierres posées une à une · 1 pierre pour 2 pas','stones laid one by one · 1 stone per 2 steps')},
+ bois:{ic:'🪵',n:()=>LG('Passerelle en bois','Wooden boardwalk'),lv:6,q:3,sp:1.3,cost:'plank',per:2,wet:true,t:()=>LG('sur pilotis, passe au-dessus de l’eau peu profonde · 1 planche pour 2 pas','on stilts, crosses shallow water · 1 plank per 2 steps')},
+ pave:{ic:'🧱',n:()=>LG('Allée de basalte taillé','Cut-basalt walkway'),lv:10,q:4,sp:1.4,cost:'stone',per:1,t:()=>LG('dalles bien jointes, la plus belle et la plus rapide · 1 pierre par pas','well-fitted slabs, the finest and fastest · 1 stone per step')}};
+const PM={sable:[std(0xf3ead2),std(0xe9dcc0)],pierre:[std(0xd8cdb4,{flatShading:true}),std(0xbfb39a,{flatShading:true})],bois:[MAT.plank||std(0xb8864e),std(0xa0743e)],pave:[std(0x4a4f55,{flatShading:true}),std(0x5c6168,{flatShading:true})]};
+const pathGeo=new THREE.CylinderGeometry(0.34,0.38,0.08,7),sandGeo=new THREE.CylinderGeometry(0.55,0.6,0.04,10),slabGeo=new THREE.BoxGeometry(0.62,0.1,0.62);
+const pathMeshes=[];
+function pathCount(P){return Math.ceil(dist(P.a.x,P.a.z,P.b.x,P.b.z)/PATHS[P.m||'pierre'].per);}
+function makePath(P){const m=P.m||'pierre',D=PATHS[m],g=new THREE.Group(),L=dist(P.a.x,P.a.z,P.b.x,P.b.z),r=mulberry32(P.seed||1),yaw=Math.atan2(P.b.x-P.a.x,P.b.z-P.a.z);
+  const step=m==='sable'?0.45:m==='bois'?0.3:m==='pave'?0.64:0.55,n=Math.max(2,Math.round(L/step));
+  for(let i=0;i<=n;i++){const t=i/n,j=m==='pierre'?0.18:m==='sable'?0.1:0,x=P.a.x+(P.b.x-P.a.x)*t+(r()-0.5)*j,z=P.a.z+(P.b.z-P.a.z)*t+(r()-0.5)*j;if(nearSite(x,z,0.1)&&S.stage>=4)continue;const h=H(x,z);let s;
+    if(m==='sable'){s=mesh(sandGeo,PM.sable[i%2],x,h+0.02,z,false);if(i%3===0)for(const sd of[-0.62,0.62]){const e=mesh(new THREE.SphereGeometry(0.09,5,4),std(0x7a5530),x+Math.cos(yaw)*sd,h+0.05,z-Math.sin(yaw)*sd,false);e.scale.y=0.6;g.add(e);}}
+    else if(m==='bois'){const y=Math.max(h,0)+0.3;s=box(1.0,0.06,0.26,PM.bois[i%2],x,y,z);s.rotation.y=yaw;if(i%5===0&&h<0.4)for(const sd of[-0.42,0.42])g.add(cyl(0.06,y-Math.min(h,0)+0.4,MAT.post,x+Math.cos(yaw)*sd,(y+Math.min(h,0)-0.4)/2,z-Math.sin(yaw)*sd,5));}
+    else if(m==='pave'){s=mesh(slabGeo,PM.pave[(i+(r()<0.2?1:0))%2],x,h+0.04,z,false);s.rotation.y=yaw;}
+    else{s=mesh(pathGeo,PM.pierre[r()<0.5?0:1],x,h+0.03,z,false);s.rotation.y=r()*3;s.scale.set(0.8+r()*0.4,1,0.8+r()*0.4);}
+    s.receiveShadow=true;g.add(s);}
+  scene.add(g);P.mesh=g;pathMeshes.push(g);}
+S.paths.forEach(makePath);
+function pathDist(x,z,P){const ax=P.a.x,az=P.a.z,vx=P.b.x-ax,vz=P.b.z-az,l2=vx*vx+vz*vz||1,t=clamp(((x-ax)*vx+(z-az)*vz)/l2,0,1);return Math.hypot(x-(ax+vx*t),z-(az+vz*t));}
+function pathAt(x,z){if(S.away)return null;for(const P of S.paths)if(pathDist(x,z,P)<(P.m==='sable'?0.7:0.55))return P;return null;}
+function onPath(x,z){return !S.boat&&!!pathAt(x,z);}
+function pathSpeed(x,z){if(S.boat)return 1;const P=pathAt(x,z);return P?PATHS[P.m||'pierre'].sp:1;}
+function wetBoard(x,z){const P=pathAt(x,z);return !!P&&P.m==='bois'&&H(x,z)<0.15;}
+{const _w=walkable;walkable=function(x,z){if(!S.boat&&!S.away&&wetBoard(x,z)&&H(x,z)>-0.75)return true;return _w(x,z);};}
+{const _g=groundY;groundY=function(x,z){if(!S.away&&wetBoard(x,z))return Math.max(H(x,z),0)+0.33;return _g(x,z);};}
+function pathCheck(a,b,m){const D=PATHS[m],L=dist(a.x,a.z,b.x,b.z);if(L<1.5)return LG('Chemin trop court','Path too short');if(L>40)return LG('Chemin trop long : fais-le en plusieurs morceaux','Path too long: build it in several pieces');
+  for(let t=0;t<=1;t+=0.5/L){const x=a.x+(b.x-a.x)*t,z=a.z+(b.z-a.z)*t,h=H(x,z);if(h<(D.wet?-0.7:0.12))return D.wet?LG('L’eau est trop profonde pour une passerelle','The water is too deep for a boardwalk'):LG('Le chemin passe dans l’eau : essaie une passerelle en bois','The path goes through water: try a wooden boardwalk');if(h>5.5)return LG('Trop raide pour un chemin','Too steep for a path');}
+  const need=Math.ceil(L/D.per);return (S.inv[D.cost]||0)<need?LG(`Il faut ${need} ${nm(D.cost)}`,`You need ${need} ${nm(D.cost)}`):null;}
+/* creation mode: a path tool */
+CRE.path=null;CRE.pathOn=false;
+const _creBar54=creBar;creBar=function(){_creBar54();if(!creEl)return;const b=creEl.querySelector('.creb');if(!b)return;
+  const t=document.createElement('button');t.className='big'+(CRE.pathOn?'':' ghost');t.dataset.cre='path';t.textContent=CRE.pathOn?(CRE.path?LG('🛤️ Touche l’arrivée','🛤️ Tap the end'):LG('🛤️ Touche le départ','🛤️ Tap the start')):'🛤️ '+LG('Chemin','Path');b.appendChild(t);
+  if(CRE.pathOn){const D=PATHS[CRE.pm];const s=creEl.querySelector('.cres');if(s)s.innerHTML=`${D.ic} <b>${D.n()}</b> ${'★'.repeat(D.q)} · ${D.t()} · ${LG('tu as','you have')} ${S.inv[D.cost]||0} ${nm(D.cost)}<br>${LG('Touche le départ puis l’arrivée. Touche un chemin pour l’enlever.','Tap the start then the end. Tap a path to remove it.')}`;
+    const l=creEl.querySelector('.crel');if(l){const nx=Object.values(PATHS).filter(D=>D.lv>(S.level||1)).sort((a,b)=>a.lv-b.lv)[0];l.innerHTML=Object.entries(PATHS).filter(([,D])=>D.lv<=(S.level||1)).map(([k,D])=>`<button class="chip${k===CRE.pm?' on':''}" data-pm="${k}">${D.ic} ${D.n()} ${'★'.repeat(D.q)}</button>`).join('')+(nx?`<button class="chip" disabled>🔒 ${LG('niv.','lv')} ${nx.lv}</button>`:'');}}};
+CRE.pm='sable';
+document.addEventListener('click',e=>{const b=e.target.closest('[data-pm]');if(!b||!CRE.on)return;e.stopImmediatePropagation();CRE.pm=b.dataset.pm;CRE.path=null;creBar();},true);
+document.addEventListener('click',e=>{const b=e.target.closest('[data-cre="path"]');if(!b||!CRE.on)return;e.stopImmediatePropagation();CRE.pathOn=!CRE.pathOn;CRE.path=null;CRE.sel=null;creBar();},true);
+(function(){const el=renderer.domElement,rc=new THREE.Raycaster(),nd=new THREE.Vector2();let st=null;
+  function ground(cx,cy){nd.set(cx/innerWidth*2-1,-(cy/innerHeight)*2+1);rc.setFromCamera(nd,camera);const o=rc.ray.origin,d=rc.ray.direction;for(let s=0;s<220;s+=0.35){const x=o.x+d.x*s,y=o.y+d.y*s,z=o.z+d.z*s;if(y<=Math.max(H(x,z),0))return{x,z};}return null;}
+  window.addEventListener('pointerdown',e=>{if(CRE.on&&CRE.pathOn&&e.target===el)st={x:e.clientX,y:e.clientY};},true);
+  window.addEventListener('pointerup',e=>{if(!CRE.on||!CRE.pathOn||!st||e.target!==el)return;const moved=Math.hypot(e.clientX-st.x,e.clientY-st.y);st=null;if(moved>12)return;e.stopImmediatePropagation();
+    const g=ground(e.clientX,e.clientY,PATHS[CRE.pm].wet);if(!g)return;
+    if(!CRE.path){const hit=S.paths.find(P=>pathDist(g.x,g.z,P)<0.6);if(hit){scene.remove(hit.mesh);S.paths.splice(S.paths.indexOf(hit),1);const HD=PATHS[hit.m||'pierre'],back=Math.floor(pathCount(hit)/2);if(back)give({[HD.cost]:back});toast(LG(`Chemin enlevé (+${back} ${nm(HD.cost)} récupérés).`,`Path removed (+${back} ${nm(HD.cost)} back).`));pendingSave=true;creBar();return;}
+      CRE.path={x:g.x,z:g.z};creRing(g.x,g.z,0.3,true);CRE.ringT=99;creBar();return;}
+    const a=CRE.path,m=CRE.pm,why=pathCheck(a,g,m);if(why){toast(why);creRing(g.x,g.z,0.3,false);return;}
+    const P={a,b:{x:g.x,z:g.z},m,seed:Math.floor(Math.random()*1e6)};take({[PATHS[m].cost]:pathCount(P)});S.paths.push(P);makePath(P);stat('paths');CRE.path={x:g.x,z:g.z};creRing(g.x,g.z,0.3,true);CRE.ringT=99;pendingSave=true;
+    if(!S.flags.pathTip){S.flags.pathTip=1;toast(LG('Chemin posé ! Continue depuis ce point, ou touche « Chemin » pour arrêter. On marche plus vite sur les chemins, d’autant plus que le matériau est de qualité.','Path laid! Continue from this point, or tap “Path” to stop. You walk faster on paths, the more so with finer materials.'));}creBar();},true);})();
+const _creExit54=creExit;creExit=function(){CRE.pathOn=false;CRE.path=null;_creExit54();};
+
+/* ----- the team ----- */
+const STAFF_R={
+ jardin:{ic:'🌱',n:()=>LG('Jardinier · Jardinière','Gardener'),t:()=>LG('Récolte ce qui est mûr dans ton jardin chaque jour','Harvests what is ripe in your garden every day'),wage:1500,lv:8},
+ peche:{ic:'🎣',n:()=>LG('Pêcheur · Pêcheuse','Fisher'),t:()=>LG('Rapporte du poisson, en respectant la limite du lagon (au large si le lagon est fatigué)','Brings fish, within the lagoon’s limit (out at sea if the lagoon is tired)'),wage:1500,lv:8},
+ artisan:{ic:'🧺',n:()=>LG('Artisan · Artisane','Craftsperson'),t:()=>LG('Tresse des panneaux de niau et des cordes','Weaves thatch panels and ropes'),wage:1200,lv:8},
+ animaux:{ic:'🐾',n:()=>LG('Soigneur des animaux','Animal keeper'),t:()=>LG('Passe voir tes amis animaux chaque jour : ils ne se sentent jamais seuls','Visits your animal friends every day: they never feel lonely'),wage:1200,lv:10},
+ pension:{ic:'🛏️',n:()=>LG('Employé·e de la pension','Guesthouse staff'),t:()=>LG('Prépare les chambres et accueille les clients : la pension gagne en note','Prepares the rooms and welcomes guests: the guesthouse rates higher'),wage:2000,lv:10}};
+const STAFF_NAMES=['Teva','Moana','Hinatea','Tamatea','Manutea','Vaiana','Heimana','Tiare','Raimana','Mareva','Poema','Teiki','Vaitiare','Hiro','Tumata','Ariitea'];
+function TM(){if(!S.team)S.team={home:null,list:[],day:S.day,cand:null,candDay:-1};return S.team;}
+function teamMax(){return !TM().home?0:(S.level||1)>=16?3:(S.level||1)>=12?2:1;}
+function teamCands(){const T=TM();if(T.candDay===S.day&&T.cand)return T.cand;const r=mulberry32(S.day*977+13),used=T.list.map(p=>p.name),out=[];
+  for(const k in STAFF_R){if((S.level||1)<STAFF_R[k].lv)continue;let n;for(let i=0;i<20;i++){n=STAFF_NAMES[Math.floor(r()*STAFF_NAMES.length)];if(!used.includes(n)&&!out.some(o=>o.name===n))break;}out.push({role:k,name:n,seed:Math.floor(r()*1e9)});}
+  T.cand=out;T.candDay=S.day;return out;}
+RECIPES.push({id:'staffhouse',lv:8,n:LG('Construire le fare de l’équipe','Build the team’s fare'),t:LG('un toit pour les personnes que tu embauches · permet d’avoir une équipe','a roof for the people you hire · lets you have a team'),in:{log:6,plank:10,thatch:6,stone:4},place:'staffhouse',cat:'build'});
+let homeMesh=null;
+function placeHome(){const Hm=TM().home;if(!Hm)return;if(homeMesh)scene.remove(homeMesh);const g=new THREE.Group();g.add(box(3.2,0.3,2.6,MAT.basalt2||MAT.post,0,0.15,0));
+  for(const[x,z]of[[-1.4,-1.1],[1.4,-1.1],[-1.4,1.1],[1.4,1.1]])g.add(cyl(0.09,1.9,MAT.post,x,1.25,z,6));
+  g.add(box(3,1.4,0.08,MAT.plank||MAT.wood,0,1.0,-1.15));g.add(box(0.08,1.4,2.3,MAT.plank||MAT.wood,-1.45,1.0,0));g.add(box(0.08,1.4,2.3,MAT.plank||MAT.wood,1.45,1.0,0));
+  const roof=mesh(new THREE.ConeGeometry(2.6,1.4,4),MAT.thatch||std(0xc9a46a),0,2.85,0);roof.rotation.y=Math.PI/4;roof.scale.set(1,1,0.85);g.add(roof);
+  g.add(box(0.9,0.5,0.6,std(0xde4634),0.8,0.55,0.4));g.position.set(Hm.x,H(Hm.x,Hm.z),Hm.z);g.rotation.y=Hm.rot||0;scene.add(g);homeMesh=g;}
+placeHome();
+{const _pc=v10PlaceCheck;v10PlaceCheck=function(w){if(w!=='staffhouse')return _pc(w);if(TM().home)return{ok:false,why:LG('Tu l’as déjà construit','Already built')};const{x,z}=ahead(2.8),h=H(x,z);if(h<0.35||h>4)return{ok:false,why:LG('Trouve un terrain plat et sec','Find flat, dry ground')};if(occupied(x,z,2.4))return{ok:false,why:LG('Trop près de quelque chose','Too close to something')};return{ok:true,x,z};};}
+{const _pl=v10Place;v10Place=function(w,c){if(w!=='staffhouse')return _pl(w,c);TM().home={x:c.x,z:c.z,rot:player.rotation.y+Math.PI};placeHome();stat('staffhouse');toast(LG('Le fare de l’équipe est construit. Tu peux embaucher (Menu › Mon équipe).','The team’s fare is built. You can now hire (Menu › My team).'));return true;};}
+{const _oc=v10Occupied;v10Occupied=function(x,z,d){const Hm=TM().home;return _oc(x,z,d)||(!!Hm&&dist(Hm.x,Hm.z,x,z)<d+2);};}
+{const _ob=v10Obstacles;v10Obstacles=function(l){_ob(l);const Hm=TM().home;if(Hm)l.push([Hm.x,Hm.z,1.9]);};}
+{const _ci=creItems;creItems=function(){const o=_ci();if(TM().home&&homeMesh)o.push({id:'staffhouse',ic:'🏠',n:LG('Fare de l’équipe','Team’s fare'),obj:TM().home,mesh:homeMesh,r:2});return o;};}
+/* people walk between home and work */
+const staffBodies=new Map();
+function workSpot(p){const Hm=TM().home||{x:SITE.x,z:SITE.z};if(p.role==='jardin'){const c=S.crops.find(c=>!c.wild);return c?{x:c.x+0.8,z:c.z}:Hm;}if(p.role==='peche')return S.canoe?{x:S.canoe.x,z:S.canoe.z}:Hm;
+  if(p.role==='animaux')return S.coop||S.pen||Hm;if(p.role==='pension')return S.g2>=1?{x:SITE2.x,z:SITE2.z+3.4}:Hm;return S.stall||Hm;}
+function staffBody(p){let b=staffBodies.get(p);if(!b){b=makePerson(p.seed);const Hm=TM().home||SITE;b.group.position.set(Hm.x+1,H(Hm.x,Hm.z),Hm.z+1.5);scene.add(b.group);b.t=Math.random()*20;staffBodies.set(p,b);}return b;}
+function updateStaffBodies(dt,t){const T=TM();for(const[p,b]of staffBodies)if(!T.list.includes(p)){scene.remove(b.group);staffBodies.delete(p);}
+  for(const p of T.list){const b=staffBody(p);b.group.visible=!S.away&&!S.inCave;if(!b.group.visible)continue;const rest=S.day%7===0||!p.paid,night=isNight(),Hm=T.home||SITE;
+    const tg=night||rest?{x:Hm.x+(T.list.indexOf(p)-1)*0.9,z:Hm.z+1.6}:(()=>{b.t+=dt;const w=workSpot(p);return b.t%30<20?w:{x:Hm.x,z:Hm.z+1.8};})();
+    const g=b.group.position,dx=tg.x-g.x,dz=tg.z-g.z,d=Math.hypot(dx,dz);if(d>0.4){const sp=1.6*pathSpeed(g.x,g.z)*dt,nx=g.x+dx/d*sp,nz=g.z+dz/d*sp;if(H(nx,nz)>0.05){g.x=nx;g.z=nz;}b.group.rotation.y=Math.atan2(dx,dz);const sw=Math.sin(t*7+p.seed)*0.6;b.legs[0].rotation.x=sw;b.legs[1].rotation.x=-sw;}else{b.legs[0].rotation.x=b.legs[1].rotation.x=0;}
+    g.y=npcY(g.x,g.z);}}
+/* the working day */
+function teamDay(){const T=TM();if(T.day===S.day)return;T.day=S.day;if(!T.list.length)return;const rest=S.day%7===0,got={},notes=[];
+  for(const p of T.list){const R=STAFF_R[p.role];p.paid=false;if(S.money<R.wage){notes.push(LG(`${p.name} attend : pas assez pour son salaire aujourd’hui (pas de travail sans salaire).`,`${p.name} waits: not enough for today’s wage (no work without pay).`));continue;}
+    S.money-=R.wage;stat('wages',R.wage);p.paid=true;p.days=(p.days||0)+1;if(rest)continue;const bonus=p.bonus>S.day?1:0;
+    if(p.role==='jardin'){let n=0;for(const c of S.crops){if(n>=4+bonus*2)break;if(!c.wild&&c.g>=1&&!(c.cd>0)&&CROPS[c.type]){const y=CROPS[c.type].yield;for(const k in y)got[k]=(got[k]||0)+y[k];c.cd=CROPS[c.type].regrow;n++;}}}
+    else if(p.role==='peche'){const tired=S.lagoon&&S.lagoon.h<45;if(tired){got.aahi=(got.aahi||0)+1+bonus;}else{const n=3+bonus;got.fish=(got.fish||0)+n;if(typeof lagCatch==='function')try{lagCatch(n);}catch(e){}}}
+    else if(p.role==='artisan'){got.thatch=(got.thatch||0)+2+bonus;got.rope=(got.rope||0)+1;}
+    else if(p.role==='animaux'){(S.animals||[]).filter(a=>a.tamed).forEach(a=>{try{addLove(a,0.5+bonus*0.5);}catch(e){}});notes.push(LG(`${p.name} a passé du temps avec tes animaux.`,`${p.name} spent time with your animals.`));}}
+  for(const k in got)if(!ITEMS[k])delete got[k];if(Object.keys(got).length)give(got);
+  const sum=Object.entries(got).map(([k,n])=>`+${n} ${nm(k)}`).join(', ');
+  toast(rest?LG('Jour de repos pour ton équipe (salaire payé quand même). Tout le monde profite du lagon !','Rest day for your team (wages still paid). Everyone enjoys the lagoon!'):LG('Ton équipe a travaillé aujourd’hui','Your team worked today')+(sum?' : '+sum:'.')+(notes.length?' '+notes.join(' '):''));pendingSave=true;refresh();}
+{const _r=v10Rating;v10Rating=function(){return _r()+(TM().list.some(p=>p.role==='pension'&&p.paid)?0.25:0);};}
+function teamSheet(){$('#sheetTitle').textContent=LG('Mon équipe','My team');const T=TM(),max=teamMax();
+  let h=`<p class="small-note">${LG('Embaucher, c’est s’engager envers quelqu’un : un salaire juste payé chaque jour, un jour de repos par semaine (payé), un toit dans le fare de l’équipe. Personne ne travaille sans salaire. Tu peux remercier avec une prime, et finir un contrat en payant une journée de plus.','Hiring means committing to someone: a fair wage paid every day, one rest day a week (paid), a roof in the team’s fare. Nobody works without pay. You can thank with a bonus, and end a contract by paying one more day.')}</p>`;
+  if((S.level||1)<8)return h+`<p class="why">${LG('À partir du niveau 8.','From level 8.')}</p>`;
+  if(!T.home)return h+`<p class="why">${LG('Construis d’abord le fare de l’équipe (Fabriquer › Construire).','First build the team’s fare (Craft › Build).')}</p>`;
+  h+=`<div class="small-note">${LG(`Équipe : ${T.list.length} / ${max}`,`Team: ${T.list.length} / ${max}`)} · ${LG('salaires du jour','today’s wages')} : <b>${fmtXPF(T.list.reduce((s,p)=>s+STAFF_R[p.role].wage,0))}</b> · ${LG('tu as','you have')} ${fmtXPF(S.money)}${S.day%7===0?' · 🌴 '+LG('jour de repos','rest day'):''}</div>`;
+  for(const p of T.list){const R=STAFF_R[p.role];h+=`<div class="afcard"><div class="afname">${R.ic} ${p.name} <small>· ${R.n()}</small></div><div class="small-note">${R.t()}<br>${LG('Salaire juste','Fair wage')} : ${fmtXPF(R.wage)} ${LG('par jour','a day')} · ${p.days||0} ${LG('jours ensemble','days together')}${p.bonus>S.day?' · 💛 '+LG('motivé·e par ta prime','motivated by your bonus'):''}${p.paid===false&&p.days?' · ⏳ '+LG('attend son salaire','waiting for wages'):''}</div>
+    <div class="row"><button class="big ghost" data-tm="bonus:${T.list.indexOf(p)}" ${S.money>=R.wage&&!(p.bonus>S.day)?'':'disabled'}>💛 ${LG('Prime de remerciement','Thank-you bonus')} (${fmtXPF(R.wage)})</button><button class="big ghost" data-tm="end:${T.list.indexOf(p)}">${LG('Finir le contrat','End the contract')}</button></div></div>`;}
+  if(T.list.length<max){h+=`<h3>${LG('Personnes qui cherchent du travail aujourd’hui','People looking for work today')}</h3>`;
+    for(const c of teamCands()){if(T.list.some(p=>p.role===c.role))continue;const R=STAFF_R[c.role];h+=`<div class="recipe"><div class="rinfo"><div class="name">${R.ic} ${c.name} <small>· ${R.n()}</small></div><div class="tah">${R.t()} · ${fmtXPF(R.wage)} ${LG('par jour','a day')}</div></div><button data-tm="hire:${c.role}">${LG('Embaucher','Hire')}</button></div>`;}}
+  else h+=`<p class="small-note">${max<3?LG(`Plus de place pour l’instant : ${max<2?'2 personnes au niveau 12':'3 personnes au niveau 16'}.`,`No more room for now: ${max<2?'2 people at level 12':'3 people at level 16'}.`):LG('Ton équipe est complète.','Your team is complete.')}</p>`;
+  return h;}
+document.addEventListener('click',e=>{if(sheetMode!=='team')return;const b=e.target.closest('[data-tm]');if(!b||b.disabled)return;const[c,a]=b.dataset.tm.split(':'),T=TM();
+  if(c==='hire'){const cd=teamCands().find(x=>x.role===a);if(!cd||T.list.length>=teamMax())return;T.list.push({role:a,name:cd.name,seed:cd.seed,days:0,paid:true,since:S.day});stat('hired');
+    toast(LG(`${cd.name} rejoint ton équipe ! Son salaire juste (${fmtXPF(STAFF_R[a].wage)} par jour) sera payé chaque matin.`,`${cd.name} joins your team! Their fair wage (${fmtXPF(STAFF_R[a].wage)} a day) will be paid every morning.`));}
+  else if(c==='bonus'){const p=T.list[+a];if(!p)return;const w=STAFF_R[p.role].wage;if(S.money<w)return;S.money-=w;p.bonus=S.day+3;stat('bonus');toast(LG(`${p.name} est touché·e par ta prime. Māuruuru !`,`${p.name} is touched by your bonus. Māuruuru!`));}
+  else if(c==='end'){const p=T.list[+a];if(!p)return;const w=STAFF_R[p.role].wage;if(S.money>=w)S.money-=w;T.list.splice(+a,1);toast(LG(`Tu remercies ${p.name} pour son travail et lui verses une journée de plus. Vous vous quittez en bons termes.`,`You thank ${p.name} for their work and pay one more day. You part on good terms.`));}
+  pendingSave=true;renderSheet();refresh();});
+{const _s=v7Sheet;v7Sheet=function(m){if(m==='team')return teamSheet();return _s(m);};V7S.team=1;}
+(function(){const row=document.querySelector('#menu .row');if(!row)return;const b=document.createElement('button');b.className='big ghost';b.id='teamBtn';b.setAttribute('data-notr','');b.textContent='👥 '+LG('Mon équipe','My team');b.onclick=()=>{$('#menu').hidden=true;openSheet('team');};
+  const ref=document.getElementById('metBtn')||document.getElementById('animalsBtn');row.insertBefore(b,ref?ref.nextSibling:null);})();
+let teamT=3;
+function updateV54(dt){const t=performance.now()/1000;updateStaffBodies(dt,t);teamT-=dt;if(teamT<=0){teamT=3;teamDay();}}
+{const _u=updateV38;updateV38=function(dt){_u(dt);updateV54(dt);};}
+ACH.push(['paths',()=>LG('Les chemins du motu','The paths of the motu'),()=>LG('Tracer un chemin de pierres','Lay a stone path'),()=>(S.stats.paths||0)>=1],
+  ['hired',()=>LG('Patron juste','Fair employer'),()=>LG('Embaucher quelqu’un avec un salaire juste','Hire someone at a fair wage'),()=>(S.stats.hired||0)>=1]);
+const V54={PATHS,pathSpeed,pathCheck,onPath,makePath,TM,teamDay,teamCands,placeHome};
+
+/* ----- v54b: crystal walkway, path decorations, electric cables ----- */
+PATHS.cristal={ic:'💎',n:()=>LG('Allée de cristal','Crystal walkway'),lv:16,q:5,sp:1.5,cost:'zeolite',per:1,t:()=>LG('dalles de zéolite de la grotte, qui luisent doucement la nuit · 1 cristal par pas','zeolite slabs from the cave, softly glowing at night · 1 crystal per step')};
+const crystalMat=new THREE.MeshStandardMaterial({color:0xd8c8ff,emissive:0x9a7cff,emissiveIntensity:0.2,transparent:true,opacity:0.9,roughness:0.15,metalness:0.1});PM.cristal=[crystalMat,crystalMat];
+const crystGeo=new THREE.CylinderGeometry(0.32,0.36,0.1,6);
+const PDECO={fleurs:{ic:'🌺',n:()=>LG('Bordure de fleurs','Flower border'),cost:{tiare:2},lv:2},coquillages:{ic:'🐚',n:()=>LG('Bordure de coquillages','Shell border'),cost:{pupu:3},lv:3},lanternes:{ic:'🏮',n:()=>LG('Petites lanternes','Little lanterns'),cost:{oil:1,bamboo:1},lv:6}};
+const decoMats={fleurs:[std(0xde4634),std(0xf2c94c),std(0xffffff),std(0xff7ab8)],coquillages:[std(0xf6ecd8),std(0xe8c9a8)],lanterne:new THREE.MeshBasicMaterial({color:0xffc070,transparent:true,opacity:0.2})};
+const _makePath54b=makePath;makePath=function(P){if(P.m==='cristal'){const g=new THREE.Group(),L=dist(P.a.x,P.a.z,P.b.x,P.b.z),n=Math.max(2,Math.round(L/0.6)),yaw=Math.atan2(P.b.x-P.a.x,P.b.z-P.a.z);
+    for(let i=0;i<=n;i++){const t=i/n,x=P.a.x+(P.b.x-P.a.x)*t,z=P.a.z+(P.b.z-P.a.z)*t;if(nearSite(x,z,0.1)&&S.stage>=4)continue;const s=mesh(crystGeo,crystalMat,x,H(x,z)+0.05,z,false);s.rotation.y=yaw+i*0.5;g.add(s);}scene.add(g);P.mesh=g;pathMeshes.push(g);}
+  else _makePath54b(P);
+  if(P.deco&&P.mesh){const g=P.mesh,L=dist(P.a.x,P.a.z,P.b.x,P.b.z),yaw=Math.atan2(P.b.x-P.a.x,P.b.z-P.a.z),r=mulberry32((P.seed||1)+7),step=P.deco==='lanternes'?3:0.9,n=Math.max(1,Math.floor(L/step)),side=(P.m==='sable'?0.85:0.7);
+    for(let i=0;i<=n;i++){const t=i/n,cx=P.a.x+(P.b.x-P.a.x)*t,cz=P.a.z+(P.b.z-P.a.z)*t;for(const sd of[-1,1]){if(P.deco==='lanternes'&&sd===1&&i%2)continue;const x=cx+Math.cos(yaw)*side*sd,z=cz-Math.sin(yaw)*side*sd,h=Math.max(H(x,z),0);
+      if(P.deco==='fleurs'){g.add(cyl(0.015,0.2,std(0x3f7d34),x,h+0.1,z,4));g.add(mesh(new THREE.SphereGeometry(0.08,6,4),decoMats.fleurs[Math.floor(r()*4)],x,h+0.22,z,false));}
+      else if(P.deco==='coquillages'){const s=mesh(new THREE.SphereGeometry(0.07,6,4),decoMats.coquillages[Math.floor(r()*2)],x,h+0.03,z,false);s.scale.set(1,0.5,1.4);s.rotation.y=r()*6;g.add(s);}
+      else{g.add(cyl(0.03,0.9,MAT.bambooMat||MAT.post,x,h+0.45,z,5));const l=mesh(new THREE.SphereGeometry(0.1,8,6),std(0xffd27a,{emissive:0xffa040,emissiveIntensity:0.3}),x,h+0.95,z,false);l.userData.lant=1;g.add(l);
+        const gl=new THREE.Sprite(new THREE.SpriteMaterial({map:typeof glowTex!=='undefined'?glowTex:null,color:0xffc070,transparent:true,opacity:0,depthWrite:false}));gl.position.set(x,h+0.95,z);gl.scale.setScalar(1.2);gl.userData.glow=1;g.add(gl);}}}}};
+/* decorate mode inside the path tool */
+CRE.deco=null;
+const _creBar54b=creBar;creBar=function(){_creBar54b();if(!creEl||!CRE.pathOn)return;const l=creEl.querySelector('.crel');if(!l)return;
+  l.innerHTML+=Object.entries(PDECO).filter(([,D])=>D.lv<=(S.level||1)).map(([k,D])=>`<button class="chip${CRE.deco===k?' on':''}" data-pdeco="${k}">${D.ic} ${D.n()}</button>`).join('');
+  if(CRE.deco){const D=PDECO[CRE.deco],s=creEl.querySelector('.cres');if(s)s.innerHTML=`${D.ic} <b>${D.n()}</b> · ${Object.entries(D.cost).map(([k,n])=>`${n} ${nm(k)}`).join(' + ')} ${LG('par chemin','per path')}<br>${LG('Touche un chemin pour le décorer (touche encore pour enlever la décoration).','Tap a path to decorate it (tap again to remove the decoration).')}`;}};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-pdeco]');if(!b||!CRE.on)return;e.stopImmediatePropagation();CRE.deco=CRE.deco===b.dataset.pdeco?null:b.dataset.pdeco;CRE.path=null;creBar();},true);
+document.addEventListener('click',e=>{const b=e.target.closest('[data-pm]');if(b&&CRE.on)CRE.deco=null;},true);
+(function(){const el=renderer.domElement,rc=new THREE.Raycaster(),nd=new THREE.Vector2();let st=null;
+  window.addEventListener('pointerdown',e=>{if(CRE.on&&CRE.pathOn&&CRE.deco&&e.target===el)st={x:e.clientX,y:e.clientY};},true);
+  window.addEventListener('pointerup',e=>{if(!CRE.on||!CRE.pathOn||!CRE.deco||!st||e.target!==el)return;const mv=Math.hypot(e.clientX-st.x,e.clientY-st.y);st=null;if(mv>12)return;e.stopImmediatePropagation();
+    nd.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);rc.setFromCamera(nd,camera);const o=rc.ray.origin,d=rc.ray.direction;let g=null;for(let s=0;s<220;s+=0.35){const x=o.x+d.x*s,y=o.y+d.y*s,z=o.z+d.z*s;if(y<=Math.max(H(x,z),0)){g={x,z};break;}}if(!g)return;
+    const P=S.paths.find(Q=>pathDist(g.x,g.z,Q)<0.9);if(!P){toast(LG('Touche un chemin','Tap a path'));return;}
+    if(P.deco===CRE.deco){P.deco=null;}else{const D=PDECO[CRE.deco];if(!hasAll(D.cost)){toast(LG('Il te manque : ','You are missing: ')+Object.entries(D.cost).map(([k,n])=>`${n} ${nm(k)}`).join(', '));return;}take(D.cost);P.deco=CRE.deco;stat('pathdeco');}
+    scene.remove(P.mesh);const i=pathMeshes.indexOf(P.mesh);if(i>=0)pathMeshes.splice(i,1);makePath(P);pendingSave=true;creBar();},true);})();
+/* ----- electric cables: overhead (poles) or buried ----- */
+S.cables=S.cables||[];
+const CABLE={aerien:{ic:'🪵',n:()=>LG('Câble aérien','Overhead cable'),t:()=>LG('sur poteaux · 1 bûche et 1 corde pour 6 pas · peut casser pendant un cyclone','on poles · 1 log and 1 rope per 6 steps · may break in a cyclone'),cost:{log:1,rope:1},per:6},
+  enfoui:{ic:'⛏️',n:()=>LG('Câble enfoui','Buried cable'),t:()=>LG('dans une tranchée, invisible · 1 pierre et 1 corde pour 3 pas · résiste aux cyclones','in a trench, invisible · 1 stone and 1 rope per 3 steps · withstands cyclones'),cost:{stone:1,rope:1},per:3}};
+const cableMat=std(0x22262a),cableMeshes=[];
+function cableCost(C){const n=Math.ceil(dist(C.a.x,C.a.z,C.b.x,C.b.z)/CABLE[C.k].per),o={};for(const q in CABLE[C.k].cost)o[q]=CABLE[C.k].cost[q]*n;return o;}
+function makeCable(C){const g=new THREE.Group(),L=dist(C.a.x,C.a.z,C.b.x,C.b.z);
+  if(C.k==='aerien'){const n=Math.max(1,Math.ceil(L/6)),pts=[];for(let i=0;i<=n;i++){const t=i/n,x=C.a.x+(C.b.x-C.a.x)*t,z=C.a.z+(C.b.z-C.a.z)*t,h=Math.max(H(x,z),0);g.add(cyl(0.07,3,MAT.post,x,h+1.5,z,6));g.add(box(0.5,0.05,0.05,MAT.post,x,h+2.9,z));pts.push(new THREE.Vector3(x,h+2.85,z));}
+    for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1],m=a.clone().lerp(b,0.5);m.y-=C.broken?1.8:0.35;g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(a,m,b),10,0.02,4,false),cableMat));}}
+  else{const n=Math.max(2,Math.round(L/1.2));for(let i=0;i<=n;i++){const t=i/n,x=C.a.x+(C.b.x-C.a.x)*t,z=C.a.z+(C.b.z-C.a.z)*t;if(i%4===0){const m=box(0.18,0.04,0.18,std(0xf2c94c),x,H(x,z)+0.03,z);g.add(m);}}}
+  scene.add(g);C.mesh=g;cableMeshes.push(g);}
+S.cables.forEach(makeCable);
+function powerSources(){const o=[];if(S.solarp)o.push(S.solarp);if(S.gen)o.push(S.gen);return o;}
+function cableNodes(){return S.cables.flatMap(C=>[C.a,C.b]);}
+function nearGrid(x,z,r){return powerSources().some(p=>dist(p.x,p.z,x,z)<r+1.5)||S.cables.some(C=>!C.broken&&pathDist(x,z,C)<r);}
+function lampWired(L){return nearGrid(L.x,L.z,1.6);}
+CRE.cab=null;CRE.cabOn=false;CRE.ck='aerien';
+const _creBar54c=creBar;creBar=function(){_creBar54c();if(!creEl)return;const b=creEl.querySelector('.creb');if(!b)return;if(!powerSources().length)return;
+  const t=document.createElement('button');t.className='big'+(CRE.cabOn?'':' ghost');t.dataset.cre='cable';t.textContent='⚡ '+LG('Câble','Cable');b.appendChild(t);
+  if(CRE.cabOn){const D=CABLE[CRE.ck],s=creEl.querySelector('.cres');if(s)s.innerHTML=`${D.ic} <b>${D.n()}</b> · ${D.t()}<br>${CRE.cab?LG('Touche l’arrivée (une lampe, la pompe…).','Tap the end (a lamp, the pump…).'):LG('Touche le départ : le panneau solaire, le groupe ou un câble déjà posé. Touche un câble pour l’enlever.','Tap the start: the solar panel, the generator or a cable already laid. Tap a cable to remove it.')}`;
+    const l=creEl.querySelector('.crel');if(l)l.innerHTML=Object.entries(CABLE).map(([k,D])=>`<button class="chip${k===CRE.ck?' on':''}" data-ck="${k}">${D.ic} ${D.n()}</button>`).join('');}};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-cre="cable"]');if(b&&CRE.on){e.stopImmediatePropagation();CRE.cabOn=!CRE.cabOn;CRE.cab=null;CRE.pathOn=false;CRE.sel=null;creBar();return;}
+  const c=e.target.closest('[data-ck]');if(c&&CRE.on){e.stopImmediatePropagation();CRE.ck=c.dataset.ck;CRE.cab=null;creBar();}},true);
+document.addEventListener('click',e=>{if(e.target.closest('[data-cre="path"]')&&CRE.on){CRE.cabOn=false;}},true);
+(function(){const el=renderer.domElement,rc=new THREE.Raycaster(),nd=new THREE.Vector2();let st=null;
+  window.addEventListener('pointerdown',e=>{if(CRE.on&&CRE.cabOn&&e.target===el)st={x:e.clientX,y:e.clientY};},true);
+  window.addEventListener('pointerup',e=>{if(!CRE.on||!CRE.cabOn||!st||e.target!==el)return;const mv=Math.hypot(e.clientX-st.x,e.clientY-st.y);st=null;if(mv>12)return;e.stopImmediatePropagation();
+    nd.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);rc.setFromCamera(nd,camera);const o=rc.ray.origin,d=rc.ray.direction;let g=null;for(let s=0;s<220;s+=0.35){const x=o.x+d.x*s,y=o.y+d.y*s,z=o.z+d.z*s;if(y<=Math.max(H(x,z),0)){g={x,z};break;}}if(!g)return;
+    if(!CRE.cab){const hit=S.cables.find(C=>pathDist(g.x,g.z,C)<0.7);if(hit&&!nearGrid(g.x,g.z,0)){}
+      if(hit&&!powerSources().some(p=>dist(p.x,p.z,g.x,g.z)<1.5)){scene.remove(hit.mesh);S.cables.splice(S.cables.indexOf(hit),1);toast(LG('Câble enlevé.','Cable removed.'));pendingSave=true;creBar();return;}
+      if(!nearGrid(g.x,g.z,0.8)){toast(LG('Pars du panneau solaire, du groupe électrogène ou d’un câble déjà posé.','Start from the solar panel, the generator or a cable already laid.'));return;}
+      CRE.cab={x:g.x,z:g.z};creRing(g.x,g.z,0.3,true);CRE.ringT=99;creBar();return;}
+    const C={a:CRE.cab,b:{x:g.x,z:g.z},k:CRE.ck},L=dist(C.a.x,C.a.z,C.b.x,C.b.z);if(L<1.5||L>36){toast(LG('Entre 2 et 36 pas par câble','Between 2 and 36 steps per cable'));return;}
+    for(let t=0;t<=1;t+=0.5/L){const h=H(C.a.x+(C.b.x-C.a.x)*t,C.a.z+(C.b.z-C.a.z)*t);if(h<0.1){toast(LG('Pas de câble dans l’eau','No cable in the water'));return;}}
+    const cost=cableCost(C);if(!hasAll(cost)){toast(LG('Il te manque : ','You are missing: ')+Object.entries(cost).map(([k,n])=>`${n} ${nm(k)}`).join(', '));return;}take(cost);S.cables.push(C);makeCable(C);stat('cables');CRE.cab={x:g.x,z:g.z};creRing(g.x,g.z,0.3,true);CRE.ringT=99;pendingSave=true;
+    if(!S.flags.cableTip){S.flags.cableTip=1;toast(LG('Câble posé ! Les lampadaires électriques raccordés consomment 25 % de moins. Continue depuis ce point, ou touche « Câble » pour arrêter.','Cable laid! Connected electric lamps use 25% less. Continue from this point, or tap “Cable” to stop.'));}creBar();},true);})();
+{const _ce=creExit;creExit=function(){CRE.cabOn=false;CRE.cab=null;CRE.deco=null;_ce();};}
+/* connected lamps use less: give back a quarter of what the night drew */
+{const _vs=v10Sim;v10Sim=function(dt,q){const P=S.solarp,G=S.gen,b0=P?P.bat:0,f0=G?G.fuel:0;_vs(dt,q);const nE=S.lamps.filter(l=>l.type==='elec').length;if(!nE)return;const w=S.lamps.filter(l=>l.type==='elec'&&lampWired(l)).length/nE;
+  if(P&&P.bat<b0)P.bat+=(b0-P.bat)*0.25*w;if(G&&G.fuel<f0)G.fuel+=(f0-G.fuel)*0.25*w;};}
+/* cyclones may bring down overhead lines; buried ones hold */
+{const _ch=cycHit;cycHit=function(){const r=_ch.apply(this,arguments);let n=0;for(const C of S.cables)if(C.k==='aerien'&&!C.broken&&Math.random()<0.5){C.broken=true;n++;scene.remove(C.mesh);makeCable(C);}
+  if(n)setTimeout(()=>toast(LG(`Le cyclone a fait tomber ${n} ligne${n>1?'s':''} électrique${n>1?'s':''} aérienne${n>1?'s':''}. Répare-les près d’un poteau (1 corde), ou enterre-les la prochaine fois !`,`The cyclone brought down ${n} overhead power line${n>1?'s':''}. Repair them near a pole (1 rope), or bury them next time!`)),4000);return r;};}
+{const _ia=islActions;islActions=function(A){_ia(A);if(S.away||S.boat)return;const px=player.position.x,pz=player.position.z,C=S.cables.find(c=>c.broken&&pathDist(px,pz,c)<2);
+  if(C)A.push(S.inv.rope>0?{label:LG('Réparer la ligne électrique','Repair the power line'),sub:LG('1 corde · remonter le câble sur les poteaux','1 rope · put the cable back on the poles'),fn:()=>{S.inv.rope--;C.broken=false;scene.remove(C.mesh);makeCable(C);stat('repair');chopT=0.6;refresh();}}:{label:LG('Ligne électrique tombée','Fallen power line'),sub:LG('Il faut 1 corde pour la réparer','Needs 1 rope to repair'),off:true});};}
+{const _nb=nearGrid;}
+/* night glow for crystal paths and lanterns */
+{const _u=updateV54;updateV54=function(dt){_u(dt);const n=isNight()?1:0;crystalMat.emissiveIntensity+=((n?0.9:0.15)-crystalMat.emissiveIntensity)*Math.min(1,dt);
+  for(const P of S.paths)if(P.deco==='lanternes'&&P.mesh)P.mesh.children.forEach(c=>{if(c.userData.glow)c.material.opacity=n*0.8;else if(c.userData.lant)c.material.emissiveIntensity=n?1.6:0.2;});};}
+ACH.push(['cristal',()=>LG('Chemin de lumière','Path of light'),()=>LG('Poser une allée de cristal','Lay a crystal walkway'),()=>S.paths.some(P=>P.m==='cristal')],
+  ['cables',()=>LG('Le courant passe','Power flows'),()=>LG('Raccorder un lampadaire par câble','Connect a street lamp by cable'),()=>S.lamps.some(l=>l.type==='elec'&&lampWired(l))]);
+Object.assign(V54,{PDECO,CABLE,makeCable,lampWired,nearGrid});
+/* ----- secret trade: plumber · fontainier ----- */
+MET.plombier={secret:1,ic:'🔧',n:()=>LG('Plombier · Fontainier','Plumber · water keeper'),t:()=>LG('Amène l’eau propre partout : source, tuyaux de bambou, distillateur, citerne d’eau de pluie.','Brings clean water everywhere: spring, bamboo pipes, solar still, rainwater tank.'),
+  ok:()=>!!S.still||!!S.hydro||(S.stats.water||0)>=25,cond:()=>LG('Construire un distillateur ou un jardin hydroponique, ou puiser 25 coupes d’eau','Build a solar still or a hydroponic garden, or draw 25 cups of water'),
+  xp:{water:1,stillwater:2,hydro:15,still:15,flooded:4,raintank:6,hydroharvest:2},
+  steps:[[2,()=>LG('Bonne étanchéité : le distillateur donne 20 % d’eau en plus','Watertight: the still gives 20% more water')],[4,()=>LG('Outil : la clé à molette','Tool: the adjustable wrench')],[6,()=>LG('Bâtiment : la citerne d’eau de pluie · de l’eau chaque jour, plus quand il pleut','Building: the rainwater tank · water every day, more when it rains')],[8,()=>LG('Quête : l’eau du village','Quest: water for the village')],[10,()=>LG('Maître de l’eau : la citerne et le distillateur donnent deux fois plus','Master of water: the tank and the still give twice as much')]],
+  tool:'cle',bld:LG('Citerne d’eau de pluie','Rainwater tank'),col:0x4fc3d0};
+MET_TOOLS.cle=[LG('Clé à molette','Adjustable wrench'),'#8a9aa4'];ITEMS.cle={n:MET_TOOLS.cle[0],t:LG('outil de métier','trade tool'),cat:'tool'};ICON.cle=ICON.multi||ICON.toi;if(!ORDER.includes('cle'))ORDER.push('cle');
+MQ.plombier={need:{bamboo:6,rope:3,stone:4},give:{},xpf:3500,t:()=>LG('Au village, les mamans vont chercher l’eau loin, à la source. Avec l’ancien fontainier, pose des tuyaux de bambou tenus par des cordes et un petit bassin de pierres : l’eau fraîche arrive au milieu du village.','In the village, mothers fetch water far away, at the spring. With the old water keeper, lay bamboo pipes held by ropes and a little stone basin: fresh water arrives in the middle of the village.')};
+for(const q in MQ.plombier.need)if(!ITEMS[q])delete MQ.plombier.need[q];
+V17T.metbld_plombier=1;
+if(typeof stillSim==='function'){const _ss=stillSim;stillSim=function(dt,day){const W=S.still,w0=W?W.w:0;_ss(dt,day);if(!W||myMet()!=='plombier')return;const d=W.w-w0;if(d>0)W.w=Math.min(6,W.w+d*(metLv('plombier')>=10?1:metLv('plombier')>=2?0.2:0));};}
+{const _mb=metBldActs;metBldActs=function(k,A){if(k!=='plombier')return _mb(k,A);const M=MS(),C=MET[k];if(myMet()!==k){A.push({label:C.bld,sub:LG('Ce n’est plus ton métier actuel','No longer your current trade'),off:true});return;}
+  if(!metDayLeft(k)){A.push({label:C.bld,sub:LG('La citerne se remplit… reviens demain','The tank is filling… come back tomorrow'),off:true});return;}
+  const rain=S.weather.r>0.25,n=(2+(rain?3:0))*(metLv('plombier')>=10?2:1),cups=Math.min(n,S.inv.ipu||0);
+  A.push(cups>0?{label:LG('Remplir tes coupes à la citerne','Fill your cups at the tank'),sub:LG(`${cups} coupe${cups>1?'s':''} d’eau de pluie${rain?' (il pleut : la citerne est pleine !)':''}`,`${cups} cup${cups>1?'s':''} of rainwater${rain?' (it’s raining: the tank is full!)':''}`),fn:()=>{S.inv.ipu-=cups;give({water:cups});stat('raintank');M.day[k]=S.day;chopT=0.4;pendingSave=true;refresh();}}
+    :{label:C.bld,sub:LG('Il te faut des coupes de coco vides','You need empty coconut cups'),off:true});};}
+
+/* =====================================================================
+   v55: lighter on phones, sharper on big ones, and an easier Craft menu.
+   - Quality: économie (no shadows, lower resolution, no antialias, point
+     lights off), basse, normale, haute, ultra (full definition).
+   - Shadows are redrawn every 2nd–3rd frame on low/normal (the sun moves slowly).
+   - While a sheet or the menu is open, the 3D view draws at half rate.
+   - A gentle advisor: if the game runs slowly, it offers a lighter quality.
+   - Craft: a search box (by name or ingredient) and trade specialities:
+     a few crafts are reserved for their trade (others get them by trading).
+   ===================================================================== */
+const _render55=renderer.render.bind(renderer);let rFrame=0;
+if(!ECO&&!HIQ){renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;}
+renderer.render=function(sc,cam){rFrame++;
+  const slow=(sheetMode&&!CRE.on)||!$('#menu').hidden;if(slow&&rFrame%2&&!PHOTO)return;
+  if(!renderer.shadowMap.autoUpdate&&rFrame%(LOWQ?3:2)===0)renderer.shadowMap.needsUpdate=true;
+  _render55(sc,cam);};
+/* economy: point lights are switched off once (constant light count, no shader recompiles) */
+function ecoLights(){if(!ECO)return;scene.traverse(o=>{if(o.isPointLight&&o.visible)o.visible=false;});}
+ecoLights();
+/* FPS advisor */
+const FPSA={t:0,n:0,acc:0,done:false};
+function updateFpsAdvisor(dt){if(FPSA.done||overlayOpen()||sheetMode||CRE.on)return;FPSA.t+=dt;if(FPSA.t<6)return;FPSA.n++;FPSA.acc+=dt;
+  if(FPSA.acc<12)return;const fps=FPSA.n/FPSA.acc;FPSA.done=true;let ask=null;try{ask=localStorage.getItem('fare-iti-fpsask');}catch(e){}
+  const order=['eco','low','normal','high','ultra'],i=order.indexOf(QUAL);if(fps>=26||i<=0||ask===QUAL)return;
+  const next=order[i-1],names={eco:LG('économie','economy'),low:LG('basse','low'),normal:LG('normale','normal'),high:LG('haute','high')};
+  const d=document.createElement('div');d.className='fpsask';d.setAttribute('data-notr','');
+  d.innerHTML=`<p>🐢 ${LG(`Le jeu tourne un peu lentement sur ton appareil (${Math.round(fps)} images/s). Passer en qualité ${names[next]} pour plus de fluidité ?`,`The game runs a bit slowly on your device (${Math.round(fps)} fps). Switch to ${names[next]} quality for smoother play?`)}</p><div class="row"><button class="big" data-fq="${next}">${LG('Oui, plus fluide','Yes, smoother')}</button><button class="big ghost" data-fq="">${LG('Non merci','No thanks')}</button></div>`;
+  document.body.appendChild(d);}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-fq]');if(!b)return;const q=b.dataset.fq;b.closest('.fpsask').remove();try{localStorage.setItem('fare-iti-fpsask',QUAL);}catch(e){}
+  if(q){try{localStorage.setItem('fare-iti-quality',q);}catch(e){}save();toast(LG('Qualité modifiée. Le jeu se recharge…','Quality changed. Reloading…'));setTimeout(()=>location.reload(),600);}});
+/* ----- Craft: search and specialities ----- */
+let CRAFT_Q='';
+function normTxt(t){return String(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯʻ‘’'ʻ]/g,'');}
+function craftMatch(r,q){const Q=normTxt(q);if(!Q)return true;const hay=[r.n,r.t,...Object.keys(r.in||{}).map(k=>ITEMS[k]&&ITEMS[k].n),...Object.keys(r.out||{}).map(k=>ITEMS[k]&&ITEMS[k].n)].map(normTxt).join(' · ');return Q.split(/\s+/).every(w=>hay.includes(w));}
+const SPEC={tifai:'tisserand',tamanuoil:'soignant',nonojuice:'soignant',confmangue:'jardinier',uke:'enseignant',ecrin:'pecheur',fusee:'artificier'};
+{const need=JSON.stringify(LEVELS);for(const k in SPEC)if(need.includes(`"${k}"`))delete SPEC[k];}
+function specOK(r){const t=SPEC[r.id];return !t||!MET[t]||myMet()===t||(S.met&&(S.met.xp[t]||0)>0);}
+{const _rc=recipeCheck;recipeCheck=function(r){if(r&&!specOK(r))return{ok:false,why:LG(`Spécialité du métier ${MET[SPEC[r.id]].n()}`,`Speciality of the ${MET[SPEC[r.id]].n()} trade`)};return _rc(r);};}
+{const fr=RECIPES.find(r=>r.id==='fusee');if(fr&&!fr.cat)fr.cat='crafts';}
+for(const r of RECIPES)if(!r.cat)r.cat='crafts';
+document.addEventListener('input',e=>{if(e.target.id!=='craftQ'||sheetMode!=='craft')return;CRAFT_Q=e.target.value;const tmp=document.createElement('div');tmp.innerHTML=craftSheet();const L=document.getElementById('craftList'),N=tmp.querySelector('#craftList');if(L&&N)L.innerHTML=N.innerHTML;});
+document.addEventListener('click',e=>{if(sheetMode==='craft'&&e.target.closest('[data-ctab]'))CRAFT_Q='';},true);
+let fpsAdvT=0;
+{const _u=updateV38;updateV38=function(dt){_u(dt);updateFpsAdvisor(dt);fpsAdvT-=dt;if(fpsAdvT<=0){fpsAdvT=2;ecoLights();}};}
+const V55={FPSA,SPEC,craftMatch,specOK};
+
+/* =====================================================================
+   v56: map of the motu. Terrain drawn once (cheap), markers refreshed
+   twice a second only while the map is open. Shows you, your fare,
+   buildings, paths, cables, bungalows, the canoe, animal friends, your team,
+   the reef pass and the rāhui zone. Tap a legend item to see it on the map.
+   ===================================================================== */
+const MAP_E=REEF+10,MAP_N=240;let mapBase=null;
+function mapXY(x,z,W){return[(x/MAP_E*0.5+0.5)*W,(z/MAP_E*0.5+0.5)*W];}
+function buildMapBase(){const c=document.createElement('canvas');c.width=c.height=MAP_N;const g=c.getContext('2d'),img=g.createImageData(MAP_N,MAP_N),d=img.data;
+  for(let j=0;j<MAP_N;j++)for(let i=0;i<MAP_N;i++){const x=(i/MAP_N*2-1)*MAP_E,z=(j/MAP_N*2-1)*MAP_E,h=H(x,z),r=Math.hypot(x,z);let col;
+    if(h<-0.05){col=r>REEF+0.8?[26,92,150]:r>REEF-1.2?[200,236,236]:h<-1.6?[40,170,190]:[110,214,210];}
+    else if(h<0.45)col=[240,226,184];else if(h<2.5)col=[118,182,86];else if(h<6)col=[86,150,70];else if(h<12)col=[66,122,62];else col=[98,104,96];
+    const k=(j*MAP_N+i)*4;d[k]=col[0];d[k+1]=col[1];d[k+2]=col[2];d[k+3]=255;}
+  g.putImageData(img,0,0);mapBase=c;}
+let mapT=0,mapHL=null;
+function mapMarks(){const M=[],add=(k,ic,n,x,z)=>{if(x!=null&&isFinite(x))M.push({k,ic,n,x,z});};
+  add('fare','🏠',LG('Ton fare','Your fare'),SITE.x,SITE.z);if(S.g2>=1)add('pension','🛏️',LG('Pension','Guesthouse'),SITE2.x,SITE2.z);add('spring','💧',LG('La source','The spring'),SPRING.x,SPRING.z);
+  const B=[['fire','🔥',LG('Foyer','Fire pit')],['coop','🐔',LG('Poulailler','Coop')],['pen','🐐',LG('Enclos','Pen')],['stall','🍍',LG('Étal','Stand')],['compost','🪱','Compost'],['ahimaa','♨️','Ahimaʻa'],['store','🏪',LG('Magasin','Store')],['hive','🐝',LG('Ruche','Hive')],['disp','⛑️',LG('Dispensaire','Dispensary')],['gen','⚡',LG('Groupe','Generator')],['pote','🛖','Fare pōteʻe'],['solarp','☀️',LG('Panneau solaire','Solar panel')],['still','💧',LG('Distillateur','Still')],['hydro','🥬',LG('Hydroponie','Hydroponics')]];
+  for(const[k,ic,n]of B)if(S[k])add(k,ic,n,S[k].x,S[k].z);
+  if(S.met)for(const k in S.met.bld)add('met_'+k,MET[k].ic,MET[k].bld,S.met.bld[k].x,S.met.bld[k].z);
+  if(S.team&&S.team.home)add('team','🏘️',LG('Fare de l’équipe','Team’s fare'),S.team.home.x,S.team.home.z);
+  if(S.bungalow)add('bung','🛖',LG('Bungalow','Bungalow'),S.bungalow.x,S.bungalow.z);(S.bungx||[]).forEach((b,i)=>add('bung'+i,'🛖',LG('Bungalow','Bungalow'),b.x,b.z));
+  if(S.acro&&S.acro.lad)add('acro','🌴',LG('Parcours dans les arbres','Treetop course'),S.acro.lad.x,S.acro.lad.z);
+  if(S.canoe&&!S.boat)add('canoe','🛶','Vaʻa',S.canoe.x,S.canoe.z);
+  (S.animals||[]).filter(a=>a.tamed&&a.mesh).forEach(a=>add('an_'+a.type,({dog:'🐕',chicken:'🐔',cat:'🐈',pig:'🐖',goat:'🐐'})[a.type]||'🐾',(typeof aname==='function'?aname(a):a.type),a.mesh.position.x,a.mesh.position.z));
+  if(typeof PASS_A!=='undefined')add('pass','⛵',LG('La passe','The reef pass'),Math.cos(PASS_A)*REEF,Math.sin(PASS_A)*REEF);
+  return M;}
+function drawMap(){const cv=document.getElementById('mapCv');if(!cv)return;const W=cv.width,g=cv.getContext('2d');if(!mapBase)buildMapBase();g.imageSmoothingEnabled=true;g.drawImage(mapBase,0,0,W,W);
+  const P=(x,z)=>mapXY(x,z,W);
+  g.lineCap='round';for(const p of S.paths||[]){const[a,b]=[P(p.a.x,p.a.z),P(p.b.x,p.b.z)];g.strokeStyle={sable:'#fff6dc',pierre:'#c8bda4',bois:'#a0743e',pave:'#4a4f55',cristal:'#b89cff'}[p.m||'pierre']||'#ccc';g.lineWidth=W/120;g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();}
+  g.setLineDash([W/90,W/120]);for(const c of S.cables||[]){const[a,b]=[P(c.a.x,c.a.z),P(c.b.x,c.b.z)];g.strokeStyle=c.broken?'#e0473a':'#f2c94c';g.lineWidth=W/260;g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();}g.setLineDash([]);
+  if(S.lagoon&&S.lagoon.rahui&&typeof SECT_A!=='undefined'){const a=SECT_A[S.lagoon.rahui.z],[x,y]=P(Math.cos(a)*(REEF-4),Math.sin(a)*(REEF-4));g.fillStyle='rgba(127,166,74,.35)';g.beginPath();g.arc(x,y,W/9,0,Math.PI*2);g.fill();}
+  g.textAlign='center';g.textBaseline='middle';g.font=`${Math.round(W/22)}px sans-serif`;
+  for(const m of mapMarks()){const[x,y]=P(m.x,m.z);if(mapHL&&m.k===mapHL){g.fillStyle='rgba(255,255,255,.85)';g.beginPath();g.arc(x,y,W/26,0,Math.PI*2);g.fill();g.strokeStyle='#e0473a';g.lineWidth=3;g.stroke();}g.fillText(m.ic,x,y);}
+  for(const p of (S.team&&S.team.list)||[]){const b=staffBodies.get(p);if(!b)continue;const[x,y]=P(b.group.position.x,b.group.position.z);g.fillStyle='#9b5cff';g.beginPath();g.arc(x,y,W/110,0,Math.PI*2);g.fill();}
+  if(!S.away){const[x,y]=P(player.position.x,player.position.z),a=player.rotation.y;g.save();g.translate(x,y);g.rotate(-a+Math.PI);g.fillStyle='#e0473a';g.strokeStyle='#fff';g.lineWidth=2;g.beginPath();g.moveTo(0,-W/36);g.lineTo(W/55,W/50);g.lineTo(-W/55,W/50);g.closePath();g.fill();g.stroke();g.restore();}
+  g.fillStyle='rgba(20,49,58,.75)';g.font=`bold ${Math.round(W/30)}px sans-serif`;g.fillText('N ↑',W*0.93,W*0.05);}
+function mapSheet(){$('#sheetTitle').textContent=LG('Carte du motu','Map of the motu');
+  const leg=mapMarks().filter((m,i,a)=>a.findIndex(o=>o.k===m.k)===i);
+  return `${S.away?`<p class="why">${LG('Tu es en voyage : la carte montre ton motu.','You are travelling: the map shows your motu.')}</p>`:''}<div class="mapwrap"><canvas id="mapCv" width="600" height="600"></canvas></div>
+    <div class="small-note">🔺 ${LG('toi','you')} · 🟣 ${LG('ton équipe','your team')} · ${LG('lignes : chemins ; pointillés jaunes : câbles','lines: paths; yellow dashes: cables')}</div>
+    <div class="tflow">${leg.map(m=>`<button class="chip${mapHL===m.k?' on':''}" data-maphl="${m.k}">${m.ic} ${m.n}</button>`).join('')}</div>`;}
+{const _s=v7Sheet;v7Sheet=function(m){if(m==='carte'){setTimeout(drawMap,0);return mapSheet();}return _s(m);};V7S.carte=1;}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-maphl]');if(!b||sheetMode!=='carte')return;mapHL=mapHL===b.dataset.maphl?null:b.dataset.maphl;document.querySelectorAll('[data-maphl]').forEach(x=>x.classList.toggle('on',x.dataset.maphl===mapHL));drawMap();});
+addEventListener('keydown',e=>{if((e.key==='m'||e.key==='M')&&!overlayOpen()&&!(e.target&&/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)))openSheet(sheetMode==='carte'?null:'carte');});
+(function(){const row=document.querySelector('#menu .row');if(row){const m=document.createElement('button');m.className='big ghost';m.id='mapMenuBtn';m.setAttribute('data-notr','');m.textContent='🗺️ '+LG('Carte du motu','Map of the motu');m.onclick=()=>{$('#menu').hidden=true;openSheet('carte');};row.insertBefore(m,document.getElementById('compBtn')||null);}})();
+{const _u=updateV38;updateV38=function(dt){_u(dt);if(sheetMode!=='carte')return;mapT-=dt;if(mapT<=0){mapT=0.5;drawMap();}};}
+const V56={drawMap,buildMapBase,mapMarks};
+
 /* =========================================================
    Main loop
    ========================================================= */
@@ -7382,7 +7989,7 @@ function tick(){
   if(mag>0.08&&!fishing){
     fwd.set(-Math.sin(cam.yaw),0,-Math.cos(cam.yaw));right.set(Math.cos(cam.yaw),0,-Math.sin(cam.yaw));
     const mx=right.x*ix-fwd.x*iy,mz=right.z*ix-fwd.z*iy,ml=Math.hypot(mx,mz)||1;
-    let speed=S.boat?(stormy()?3.5:(S.owned.motor?12:S.sail?8+S.weather.w*5:7)):(onFloor(player.position.x,player.position.z)?3.4:6.2);if(S.hunger<=0)speed*=0.55;
+    let speed=S.boat?(stormy()?3.5:(S.owned.motor?12:S.sail?8+S.weather.w*5:7)):(onFloor(player.position.x,player.position.z)?3.4:6.2);if(S.hunger<=0)speed*=0.55;speed*=pathSpeed(player.position.x,player.position.z);
     const sp=speed*mag*dt,nx=player.position.x+mx/ml*sp,nz=player.position.z+mz/ml*sp;
     const tryMove=S.boat
       ?(x,z)=>{if(H(x,z)>-0.05||!seaOK(x,z))return false;player.position.x=x;player.position.z=z;return true;}
@@ -7496,6 +8103,6 @@ renderTop();renderGoal();renderWx();
 actions=computeActions();renderActions();
 addEventListener('pagehide',()=>{if(!wiping)save();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&!wiping)save();});
-if(location.hash==='#debug')window.__fare={v44:V44,v45:V45,v46:V46,v47:V47,v48:V48,v49:V49,v50:V50,v51:V51,scene,renderer,bushes,save,camera,expe:{EXPE,expeSend,expeReturn,expeCost},fr:{finishWork,workDur,timeMul,aLevel,addLove,askName,openAnimal,startTutorial,showStory,gearHave,GEAR},clouds:{nimbo,alto,cbs,capCloud,cloudName},prep:{prepActions,lightning,LIT,surge,cycHit:()=>cycHit()},storm:{startWaterspout,launchRedStar,startTornado,TOR,torMesh},stars:{starShower,launchMagic,updateMagic,updateShower,MAGIC,SHOWER,STAR_SONG},gold:{updateGolden,launchBolide,BOL,farIsl,cirrus,GHU,CLU,bungSpot,placeBungalow,onBung,makeWish},hua:{HUA,HUAP,HUAP_LAKE,huaH,buildHuahine,fx:huaFX,huaFixTrap,huaFeed,huaHint,makeNahe},fl:{makeTiare,makeHibiscus,makeParterre,flower,MAT,mesh,THREE},sun:{uvIndex,inShade,get sunT(){return S.sunT}},vis:{VISITORS,get meshes(){return visMeshes}},cyc:{scheduleCyclone,cycPhase,cycT,cycHit,pflotSpot,dive,onPflot,SPECIES,discover},moo:{MOO,MOOP,MOOP_SB,mooH,sailTo,crow,get fx(){return mooFX}},isl:{ISL,ISLP,sailToTahiti,sailHome,buildIsland,offerFlower,greetMoo,islH,get falls(){return islFalls},get moo(){return islMoo},get blow(){return islBlow}},v22:{dailyGen,updateDaily,checkAch,ACH,photoMode,savePhoto,AMB,get AC(){return AC;}},stageGroups,gStages,applyPaint,build,v21:{month,startHatch,get hatch(){return hatch;},EVENTS,calendarDay},v18:{hinaPereSong,ERUPT},v17:{enterSea,leaveSea,seaRespect,seaSong,DIVE_AT,freeHonu,spawnTangled,plantCoral},v16:{enterCave,leaveCave,crownSectors,mountainSong,CAVE_FRONT,MTN},v15:{summonButterflies,SWARM},v14:{lightSpots,lightsC:()=>lightsC,BFLY:()=>BFLY,GECKOS:()=>GECKOS,flowersC:()=>flowersC},v13:{summonMermaid,mer:()=>mermaid,playSong,SONGS},v10:{spawnCrop,spawnLamp,v10Sim,v10Place,checkMilestones,lampActs,genActs,lampClick,makeV10Crop},v9:{v9Place,v9DoSpecial,pfarmActs,portActs,helipadActs,hiveActs,PONTON_C,tillCheck,till,S_fields:()=>S.fields,plantField,graft,harvestPearls,rollPearl,PFARM_AT,PORT_AT,startHeli,HELI,flowersNear,treat,canSellHere,pearlClick},v8:{FLY,startFly,stopFly,RINGS,TOUR_STOPS,startTour,board,TOUR_DOCK,computeActions,placeCanoeMesh},v7:{openLook,startExc,whales,smartHint,buildPlayer,clock,cam},S,give,refresh,checkLevel,player,openSheet,doCraft,simStep,v6:{startTornado,TOR,launchShooter,flocks,honus,crabs}};
+if(location.hash==='#debug')window.__fare={v44:V44,v45:V45,v46:V46,v47:V47,v48:V48,v49:V49,v50:V50,v51:V51,v52:V52,v54:V54,v55:V55,v56:V56,scene,renderer,bushes,save,camera,expe:{EXPE,expeSend,expeReturn,expeCost},fr:{finishWork,workDur,timeMul,aLevel,addLove,askName,openAnimal,startTutorial,showStory,gearHave,GEAR},clouds:{nimbo,alto,cbs,capCloud,cloudName},prep:{prepActions,lightning,LIT,surge,cycHit:()=>cycHit()},storm:{startWaterspout,launchRedStar,startTornado,TOR,torMesh},stars:{starShower,launchMagic,updateMagic,updateShower,MAGIC,SHOWER,STAR_SONG},gold:{updateGolden,launchBolide,BOL,farIsl,cirrus,GHU,CLU,bungSpot,placeBungalow,onBung,makeWish},hua:{HUA,HUAP,HUAP_LAKE,huaH,buildHuahine,fx:huaFX,huaFixTrap,huaFeed,huaHint,makeNahe},fl:{makeTiare,makeHibiscus,makeParterre,flower,MAT,mesh,THREE},sun:{uvIndex,inShade,get sunT(){return S.sunT}},vis:{VISITORS,get meshes(){return visMeshes}},cyc:{scheduleCyclone,cycPhase,cycT,cycHit,pflotSpot,dive,onPflot,SPECIES,discover},moo:{MOO,MOOP,MOOP_SB,mooH,sailTo,crow,get fx(){return mooFX}},isl:{ISL,ISLP,sailToTahiti,sailHome,buildIsland,offerFlower,greetMoo,islH,get falls(){return islFalls},get moo(){return islMoo},get blow(){return islBlow}},v22:{dailyGen,updateDaily,checkAch,ACH,photoMode,savePhoto,AMB,get AC(){return AC;}},stageGroups,gStages,applyPaint,build,v21:{month,startHatch,get hatch(){return hatch;},EVENTS,calendarDay},v18:{hinaPereSong,ERUPT},v17:{enterSea,leaveSea,seaRespect,seaSong,DIVE_AT,freeHonu,spawnTangled,plantCoral},v16:{enterCave,leaveCave,crownSectors,mountainSong,CAVE_FRONT,MTN},v15:{summonButterflies,SWARM},v14:{lightSpots,lightsC:()=>lightsC,BFLY:()=>BFLY,GECKOS:()=>GECKOS,flowersC:()=>flowersC},v13:{summonMermaid,mer:()=>mermaid,playSong,SONGS},v10:{spawnCrop,spawnLamp,v10Sim,v10Place,checkMilestones,lampActs,genActs,lampClick,makeV10Crop},v9:{v9Place,v9DoSpecial,pfarmActs,portActs,helipadActs,hiveActs,PONTON_C,tillCheck,till,S_fields:()=>S.fields,plantField,graft,harvestPearls,rollPearl,PFARM_AT,PORT_AT,startHeli,HELI,flowersNear,treat,canSellHere,pearlClick},v8:{FLY,startFly,stopFly,RINGS,TOUR_STOPS,startTour,board,TOUR_DOCK,computeActions,placeCanoeMesh},v7:{openLook,startExc,whales,smartHint,buildPlayer,clock,cam},S,give,refresh,checkLevel,player,openSheet,doCraft,simStep,v6:{startTornado,TOR,launchShooter,flocks,honus,crabs}};
 requestAnimationFrame(tick);
 })();

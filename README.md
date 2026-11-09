@@ -589,6 +589,36 @@ To add a recipe or change a level, edit `data.js`. Every recipe has a `lv` (the 
 
 </details>
 
+## v55–v56 · Lighter on phones, a Craft search, trade specialities, a map
+
+**Quality** (Menu › Quality), five levels: economy (no shadows, 85% resolution, no antialiasing, point lights off, less grass), low, normal, high, ultra (full definition: up to 3× resolution, 4096 shadow map, more grass). Shadows are redrawn every 3rd frame (low) or 2nd frame (normal) since the sun moves slowly; the 3D view draws at half rate while a sheet or the menu is open (battery and heat). After a few seconds of play, if the game runs below 26 images/s, it offers to switch to the next lighter quality (once per quality).
+
+**Craft**: a search box above the list (by name or ingredient, accents ignored, across all pages at your level). A few crafts are trade specialities, reserved for their trade (others get them by trading): tīfaifai (weaver), tamanu oil and nono juice (carer), mango jam (gardener), ukulele (teacher), pearl case (fisher), firework rockets (fireworks maker). Specialities never include anything a level goal needs.
+
+**Map of the motu** (Menu › 🗺️, or the M key): terrain drawn once, with you (red arrow), your fare, the spring, every building, trade buildings, the team’s fare and team, bungalows, the treetop course, the canoe, animal friends, the reef pass, the rāhui zone, paths and cables. Tap a legend item to highlight it.
+
+## v54 · Paths, cables and a team
+
+**Paths** (creation mode › 🛤️ Path): tap the start then the end; tap a path to remove it (half the material back). Five materials unlocked by level, finer = faster on foot: white sand trail (lv 1, coconuts, ★, +10%), basalt stepping stones (lv 3, stones, ★★, +25%), wooden boardwalk on stilts that crosses shallow water (lv 6, planks, ★★★, +30%), cut-basalt walkway (lv 10, ★★★★, +40%), crystal walkway that glows at night (lv 16, zeolite from the cave, ★★★★★, +50%). Decorate a path: flower border (lv 2), shell border (lv 3), little lanterns lit at night (lv 6).
+
+**Electric cables** (creation mode › ⚡ Cable, once you have a solar panel or a generator): overhead on poles (logs and ropes; may come down in a cyclone, repair with 1 rope) or buried (stones and ropes; withstands cyclones). Connected electric street lamps use 25% less energy.
+
+**My team** (Menu › 👥, from level 8): build the team’s fare (a roof for everyone), then hire up to 3 people (2 at level 12, 3 at level 16): gardener (harvests what is ripe), fisher (within the lagoon’s limit, out at sea when it is tired), craftsperson (thatch and rope), animal keeper (no animal ever lonely), guesthouse staff (higher rating). Fair wage shown and paid every morning, a paid rest day every 7 days, a thank-you bonus, ending a contract pays one more day. If you can’t pay, nobody works unpaid. They walk between home and work, faster on paths.
+
+**Plumber · water keeper**: a new secret trade (rainwater tank, more water from the still).
+
+## v53 · A clearer Craft menu
+
+Craft only shows what you can already make at your level, and the pages (tabs) appear as they open up. At the bottom of each page, a locked line says how many new things arrive at the next level, without revealing them.
+
+## v52 · Trades (métiers)
+
+Menu › 🛠️ My trade. From level 5, choose a trade among those you have unlocked by playing. Once chosen, it can only change at trade level 10 or player level 15 (progress in every trade is kept). Trade levels 1–10 come from the trade’s own gestures. Each trade unlocks: a capacity (lv 2), a tool given by an elder (lv 4), a building with a daily action (lv 6), an elder’s quest (lv 8) and a master capacity (lv 10). Everyone can still do everything; the specialist just does it better, and nothing harms nature.
+
+Trades: fisher (drying rack, stone-fishing quest, keeper of the lagoon), gardener (nursery, the elders’ garden), carpenter (workshop: 1 log = 2 planks, the elders’ canoe), weaver (weaving fare, the family tīfaifai), friend of the animals (animal shelter, the refuge), guide (welcome fare = one more room, the legend for visitors).
+
+Secret trades, hidden until discovered by playing: mediator (fare of the word), peacekeeper · mūtoʻi (post, daily round, non-violent), carer (fare rāʻau), vet (animal clinic, injured birds), astronomer · star navigator (observatory, faster and safer expeditions), electrician (electrical workshop), teacher (school, a child helps every day), weather watcher (weather station, daily bulletin), fireworks maker (rockets fired over the sea, far from the animals; guests applaud).
+
 ## v51 · Friends’ vaʻa (mutual help between players)
 
 Menu › 🛶 Friends’ vaʻa. Needs the internet; the island keeps working without it.
