@@ -436,3 +436,34 @@ body.coarse #vignette{background:radial-gradient(ellipse at center,rgba(0,0,0,0)
 .fpsask{position:fixed;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:70;max-width:520px;margin:0 auto;background:var(--paper);border:2.5px solid var(--ink);border-radius:16px;padding:10px 14px;box-shadow:0 4px 0 rgba(20,49,58,.35)}
 .fpsask p{margin:0 0 8px;font-weight:700}
 .mapwrap{display:flex;justify-content:center}.mapwrap canvas{width:min(100%,520px);aspect-ratio:1;border-radius:16px;border:2.5px solid var(--ink);background:#1a5c96}
+/* v57 guide */
+#sheetHelp{font-family:var(--display);font-size:20px;margin-right:8px}
+.gitem{border-top:2px dashed var(--paper-2);padding:8px 2px}.gitem summary{font-family:var(--display);font-size:17px;cursor:pointer;list-style:none}.gitem summary::-webkit-details-marker{display:none}
+.gitem[open] summary{color:var(--lagoon)}.gitem p{margin:6px 0 2px;font-size:14.5px;line-height:1.4}
+#sheet .sheet-head #sheetTitle{flex:1}
+/* v58 skill game */
+#mini{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;background:rgba(14,40,74,.35)}
+#mini .minic{background:var(--paper);border:2.5px solid var(--ink);border-radius:18px;padding:14px 16px;width:min(92vw,420px);text-align:center;box-shadow:0 4px 0 rgba(20,49,58,.35)}
+#mini .minic b{font-family:var(--display);font-size:20px}
+.mbar{position:relative;height:26px;border-radius:13px;background:#e9dcc0;border:2px solid var(--ink);margin:14px 4px 8px;overflow:hidden}
+.mbar .mz{position:absolute;top:0;bottom:0;width:20%;background:#55c08a}
+.mbar i{position:absolute;top:-2px;bottom:-2px;width:6px;margin-left:-3px;background:var(--ink);border-radius:3px}
+#mini .big{margin-top:8px;width:100%}
+/* v61 voyage */
+#voyHud{position:fixed;left:0;right:0;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:30;display:flex;align-items:flex-end;justify-content:space-between;gap:8px;padding:0 10px;pointer-events:none}
+#voyHud canvas{width:118px;height:118px;pointer-events:none}
+#voyHud .vinfo{flex:1;max-width:300px;background:rgba(246,236,216,.92);border:2px solid var(--ink);border-radius:14px;padding:6px 10px;pointer-events:none;align-self:flex-end;margin-bottom:6px}
+#voyHud .vinfo b{font-size:13px}.vbar{height:8px;border-radius:4px;background:#d9cdb0;margin-top:5px;overflow:hidden}.vbar span{display:block;height:100%;background:#1fa9b0;width:0}.vbar.risk span{background:#e0473a}
+#voyHud .vsteer{display:flex;flex-direction:column;gap:8px;pointer-events:auto;margin-bottom:64px}
+#voyHud .vsteer button{width:62px;height:62px;border-radius:50%;border:2.5px solid var(--ink);background:var(--paper);font-size:26px;font-weight:900;touch-action:none}
+body.voyaging #actions,body.voyaging #hint,body.voyaging #goal{display:none!important}
+#voyHud .vinfo{pointer-events:auto}#voyHud #vSkip{margin-top:6px;font-size:12px;padding:4px 10px}
+#voyHud .vsteer{margin-bottom:0}
+
+/* v63: tidier pause menu (two even columns), no extra effects */
+#menu .card>.row{display:grid;grid-template-columns:1fr 1fr;gap:9px;align-items:stretch}
+#menu .card>.row>.big{font-size:14.5px;line-height:1.2;padding:11px 8px;border-radius:16px;width:100%;margin:0;min-height:50px;box-shadow:0 3px 0 var(--ink);border-width:2px;white-space:normal;overflow-wrap:anywhere}
+#menu .card>.row>.big[hidden]{display:none}
+#menu .card>.row>#resumeBtn{grid-column:1/-1;font-size:19px;min-height:54px}
+#menu .card>.row>.big.warn{grid-column:1/-1}
+#scene{position:fixed;inset:0}#tint63{position:absolute;inset:0;background:#1a2f8c;pointer-events:none;display:none}

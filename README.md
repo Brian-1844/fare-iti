@@ -589,6 +589,40 @@ To add a recipe or change a level, edit `data.js`. Every recipe has a `lv` (the 
 
 </details>
 
+## v63 · Nicer light, tidier menu, same speed
+
+Sunsets are now golden with long shadows, nights are a moonlit blue, and the striped shadows at low sun are gone. The pause menu is an even two-column grid. Nothing was added to the 3D scene, so the frame rate is unchanged.
+
+## v62 · Fēti’i, the extended family
+
+From level 14, Menu › 🏡 Fēti’i lets you choose: an **open motu** (a little village) or a **quiet motu** (all the room for nature). It’s a balance. Families help every day (fishers, gardeners, craftspeople, singers, cooks, builders), have simple wishes and become your **hoa rahi** (close friends) if you talk with them every day, but each family eats 2 meals and drinks 1 water a day and puts a little pressure on the lagoon; if they go short too long they leave kindly to join cousins in Tahiti. The quiet motu heals the lagoon faster, makes your animals trust you more and gives your guesthouse a calm bonus. Build a family fare (4 at most); when your motu is welcoming enough (healthy lagoon, flowers, paths, clean water, sun, a liked guesthouse), a family asks to settle. From level 16, in the **faʻaʻamu** tradition, you can welcome Mama Tetua or Heimana into your household. You can change your choice every 7 days.
+
+## v61 · The sailing phase (star navigation)
+
+Choosing an island in “Sail to…” (or the way home) now starts a real crossing on the open ocean. The vaʻa sails by itself; steer with ◀ ▶ (or the joystick/arrow keys) and keep the guide star (Taʻurua for Tahiti, Ana-muri for Moorea, Matariʻi for Huahine, Ana-varu for Raiatea, Fetū iti for your motu) ahead of the bow, as shown on the star compass (kapehu). Manu gives the old navigators’ clues: the swell always on the same side of the hull, then a still cloud above the island, seabirds flying home to land, floating coconuts. A blue bar shows the distance travelled, a red bar the danger: drifting off course too long makes it fill; Manu warns at half and at 80%; when it is full the vaʻa hits a hidden reef and you wash up on your motu’s beach with the vaʻa to repair (3 planks, 2 ropes), a little hungry, nothing else lost. “Skip to arrival” is always there. The Sky navigator trade makes crossings shorter, and with the kapehu the compass shows the exact angle.
+
+## v59–v60 · Reshape the motu, protect the coast, Raiatea
+
+**v59.** Creation mode › ♻️ Take apart: recycle a building, half of its materials come back (not while animals or the team live in it). Near a plant or tree: “Dig up to replant”: replanted elsewhere it keeps most of its growth (big plants need a shovel or an ʻō). “Dig out the stump” frees the space (+1 log). Pick a bouquet from a flower bed once a day. Creation mode › 🪨 Sea wall (from level 4): rocks along the shore, 1 stone per step; during a cyclone the protected coast gets fewer trunks and less litter, and the vaʻa or pontoon behind the wall are sheltered; the share of protected coast is shown. New title **Tiaʻi moana · Guardian of the ocean**: reach level 6 without ever catching a fish, with 30 pieces of litter picked up, 2 honu or fish saved and 5 corals replanted (shown in the menu, +10 lagoon health).
+
+**v60 · Raiatea** (sail there from level 12 with a sail). Mama Hina tells the popular legend of the tiare ʻapetahi (told without gods). She gives a riddle; at the foot of Mount Temehani five carved stones (🌊 🐟 🐢 ⭐ 🌺) must be touched in the order of the fisherman’s journey to open the path. On the plateau, at dawn, the ʻapetahi opens: you only look and sketch it (it grows nowhere else in the world and is protected). Back with Mama Hina: an ʻapetahi pāreu, motoʻi (ylang-ylang) cuttings to plant on your motu, and two new recipes: motoʻi monoʻi and a motoʻi crown. Pick motoʻi flowers in the village once a day.
+
+## v58 · The kitchen, the cook, going inside, sharing
+
+**Kitchen (fare tūtu, lv 7)**: go inside to cook on the gas stove (gas bottles from the goélette, 12 cookings each; sometimes an extra portion) or bake in the oven (coconut bread, banana cake, oven fish in coconut milk, oven ʻuru); make poisson cru with a skill game. **Biodigester (lv 9)**: feed it scraps, dead leaves and fronds, it makes free biogas for the stove. **Solar oven (lv 6)**: bakes for free in fine weather.
+
+**Cook** (cuisinier), a visible trade unlocked after 15 dishes: dishes fill more, a carved ʻumete, the fare tāmāʻa (a daily meal for neighbours and guests), the big Sunday ahimaʻa quest.
+
+**Merged trades** (clearer, easier to balance): astronomer + weather watcher = Sky navigator; electrician + plumber = Water and energy technician. Saves move over and progress is added up. Now 7 visible trades and 8 secret ones.
+
+**Going inside**: near the kitchen, a trade building or the team’s fare, “Go in”: the roof lifts, the camera comes close and the place’s activities appear, some with a little skill game (tap “Now!” when the marker is in the green, 3 tries; the better you do, the more you get). Every trade building has its own activity (mend the nets, plane a plank, plait a pattern, brush the animals, assemble a rocket…). In the team’s fare, share a meal with your team.
+
+**Share and install**: Menu › 📤 Share the game (the link and your friend code, through the phone’s share menu or copied); 📲 Install puts the Fare Iti icon on the phone’s home screen (also on the start screen).
+
+## v57 · The guide
+
+Menu › ❓ Guide (or the H key): 21 short help topics (getting started, food, crafting, time, garden, animals, Manu and the birds, fishing, the lagoon and the rāhui, fair trade, the friends’ vaʻa, trades, the team, creation mode, energy and water, expeditions, the guesthouse, weather and cyclones, the map, if the game is slow, the charter), with a search box. Every page has a small “?” button next to the close button: it opens the guide at the right topic, with a Back button to return.
+
 ## v55–v56 · Lighter on phones, a Craft search, trade specialities, a map
 
 **Quality** (Menu › Quality), five levels: economy (no shadows, 85% resolution, no antialiasing, point lights off, less grass), low, normal, high, ultra (full definition: up to 3× resolution, 4096 shadow map, more grass). Shadows are redrawn every 3rd frame (low) or 2nd frame (normal) since the sun moves slowly; the 3D view draws at half rate while a sheet or the menu is open (battery and heat). After a few seconds of play, if the game runs below 26 images/s, it offers to switch to the next lighter quality (once per quality).

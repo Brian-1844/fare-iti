@@ -7440,7 +7440,7 @@ function metSheet(){$('#sheetTitle').textContent=LG('Mon métier','My trade');co
     h+=`</div>`;}
   h+=`<h3>${cur?LG('Les autres métiers','The other trades'):LG('Choisis ton métier','Choose your trade')}</h3>`;
   if(cur&&!metCanChange())h+=`<p class="small-note">🔒 ${LG(`Tu pourras changer au niveau 10 de ton métier (${metLv(cur)}/10) ou au niveau 15 (${S.level||1}/15).`,`You can change at trade level 10 (${metLv(cur)}/10) or level 15 (${S.level||1}/15).`)}</p>`;
-  for(const k in MET){if(k===cur)continue;const C=MET[k],ok=C.ok(),x=M.xp[k]||0,hid=C.secret&&!ok&&!x;
+  for(const k in MET){if(k===cur||MET[k].hidden)continue;const C=MET[k],ok=C.ok(),x=M.xp[k]||0,hid=C.secret&&!ok&&!x;
     if(hid){h+=`<div class="recipe locked"><div class="rinfo"><div class="name">❔ ${LG('Métier secret','Secret trade')}</div><div class="tah">${LG('Indice','Hint')} : ${C.cond()}</div></div><button disabled>?</button></div>`;continue;}
     h+=`<div class="recipe${ok?'':' locked'}"><div class="rinfo"><div class="name">${ok?C.ic:'🔒'} ${C.n()}${C.secret?` <small>· ${LG('secret découvert','secret found')}</small>`:''}${x?` <small>· ${LG('niv.','lv')} ${metLv(k)}</small>`:''}</div><div class="tah">${C.t()}</div>${ok?'':`<div class="why">${C.cond()}</div>`}</div>
       <button data-met="${k}" ${ok&&metCanChoose()&&metCanChange()?'':'disabled'}>${cur?LG('Changer','Switch'):LG('Choisir','Choose')}</button></div>`;}
@@ -7450,7 +7450,7 @@ const _v7Sheet52=v7Sheet;v7Sheet=function(mode){if(mode==='metier')return metShe
 (function(){const row=document.querySelector('#menu .row');if(!row)return;const b=document.createElement('button');b.className='big ghost';b.id='metBtn';b.setAttribute('data-notr','');b.textContent='🛠️ '+LG('Mon métier','My trade');b.onclick=()=>{$('#menu').hidden=true;openSheet('metier');};
   const ref=document.getElementById('amisBtn')||document.getElementById('animalsBtn');row.insertBefore(b,ref||null);})();
 let metT=4;
-function updateV52(dt){metT-=dt;if(metT>0)return;metT=6;const M=MS();M.found=M.found||{};for(const k in MET){if(MET[k].secret&&!M.found[k]&&MET[k].ok()){M.found[k]=1;pendingSave=true;if((S.level||1)>=5)toast(LG(`Métier secret découvert : ${MET[k].ic} ${MET[k].n()} ! (Menu › Mon métier)`,`Secret trade discovered: ${MET[k].ic} ${MET[k].n()}! (Menu › My trade)`));}}if(!myMet()&&metCanChoose()&&!S.flags.metTip&&Object.values(MET).some(C=>C.ok())){S.flags.metTip=1;manuSay(LG('Tu peux maintenant choisir un métier ! Ouvre le menu › Mon métier.','You can now choose a trade! Open the menu › My trade.'),8);}}
+function updateV52(dt){metT-=dt;if(metT>0)return;metT=6;const M=MS();M.found=M.found||{};for(const k in MET){if(MET[k].secret&&!MET[k].hidden&&!M.found[k]&&MET[k].ok()){M.found[k]=1;pendingSave=true;if((S.level||1)>=5)toast(LG(`Métier secret découvert : ${MET[k].ic} ${MET[k].n()} ! (Menu › Mon métier)`,`Secret trade discovered: ${MET[k].ic} ${MET[k].n()}! (Menu › My trade)`));}}if(!myMet()&&metCanChoose()&&!S.flags.metTip&&Object.values(MET).some(C=>C.ok())){S.flags.metTip=1;manuSay(LG('Tu peux maintenant choisir un métier ! Ouvre le menu › Mon métier.','You can now choose a trade! Open the menu › My trade.'),8);}}
 const _u38_52=updateV38;updateV38=function(dt){_u38_52(dt);updateV52(dt);};
 ACH.push(['metier',()=>LG('Un métier','A trade'),()=>LG('Choisir ton métier','Choose your trade'),()=>!!myMet()],
   ['metier10',()=>LG('Maître artisan','Master of a trade'),()=>LG('Atteindre le niveau 10 d’un métier','Reach level 10 in a trade'),()=>Object.keys(MET).some(k=>metLv(k)>=10)],
@@ -7801,10 +7801,10 @@ MET_TOOLS.cle=[LG('Clé à molette','Adjustable wrench'),'#8a9aa4'];ITEMS.cle={n
 MQ.plombier={need:{bamboo:6,rope:3,stone:4},give:{},xpf:3500,t:()=>LG('Au village, les mamans vont chercher l’eau loin, à la source. Avec l’ancien fontainier, pose des tuyaux de bambou tenus par des cordes et un petit bassin de pierres : l’eau fraîche arrive au milieu du village.','In the village, mothers fetch water far away, at the spring. With the old water keeper, lay bamboo pipes held by ropes and a little stone basin: fresh water arrives in the middle of the village.')};
 for(const q in MQ.plombier.need)if(!ITEMS[q])delete MQ.plombier.need[q];
 V17T.metbld_plombier=1;
-if(typeof stillSim==='function'){const _ss=stillSim;stillSim=function(dt,day){const W=S.still,w0=W?W.w:0;_ss(dt,day);if(!W||myMet()!=='plombier')return;const d=W.w-w0;if(d>0)W.w=Math.min(6,W.w+d*(metLv('plombier')>=10?1:metLv('plombier')>=2?0.2:0));};}
+if(typeof stillSim==='function'){const _ss=stillSim;stillSim=function(dt,day){const W=S.still,w0=W?W.w:0;_ss(dt,day);if(!W||!metHas('plombier',1))return;const d=W.w-w0;if(d>0)W.w=Math.min(6,W.w+d*(metLv('plombier')>=10?1:metLv('plombier')>=2?0.2:0));};}
 {const _mb=metBldActs;metBldActs=function(k,A){if(k!=='plombier')return _mb(k,A);const M=MS(),C=MET[k];if(myMet()!==k){A.push({label:C.bld,sub:LG('Ce n’est plus ton métier actuel','No longer your current trade'),off:true});return;}
   if(!metDayLeft(k)){A.push({label:C.bld,sub:LG('La citerne se remplit… reviens demain','The tank is filling… come back tomorrow'),off:true});return;}
-  const rain=S.weather.r>0.25,n=(2+(rain?3:0))*(metLv('plombier')>=10?2:1),cups=Math.min(n,S.inv.ipu||0);
+  const rain=S.weather.r>0.25,n=(2+(rain?3:0))*(metLv(metAlias('plombier'))>=10?2:1),cups=Math.min(n,S.inv.ipu||0);
   A.push(cups>0?{label:LG('Remplir tes coupes à la citerne','Fill your cups at the tank'),sub:LG(`${cups} coupe${cups>1?'s':''} d’eau de pluie${rain?' (il pleut : la citerne est pleine !)':''}`,`${cups} cup${cups>1?'s':''} of rainwater${rain?' (it’s raining: the tank is full!)':''}`),fn:()=>{S.inv.ipu-=cups;give({water:cups});stat('raintank');M.day[k]=S.day;chopT=0.4;pendingSave=true;refresh();}}
     :{label:C.bld,sub:LG('Il te faut des coupes de coco vides','You need empty coconut cups'),off:true});};}
 
@@ -7903,6 +7903,689 @@ addEventListener('keydown',e=>{if((e.key==='m'||e.key==='M')&&!overlayOpen()&&!(
 {const _u=updateV38;updateV38=function(dt){_u(dt);if(sheetMode!=='carte')return;mapT-=dt;if(mapT<=0){mapT=0.5;drawMap();}};}
 const V56={drawMap,buildMapBase,mapMarks};
 
+/* =====================================================================
+   v57: the guide. Menu › ❓ Guide (or the H key): short help topics with a
+   search box. Every sheet gets a small "?" button that opens the guide at
+   the right topic, with a button to go back.
+   ===================================================================== */
+let GUIDE=()=>[
+ {k:'debut',ic:'🌴',t:LG('Bien commencer','Getting started'),b:LG('Suis l’objectif affiché en haut : il te dit quoi faire ensuite. Touche Manu (l’oiseau, en haut) pour un conseil précis. Approche-toi des choses (cocotier, rocher, animal…) : des boutons d’action apparaissent en bas à droite.','Follow the goal shown at the top: it tells you what to do next. Tap Manu (the bird, at the top) for a precise tip. Walk up to things (palm, rock, animal…): action buttons appear at the bottom right.')},
+ {k:'faim',ic:'🍽️',t:LG('Manger et la barre de faim','Eating and the food bar'),b:LG('La barre baisse doucement, plus vite au soleil quand tu travailles. À 0 % tu ne meurs pas, tu marches juste lentement jusqu’à ce que tu manges. Touche un aliment dans la barre du haut, ou le bouton « Manger ». Les plats cuisinés au foyer nourrissent beaucoup plus.','The bar drops slowly, faster when you work in the sun. At 0% you don’t die, you just walk slowly until you eat. Tap a food in the top bar, or the “Eat” button. Dishes cooked at the fire pit fill you up much more.')},
+ {k:'craft',ic:'🔨',t:LG('Fabriquer et construire','Crafting and building'),b:LG('Le bouton « Fabriquer » ouvre les pages Matériaux, Outils, Construire… Seul ce qui est possible à ton niveau est montré ; de nouvelles choses arrivent à chaque niveau. Cherche une recette par son nom ou un ingrédient avec la loupe. Les chantiers prennent du temps réel, même jeu fermé, un à la fois.','The “Craft” button opens the Materials, Tools, Build… pages. Only what’s possible at your level is shown; new things arrive each level. Search a recipe by name or ingredient with the magnifier. Building jobs take real time, even with the game closed, one at a time.')},
+ {k:'temps',ic:'⏳',t:LG('Le temps qui passe','Time passing'),b:LG('Une journée du jeu dure 12 minutes. Les plantes et les chantiers continuent pendant que le jeu est fermé (jusqu’à 24 h). Plus tu montes en niveau, plus les choses prennent du temps : lance un chantier, occupe-toi d’autre chose, reviens plus tard.','A game day lasts 12 minutes. Plants and building jobs carry on while the game is closed (up to 24 h). The higher your level, the longer things take: start a job, do something else, come back later.')},
+ {k:'jardin',ic:'🌱',t:LG('Le jardin et l’engrais','The garden and fertiliser'),b:LG('Plante graines et boutures sur un terrain libre. Arrose et mets du compost : ça pousse beaucoup plus vite. Le compost se fait avec les restes de repas, les palmes et les feuilles mortes ramassées sous les grands arbres.','Plant seeds and cuttings on free ground. Water and add compost: it grows much faster. Compost is made from food scraps, fronds and dead leaves raked under the big trees.')},
+ {k:'animal',ic:'🐾',t:LG('Les animaux amis','Animal friends'),b:LG('Les animaux sont des amis, jamais des ressources. Gagne leur confiance avec ce qu’ils aiment, donne-leur un nom, caresse-les, jouez ensemble. Passe les voir chaque jour : plus ils t’aiment, plus ils sont généreux. Au niveau 10 d’amitié, un bébé naît.','Animals are friends, never resources. Win their trust with what they love, name them, pet them, play together. Visit them every day: the more they love you, the more generous they are. At friendship level 10 a baby is born.')},
+ {k:'manu',ic:'🐦',t:LG('Manu et les oiseaux compagnons','Manu and the bird companions'),b:LG('Ton guide grandit avec toi (niveaux, capacités, équipement). Dans « Oiseaux compagnons », tu peux choisir un autre guide quand tu l’as rencontré : l’ʻitatae quand le lagon est florissant, l’ʻōmamao quand tu as planté 5 arbres de la forêt.','Your guide grows with you (levels, abilities, gear). In “Bird companions” you can choose another guide once you’ve met it: the ʻitatae when the lagoon thrives, the ʻōmamao when you’ve planted 5 forest trees.')},
+ {k:'peche',ic:'🎣',t:LG('Pêcher','Fishing'),b:LG('Monte dans ton vaʻa et lance ta ligne près des ronds dans l’eau (les bancs). Au large, derrière le récif, suis les oiseaux qui plongent pour les gros poissons. Dans le lagon, respecte la limite du jour pour qu’il reste en bonne santé.','Get in your vaʻa and cast near the rings on the water (shoals). Out at sea, past the reef, follow the diving birds for big fish. In the lagoon, keep within the daily limit so it stays healthy.')},
+ {k:'lagon',ic:'🐠',t:LG('La santé du lagon et le rāhui','Lagoon health and the rāhui'),b:LG('Le lagon guérit quand tu pêches raisonnablement, ramasses les déchets, libères les honu et replantes du corail. Le rāhui met une zone au repos : personne n’y pêche, et à la levée les poissons sont plus nombreux.','The lagoon heals when you fish reasonably, pick up litter, free the honu and replant coral. The rāhui puts a zone to rest: nobody fishes there, and when it’s lifted the fish are more plentiful.')},
+ {k:'troc',ic:'🤝',t:LG('Le troc juste','Fair trade'),b:LG('Échange ce que tu as en trop contre ce qui te manque, à la valeur juste affichée. Un troc n’est accepté que s’il est juste pour les deux. Chaque bon troc fait grandir la confiance. Quand on t’aide, tu peux offrir un cadeau en retour.','Swap what you have too much of for what you lack, at the fair value shown. A trade is only accepted when it’s fair for both. Every good trade grows trust. When someone helps you, you can give a gift back.')},
+ {k:'amis',ic:'🛶',t:LG('Le vaʻa des amis','The friends’ vaʻa'),b:LG('Avec internet, échange ton code ami avec tes proches : cadeau du jour, demande d’aide (même après un cyclone), livre d’or, parrainage et Objectif du fenua de la semaine. Messages tout prêts seulement, jamais de classement.','With internet, swap your friend code with people close to you: daily gift, help requests (even after a cyclone), guest book, sponsorship and the weekly Objectif du fenua. Ready-made messages only, never any ranking.')},
+ {k:'metier',ic:'🛠️',t:LG('Les métiers','Trades'),b:LG('Dès le niveau 5, choisis un métier parmi ceux que tu as débloqués. Il ne change qu’au niveau 10 du métier ou au niveau 15. Chaque palier donne une capacité, un outil, un bâtiment et une quête. Des métiers secrets se découvrent en jouant.','From level 5, choose a trade among those you have unlocked. It only changes at trade level 10 or level 15. Each step gives an ability, a tool, a building and a quest. Secret trades are discovered by playing.')},
+ {k:'equipe',ic:'👥',t:LG('Ton équipe','Your team'),b:LG('Dès le niveau 8, construis le fare de l’équipe puis embauche (jusqu’à 3 personnes). Le salaire juste est payé chaque matin, le jour de repos aussi. Personne ne travaille sans être payé.','From level 8, build the team’s fare, then hire (up to 3 people). The fair wage is paid every morning, the rest day too. Nobody works without pay.')},
+ {k:'creation',ic:'🏗️',t:LG('Mode création, chemins et câbles','Creation mode, paths and cables'),b:LG('Dans le menu, « Mode création » : vue du dessus, le temps s’arrête. Touche un bâtiment puis le sol pour le déplacer. « Chemin » trace des allées (5 matériaux, on marche plus vite dessus) et « Câble » relie tes lampadaires électriques.','In the menu, “Creation mode”: top view, time stops. Tap a building then the ground to move it. “Path” lays walkways (5 materials, faster walking) and “Cable” connects your electric street lamps.')},
+ {k:'energie',ic:'☀️',t:LG('Énergie et eau propres','Clean energy and water'),b:LG('Le panneau solaire charge une batterie le jour pour les lampadaires électriques. Le distillateur solaire transforme l’eau de mer en eau douce sans électricité. Le jardin hydroponique fait pousser des légumes dans l’eau.','The solar panel charges a battery by day for the electric lamps. The solar still turns sea water into fresh water with no electricity. The hydroponic garden grows vegetables in water.')},
+ {k:'expe',ic:'🧭',t:LG('Expéditions et voyages','Expeditions and voyages'),b:LG('Dès le niveau 5 avec un vaʻa, envoie un équipage vers les îles lointaines (Menu › Expéditions) : il revient en temps réel avec des biens. Au niveau 12, avec une voile, sors par la passe et navigue toi-même vers Tahiti et Moorea.','From level 5 with a vaʻa, send a crew to far islands (Menu › Expeditions): it comes back in real time with goods. At level 12, with a sail, go out through the pass and sail yourself to Tahiti and Moorea.')},
+ {k:'pension',ic:'🛏️',t:LG('La pension de famille','The guesthouse'),b:LG('Ouvre ta pension pour accueillir des clients : exauce leurs souhaits, offre un collier de tiare, propose des activités (tour du lagon, parcours dans les arbres, feux d’artifice). Les bungalows sur pilotis ajoutent des chambres.','Open your guesthouse to welcome guests: grant their wishes, offer a tiare necklace, suggest activities (lagoon tour, treetop course, fireworks). Overwater bungalows add rooms.')},
+ {k:'meteo',ic:'🌀',t:LG('Météo et cyclones','Weather and cyclones'),b:LG('Par tempête, personne ne prend la mer. Avant un cyclone, Manu te prévient : mets les animaux à l’abri, ferme les volets, attache ce qui peut s’envoler. Après, répare et demande de l’aide à tes amis.','In a storm nobody goes to sea. Before a cyclone Manu warns you: shelter the animals, close the shutters, tie down what could fly away. Afterwards, repair and ask your friends for help.')},
+ {k:'carte',ic:'🗺️',t:LG('La carte','The map'),b:LG('Menu › Carte du motu (ou la touche M) : ta position, tes bâtiments, tes chemins et tes animaux. Touche un élément de la liste pour le voir sur la carte.','Menu › Map of the motu (or the M key): your position, your buildings, paths and animals. Tap an item in the list to see it on the map.')},
+ {k:'qualite',ic:'📱',t:LG('Si le jeu rame','If the game is slow'),b:LG('Menu › Qualité : économie (le plus léger), basse, normale, haute, ultra (définition totale). Le jeu te propose lui-même une qualité plus légère s’il tourne lentement. Ta progression est gardée dans ce navigateur : pense à « Exporter mon île » de temps en temps.','Menu › Quality: economy (lightest), low, normal, high, ultra (full definition). The game itself offers a lighter quality if it runs slowly. Your progress is kept in this browser: remember to “Export my island” now and then.')},
+ {k:'charte',ic:'📜',t:LG('La charte du fenua','The charter of the fenua'),b:LG('Les mêmes règles pour tous, rien à acheter pour être plus fort, respect dans les messages, échanges justes, prendre soin du fenua, le droit de chacun à prospérer. Relis-la dans le menu.','The same rules for everyone, nothing to buy to be stronger, respect in messages, fair exchanges, caring for the fenua, everyone’s right to prosper. Read it again from the menu.')}];
+const GUIDE_FOR={craft:'craft',bag:'faim',animal:'animal',aname:'animal',manu:'manu',comp:'manu',lagon:'lagon',troc:'troc',amis:'amis',metier:'metier',team:'equipe',carte:'carte',expe:'expe',voyage:'expe',pension:'pension',shop:'pension',stall:'troc',store:'troc',cyclone:'meteo',charte:'charte',plant:'jardin',cook:'faim',gov:'troc',bien:'metier'};
+let guideOpen=null,guideBack=null,guideQ='';
+function guideSheet(){$('#sheetTitle').textContent=LG('Guide','Guide');const Q=normTxt(guideQ);
+  let h=`<div class="csearch"><input id="guideQ" type="search" autocomplete="off" placeholder="🔍 ${LG('Chercher dans le guide…','Search the guide…')}" value="${guideQ.replace(/"/g,'')}"></div>`;
+  if(guideBack)h+=`<div class="row"><button class="big ghost" data-guideback="1">← ${LG('Revenir','Back')}</button></div>`;
+  h+=`<div id="guideList">`+GUIDE().filter(g=>!Q||normTxt(g.t+' '+g.b).includes(Q)).map(g=>`<details class="gitem" data-gk="${g.k}"${guideOpen===g.k||Q?' open':''}><summary>${g.ic} ${g.t}</summary><p>${g.b}</p></details>`).join('')+`</div>`;
+  return h;}
+{const _s=v7Sheet;v7Sheet=function(m){if(m==='guide'){setTimeout(()=>{const e=document.querySelector(`[data-gk="${guideOpen}"]`);if(e)e.scrollIntoView({block:'nearest'});},30);return guideSheet();}return _s(m);};V7S.guide=1;}
+function openGuide(topic){guideBack=sheetMode&&sheetMode!=='guide'?sheetMode:null;guideOpen=topic||null;guideQ='';openSheet('guide');}
+document.addEventListener('input',e=>{if(e.target.id!=='guideQ')return;guideQ=e.target.value;const tmp=document.createElement('div');tmp.innerHTML=guideSheet();const L=document.getElementById('guideList'),N=tmp.querySelector('#guideList');if(L&&N)L.innerHTML=N.innerHTML;});
+document.addEventListener('click',e=>{if(e.target.closest('[data-guideback]')){const b=guideBack;guideBack=null;openSheet(b);}});
+/* the "?" on every sheet */
+(function(){const head=document.querySelector('#sheet .sheet-head'),close=document.getElementById('sheetClose');if(!head||!close)return;const b=document.createElement('button');b.className='icon-btn';b.id='sheetHelp';b.setAttribute('aria-label',LG('Aide','Help'));b.setAttribute('data-notr','');b.textContent='?';
+  b.onclick=()=>{if(sheetMode==='guide')return;openGuide(GUIDE_FOR[sheetMode]||null);};head.insertBefore(b,close);})();
+{const _r=renderSheet;renderSheet=function(){_r();const b=document.getElementById('sheetHelp');if(b)b.hidden=sheetMode==='guide';};}
+(function(){const row=document.querySelector('#menu .row');if(!row)return;const m=document.createElement('button');m.className='big ghost';m.id='guideBtn';m.setAttribute('data-notr','');m.textContent='❓ '+LG('Guide','Guide');m.onclick=()=>{$('#menu').hidden=true;openGuide(null);};
+  const ref=document.getElementById('resumeBtn');row.insertBefore(m,ref?ref.nextSibling:null);})();
+addEventListener('keydown',e=>{if((e.key==='h'||e.key==='H')&&!overlayOpen()&&!(e.target&&/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)))openGuide(GUIDE_FOR[sheetMode]||null);});
+const V57={GUIDE,openGuide};
+
+/* =====================================================================
+   v58: the kitchen, the cook, merged trades, entering buildings, sharing.
+   - Fare tūtu (kitchen, lv 7): gas stove (bottles from the goélette) and an
+     oven; a biodigester (lv 9) turns scraps, leaves and fronds into biogas;
+     a solar oven (lv 6) bakes for free in the sun.
+   - Cook (cuisinier), a visible trade.
+   - Merged trades: astronomer + weather watcher = Navigateur du ciel;
+     electrician + plumber = Technicien de l’eau et de l’énergie
+     (old saves move over, progress added up).
+   - Enter a building (kitchen, trade buildings, team’s fare): the roof lifts,
+     the camera comes close, and activities with a small skill game appear.
+   - Share the game, and install it with its icon on the phone.
+   ===================================================================== */
+/* ----- merged trades ----- */
+const MET_ALIAS={meteo:'astronome',plombier:'technicien'};
+function metAlias(k){return MET_ALIAS[k]||k;}
+{const A=MET.astronome,B=MET.meteo;Object.assign(A.xp,B.xp,A.xp);const okA=A.ok,okB=B.ok;A.ok=()=>okA()||okB();A.cond=()=>LG('Observer le ciel la nuit, ou vivre un cyclone ou une trombe marine','Watch the night sky, or live through a cyclone or a waterspout');
+  A.n=()=>LG('Navigateur du ciel','Sky navigator');A.t=()=>LG('Lit les étoiles, les nuages, le vent et la houle comme les anciens navigateurs : guide les pirogues et prévient avant les tempêtes.','Reads stars, clouds, wind and swell like the ancient navigators: guides canoes and warns before storms.');
+  A.steps=[[2,()=>LG('Chemin des étoiles : expéditions 15 % plus courtes, et chaque matin le temps de la journée','Star path: expeditions 15% shorter, and every morning the day’s weather')],[4,()=>LG('Outil : le kapehu, compas d’étoiles · moins de risque en mer','Tool: the kapehu star compass · less risk at sea')],[6,()=>LG('Bâtiment : l’observatoire · bulletin le jour, étoiles la nuit','Building: the observatory · bulletin by day, stars at night')],[8,()=>LG('Quête : le ciel des navigateurs','Quest: the navigators’ sky')],[10,()=>LG('Grand navigateur : expéditions 30 % plus rapides et moins risquées','Great navigator: expeditions 30% faster and less risky')]];
+  B.hidden=true;}
+{const A=MET.technicien,B=MET.plombier;Object.assign(A.xp,B.xp,A.xp);const okA=A.ok,okB=B.ok;A.ok=()=>okA()||okB();A.cond=()=>LG('Installer le soleil ou l’eau : panneau solaire, groupe, distillateur ou hydroponie','Set up sun or water: solar panel, generator, still or hydroponics');
+  A.n=()=>LG('Technicien de l’eau et de l’énergie','Water and energy technician');A.t=()=>LG('Installe et répare l’énergie propre et l’eau : soleil, batteries, câbles, distillateur, citerne.','Installs and repairs clean energy and water: sun, batteries, cables, still, tank.');
+  A.steps=[[2,()=>LG('Bon branchement : le panneau charge 20 % plus vite et le distillateur donne 20 % de plus','Good wiring: the panel charges 20% faster and the still gives 20% more')],[4,()=>LG('Outil : le multimètre','Tool: the multimeter')],[6,()=>LG('Bâtiment : l’atelier · réparations et citerne d’eau de pluie','Building: the workshop · repairs and a rainwater tank')],[8,()=>LG('Quête : la lumière du village','Quest: light for the village')],[10,()=>LG('Maîtrise : la batterie ne baisse presque plus la nuit, la citerne donne deux fois plus','Mastery: the battery barely drops at night, the tank gives twice as much')]];
+  A.bld=LG('Atelier de l’eau et de l’énergie','Water and energy workshop');B.hidden=true;}
+{const _mh=metHas;metHas=function(k,lv){return _mh(metAlias(k),lv);};}
+(function migrate(){const M=S.met;if(!M)return;for(const a in MET_ALIAS){const b=MET_ALIAS[a];if(M.xp[a]){M.xp[b]=(M.xp[b]||0)+M.xp[a];delete M.xp[a];}if(M.k===a)M.k=b;if(M.bld[a]&&!M.bld[b]){M.bld[b]=M.bld[a];}delete M.bld[a];if(metMeshes[a]){scene.remove(metMeshes[a]);delete metMeshes[a];}if(M.quest[a]&&!M.quest[b])M.quest[b]=M.quest[a];M.found=M.found||{};M.found[a]=1;}
+  for(const k in M.bld)placeMetBld(k);})();
+{const _mb=metBldActs;metBldActs=function(k,A){const M=MS();
+  if(k==='astronome'&&myMet()===k){if(!metDayLeft('astronome_n')&&isNight()){A.push({label:MET[k].bld,sub:LG('Déjà observé cette nuit','Already watched tonight'),off:true});}
+    else if(isNight())A.push({label:LG('Observer les étoiles','Watch the stars'),sub:LG('Matariʻi, la Croix du Sud, Ana-muri…','Matariʻi, the Southern Cross, Ana-muri…'),fn:()=>{stat('stargaze');if(typeof launchShooter==='function'&&Math.random()<0.6)launchShooter();M.day['astronome_n']=S.day;toast(LG('Tu repères les étoiles qui guidaient les pirogues. Une étoile filante passe : fais un vœu !','You find the stars that guided the canoes. A shooting star passes: make a wish!'));pendingSave=true;refresh();}});
+    if(!isNight())A.push(metDayLeft('astronome')?{label:LG('Préparer le bulletin du jour','Prepare today’s bulletin'),sub:LG('Pour tes voisins et les pêcheurs · +900 XPF','For your neighbours and the fishers · +900 XPF'),fn:()=>{stat('forecast');earn(900,_p.set(player.position.x,2.4,player.position.z));toast(meteoText());M.day.astronome=S.day;pendingSave=true;refresh();}}:{label:MET[k].bld,sub:LG('Bulletin fait · reviens la nuit pour les étoiles','Bulletin done · come back at night for the stars'),off:true});return;}
+  if(k==='technicien'&&myMet()===k){const at=_p.set(player.position.x,2.4,player.position.z);
+    A.push(metDayLeft('technicien')?{label:LG('Réparer un appareil des voisins','Repair a neighbour’s appliance'),sub:LG('Radio, lampe, pompe… · +1 200 XPF','Radio, lamp, pump… · +1,200 XPF'),fn:()=>{stat('fixjob');earn(1200,at);M.day.technicien=S.day;toast(LG('La radio de Mama Teura marche de nouveau !','Mama Teura’s radio works again!'));pendingSave=true;refresh();}}:{label:LG('Atelier','Workshop'),sub:LG('Réparation faite aujourd’hui','Repair done today'),off:true});
+    const rain=S.weather.r>0.25,n=(2+(rain?3:0))*(metLv('technicien')>=10?2:1),cups=Math.min(n,S.inv.ipu||0);
+    if(metDayLeft('technicien_w'))A.push(cups>0?{label:LG('Remplir tes coupes à la citerne','Fill your cups at the tank'),sub:LG(`${cups} coupe${cups>1?'s':''} d’eau de pluie`,`${cups} cup${cups>1?'s':''} of rainwater`),fn:()=>{S.inv.ipu-=cups;give({water:cups});stat('raintank');M.day.technicien_w=S.day;pendingSave=true;refresh();}}:{label:LG('Citerne d’eau de pluie','Rainwater tank'),sub:LG('Il te faut des coupes de coco vides','You need empty coconut cups'),off:true});return;}
+  return _mb(k,A);};}
+/* ----- new items ----- */
+ITEMS.gaz={n:LG('Bouteille de gaz','Gas bottle'),t:LG('pour la gazinière · 12 cuissons','for the gas stove · 12 cookings'),cat:'tool'};PRICES.gaz=3500;
+ICON.gaz=`<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="7" width="12" height="14" rx="5" fill="#de4634" stroke="#14313a" stroke-width="1.6"/><rect x="9" y="3" width="6" height="4" rx="1" fill="#8a9aa4" stroke="#14313a" stroke-width="1.4"/></svg>`;
+const OVEN=[{id:'paincoco',n:LG('Pain coco','Coconut bread'),t:LG('le faraoa ʻipo des dimanches','Sunday faraoa ʻipo'),in:{flour:1,coconut:1},out:{paincoco:2},food:40},
+  {id:'gateaub',n:LG('Gâteau à la banane','Banana cake'),t:LG('moelleux, avec un œuf','soft, with an egg'),in:{flour:1,banana:2,egg:1},out:{gateaub:1},food:60},
+  {id:'poissonfour',n:LG('Poisson au four au lait de coco','Oven fish in coconut milk'),t:LG('le poisson du dimanche','the Sunday fish'),in:{fish:1,coconut:1},out:{poissonfour:1},food:55},
+  {id:'urufour',n:LG('ʻUru au four','Oven ʻuru'),t:LG('fondant, à partager','melting, to share'),in:{uru:1},out:{ruru:2},food:0}];
+for(const o of OVEN){const k=Object.keys(o.out)[0];if(!ITEMS[k]){ITEMS[k]={n:o.n,t:o.t,food:o.food,cat:'food'};PRICES[k]=Math.round(o.food*12);ICON[k]=ICON.faraoa||ICON.poe||'';}if(!ORDER.includes(k))ORDER.push(k);}
+for(const k of['gaz'])if(!ORDER.includes(k))ORDER.push(k);
+SHOP.push({id:'gaz',n:LG('Bouteille de gaz','Gas bottle'),t:LG('12 cuissons à la gazinière','12 cookings on the gas stove'),price:3500,give:{gaz:1}});
+RECIPES.push({id:'kitchen',lv:7,n:LG('Construire la cuisine (fare tūtu)','Build the kitchen (fare tūtu)'),t:LG('gazinière et four, cuisine plus vite et nouveaux plats au four · on peut y entrer','gas stove and oven, faster cooking and new oven dishes · you can go inside'),in:{log:4,plank:8,thatch:5,stone:6},place:'kitchen',cat:'build'},
+  {id:'biod',lv:9,n:LG('Construire un biodigesteur','Build a biodigester'),t:LG('transforme restes, feuilles et palmes en biogaz pour la gazinière : plus besoin d’acheter du gaz','turns scraps, leaves and fronds into biogas for the stove: no more gas to buy'),in:{plank:4,stone:6,rope:2},place:'biod',cat:'build'},
+  {id:'fsol',lv:6,n:LG('Fabriquer un four solaire','Make a solar oven'),t:LG('une boîte noire et une vitre : cuit gratuitement au soleil','a black box and a glass pane: bakes for free in the sun'),in:{plank:2,glass:1},place:'fsol',cat:'build'});
+/* ----- cook trade (visible) ----- */
+MET.cuisinier={ic:'🍲',n:()=>LG('Cuisinier · Cuisinière','Cook'),t:()=>LG('Prépare les plats du fenua pour la famille, les voisins et les clients.','Prepares the dishes of the fenua for family, neighbours and guests.'),
+  ok:()=>(S.stats.cooked||0)>=15,cond:()=>LG(`Cuisiner 15 plats (${Math.min(15,S.stats.cooked||0)}/15)`,`Cook 15 dishes (${Math.min(15,S.stats.cooked||0)}/15)`),
+  xp:{cooked:3,tablemeal:4,feast:12,ahimaa:5,baked:4,meal:6},
+  steps:[[2,()=>LG('Bon goût : tes plats cuisinés nourrissent 20 % de plus','Good taste: your cooked dishes fill 20% more')],[4,()=>LG('Outil : le ʻumete, plat en bois sculpté','Tool: the ʻumete, a carved wooden dish')],[6,()=>LG('Bâtiment : le fare tāmāʻa · un repas pour les voisins et les clients chaque jour','Building: the fare tāmāʻa · a meal for neighbours and guests every day')],[8,()=>LG('Quête : le grand ahimaʻa du dimanche','Quest: the big Sunday ahimaʻa')],[10,()=>LG('Chef du fenua : plats 40 % plus nourrissants, la pension gagne en note','Chef of the fenua: dishes 40% more filling, the guesthouse rates higher')]],
+  tool:'umete',bld:LG('Fare tāmāʻa','Fare tāmāʻa'),col:0xe0663a};
+MET_TOOLS.umete=[LG('ʻUmete · plat en bois','ʻUmete · wooden dish'),'#9a6a38'];ITEMS.umete={n:MET_TOOLS.umete[0],t:LG('outil de métier','trade tool'),cat:'tool'};ICON.umete=ICON.toimetier||ICON.multi;if(!ORDER.includes('umete'))ORDER.push('umete');
+MQ.cuisinier={need:{taro:4,uru:2,fish:4,banana:4},give:{},xpf:5000,t:()=>LG('Le dimanche, toute la famille se retrouve autour du grand ahimaʻa. Avec la grand-mère, prépare le four de terre : pierres chaudes, feuilles de bananier, taro, ʻuru, poisson et bananes. Tout le village vient manger.','On Sunday the whole family gathers around the big ahimaʻa. With grandmother, prepare the earth oven: hot stones, banana leaves, taro, ʻuru, fish and bananas. The whole village comes to eat.')};
+for(const q in MQ.cuisinier.need)if(!ITEMS[q])delete MQ.cuisinier.need[q];V17T.metbld_cuisinier=1;
+{const COOKED=new Set([...COOK.map(r=>Object.keys(r.out)[0]),...OVEN.map(r=>Object.keys(r.out)[0])]);const _eat=eat;eat=function(k){const before=S.hunger,f=ITEMS[k]&&ITEMS[k].food;_eat(k);if(S.hunger>before&&COOKED.has(k)&&myMet()==='cuisinier'){const m=metLv('cuisinier')>=10?0.4:metLv('cuisinier')>=2?0.2:0;if(m)S.hunger=Math.min(100,S.hunger+f*m);}};}
+{const _r=v10Rating;v10Rating=function(){return _r()+(metHas('cuisinier',10)?0.15:0);};}
+{const _mb=metBldActs;metBldActs=function(k,A){if(k!=='cuisinier')return _mb(k,A);const M=MS();if(myMet()!==k){A.push({label:MET[k].bld,sub:LG('Ce n’est plus ton métier actuel','No longer your current trade'),off:true});return;}
+  if(!metDayLeft(k)){A.push({label:MET[k].bld,sub:LG('Repas servi aujourd’hui · reviens demain','Meal served today · come back tomorrow'),off:true});return;}
+  const gs=typeof guestsStaying==='function'?guestsStaying():0,need={fish:2,taro:1};const ok=hasAll(need);
+  A.push(ok?{label:LG('Servir le repas du jour','Serve today’s meal'),sub:LG(`2 poissons, 1 taro · voisins${gs?' et '+gs+' client'+(gs>1?'s':''):''} · +${fmtXPF(700+gs*600)}`,`2 fish, 1 taro · neighbours${gs?' and '+gs+' guest'+(gs>1?'s':''):''} · +${fmtXPF(700+gs*600)}`),fn:()=>{take(need);earn(700+gs*600,_p.set(player.position.x,2.4,player.position.z));stat('meal');M.day[k]=S.day;toast(LG('Le fare tāmāʻa est plein : poisson cru, taro, rires. Māuruuru pour ce bon repas !','The fare tāmāʻa is full: poisson cru, taro, laughter. Māuruuru for the lovely meal!'));pendingSave=true;refresh();}}:{label:MET[k].bld,sub:LG('Il faut 2 poissons et 1 taro','Needs 2 fish and 1 taro'),off:true});};}
+/* ----- kitchen, biodigester, solar oven ----- */
+let kitMesh=null,biodMesh=null,fsolMesh=null;
+function roofed(g,y){g.children.forEach(c=>{const b=new THREE.Box3().setFromObject(c);if(b.min.y>y)c.userData.roof=1;});}
+function placeKitchen(){const K=S.kit;if(!K)return;if(kitMesh)scene.remove(kitMesh);const g=new THREE.Group(),W=MAT.plank||MAT.wood;
+  g.add(box(3.4,0.2,2.8,MAT.basalt2||MAT.post,0,0.1,0));for(const[x,z]of[[-1.6,-1.3],[1.6,-1.3],[-1.6,1.3],[1.6,1.3]])g.add(cyl(0.08,2.2,MAT.post,x,1.2,z,6));
+  g.add(box(3.2,1.2,0.06,W,0,0.8,-1.35));g.add(box(0.06,1.2,2.6,W,-1.65,0.8,0));
+  g.add(box(1.0,0.85,0.6,std(0xe9e6df),-0.9,0.62,-0.95));g.add(box(1.0,0.04,0.6,std(0x22262a),-0.9,1.06,-0.95));for(const[x,z]of[[-1.15,-1.05],[-0.65,-1.05],[-1.15,-0.8],[-0.65,-0.8]])g.add(cyl(0.1,0.02,std(0x3c3f44),x,1.09,z,10));
+  g.add(box(0.8,0.7,0.6,std(0x8a8f94),0.4,0.55,-0.95));g.add(box(0.6,0.4,0.03,std(0x22262a),0.4,0.6,-0.64));
+  g.add(box(1.2,0.08,0.7,W,0.6,0.78,0.6));g.add(cyl(0.18,0.55,std(0xde4634),1.35,0.48,-1.0,10));
+  const roof=mesh(new THREE.ConeGeometry(2.7,1.3,4),MAT.thatch||std(0xc9a46a),0,2.95,0);roof.rotation.y=Math.PI/4;roof.scale.set(1,1,0.85);g.add(roof);
+  const smoke=new THREE.Sprite(new THREE.SpriteMaterial({color:0xdddddd,transparent:true,opacity:0,depthWrite:false}));smoke.position.set(-0.9,2.2,-0.95);smoke.scale.setScalar(0.9);g.add(smoke);g.userData.smoke=smoke;
+  roofed(g,2.25);g.position.set(K.x,H(K.x,K.z),K.z);g.rotation.y=K.rot||0;scene.add(g);kitMesh=g;}
+function placeBiod(){const B=S.biod;if(!B)return;if(biodMesh)scene.remove(biodMesh);const g=new THREE.Group();const dome=mesh(new THREE.SphereGeometry(0.9,14,8,0,Math.PI*2,0,Math.PI/2),std(0x3f7d34),0,0.15,0);g.add(dome);
+  g.add(cyl(0.95,0.2,MAT.basalt2||MAT.post,0,0.1,0,14));g.add(cyl(0.06,1.1,std(0x8a9aa4),0.7,0.7,0,6));const p=cyl(0.04,1.6,std(0x8a9aa4),1.4,1.2,0,6);p.rotation.z=Math.PI/2;g.add(p);
+  g.position.set(B.x,H(B.x,B.z),B.z);scene.add(g);biodMesh=g;}
+function placeFsol(){const F=S.fsol;if(!F)return;if(fsolMesh)scene.remove(fsolMesh);const g=new THREE.Group();g.add(box(0.8,0.35,0.6,std(0x22262a),0,0.45,0));const gl=box(0.8,0.02,0.6,new THREE.MeshStandardMaterial({color:0xd9f4fb,transparent:true,opacity:0.5}),0,0.64,0);gl.rotation.x=-0.2;g.add(gl);
+  for(const sd of[-1,1]){const r=box(0.8,0.02,0.5,std(0xe9eef2,{metalness:0.6}),0,0.85,sd*0.55);r.rotation.x=sd*0.9;g.add(r);}for(const[x,z]of[[-0.35,-0.25],[0.35,-0.25],[-0.35,0.25],[0.35,0.25]])g.add(cyl(0.03,0.3,MAT.post,x,0.15,z,4));
+  g.position.set(F.x,H(F.x,F.z),F.z);g.rotation.y=F.rot||0;scene.add(g);fsolMesh=g;}
+placeKitchen();placeBiod();placeFsol();
+{const _pc=v10PlaceCheck;v10PlaceCheck=function(w){if(!['kitchen','biod','fsol'].includes(w))return _pc(w);const key={kitchen:'kit',biod:'biod',fsol:'fsol'}[w];if(S[key])return{ok:false,why:LG('Tu l’as déjà construit','Already built')};
+  if(w==='biod'&&!S.kit)return{ok:false,why:LG('Construis d’abord la cuisine','Build the kitchen first')};const{x,z}=ahead(w==='kitchen'?2.8:1.6),h=H(x,z);if(h<0.35||h>4)return{ok:false,why:LG('Trouve un terrain plat et sec','Find flat, dry ground')};
+  if(occupied(x,z,w==='kitchen'?2.3:1.2))return{ok:false,why:LG('Trop près de quelque chose','Too close to something')};return{ok:true,x,z};};}
+{const _pl=v10Place;v10Place=function(w,c){const rot=player.rotation.y+Math.PI;
+  if(w==='kitchen'){S.kit={x:c.x,z:c.z,rot,gas:0,bio:0};placeKitchen();stat('kitchen');toast(LG('Ta cuisine est prête ! Entre dedans pour cuisiner à la gazinière (bouteilles de gaz à la goélette) ou au four.','Your kitchen is ready! Go inside to cook on the gas stove (gas bottles from the goélette) or in the oven.'));return true;}
+  if(w==='biod'){S.biod={x:c.x,z:c.z,fill:0,t:0};placeBiod();stat('biod');toast(LG('Le biodigesteur est installé : nourris-le de restes, de feuilles et de palmes, il fera du biogaz pour ta cuisine.','The biodigester is in: feed it scraps, leaves and fronds, it will make biogas for your kitchen.'));return true;}
+  if(w==='fsol'){S.fsol={x:c.x,z:c.z,rot};placeFsol();stat('fsol');toast(LG('Ton four solaire est prêt : par beau temps, il cuit le pain et les gâteaux sans rien brûler.','Your solar oven is ready: in fine weather it bakes bread and cakes without burning anything.'));return true;}
+  return _pl(w,c);};}
+{const _oc=v10Occupied;v10Occupied=function(x,z,d){return _oc(x,z,d)||(S.kit&&dist(S.kit.x,S.kit.z,x,z)<d+2)||(S.biod&&dist(S.biod.x,S.biod.z,x,z)<d+1)||(S.fsol&&dist(S.fsol.x,S.fsol.z,x,z)<d+0.6);};}
+{const _ob=v10Obstacles;v10Obstacles=function(l){_ob(l);if(S.biod)l.push([S.biod.x,S.biod.z,0.95]);if(S.fsol)l.push([S.fsol.x,S.fsol.z,0.5]);};}
+{const _ci=creItems;creItems=function(){const o=_ci(),add=(id,ic,n,obj,m,r)=>{if(obj&&m)o.push({id,ic,n,obj,mesh:m,r});};add('kitchen','🍳',LG('Cuisine','Kitchen'),S.kit,kitMesh,2);add('biod','♻️',LG('Biodigesteur','Biodigester'),S.biod,biodMesh,1);add('fsol','🔆',LG('Four solaire','Solar oven'),S.fsol,fsolMesh,0.6);return o;};}
+function kitFuel(){const K=S.kit;return K?(K.gas||0)+(K.bio||0):0;}
+function useFuel(){const K=S.kit;if(K.bio>0)K.bio--;else K.gas--;}
+function sunny(){return dayAmt()>0.4&&S.weather.c<0.6&&S.weather.r<0.2;}
+let kitSrc='stove';
+function kitchenSheet(){const K=S.kit,solar=kitSrc==='solar';$('#sheetTitle').textContent=solar?LG('Four solaire','Solar oven'):LG('Cuisine · fare tūtu','Kitchen · fare tūtu');
+  let h=solar?`<p class="small-note">${sunny()?'🔆 '+LG('Il fait beau : le four solaire chauffe, la cuisson est gratuite.','Fine weather: the solar oven is hot, baking is free.'):'☁️ '+LG('Il faut du soleil pour le four solaire.','The solar oven needs sunshine.')}</p>`
+    :`<p class="small-note">${LG('Énergie','Energy')} : <b>${K.gas||0}</b> ${LG('cuissons au gaz','gas cookings')} · <b>${K.bio||0}</b> ${LG('au biogaz','with biogas')}${S.biod?'':' · '+LG('un biodigesteur ferait du gaz gratuit avec tes restes','a biodigester would make free gas from your scraps')}</p>`;
+  if(!solar){h+=`<h3>${LG('À la gazinière','On the gas stove')}</h3><p class="small-note">${LG('Une cuissons par plat, et parfois une part de plus.','One cooking per dish, and sometimes an extra portion.')}</p>`;
+    h+=COOK.filter(r=>r.lv<=S.level).map(r=>{const[ok,ov]=Object.entries(r.out)[0];return `<div class="recipe"><div class="rinfo"><div class="name">${r.n}</div><div class="flow">${flowHtml(r.in,`${ICON[ok]||''}${ov}`)}</div></div><button data-kc="${r.id}" ${hasAll(r.in)&&kitFuel()>0?'':'disabled'}>${LG('Cuire','Cook')}</button></div>`;}).join('');}
+  h+=`<h3>${LG('Au four','In the oven')}</h3>`+OVEN.map(r=>{const[ok,ov]=Object.entries(r.out)[0];const can=hasAll(r.in)&&(solar?sunny():kitFuel()>0);
+    return `<div class="recipe"><div class="rinfo"><div class="name">${r.n}</div><div class="tah">${r.t}</div><div class="flow">${flowHtml(r.in,`${ICON[ok]||''}${ov}`)}</div></div><button data-ko="${r.id}" ${can?'':'disabled'}>${LG('Enfourner','Bake')}</button></div>`;}).join('');
+  return h;}
+{const _s=v7Sheet;v7Sheet=function(m){if(m==='kitchen')return kitchenSheet();return _s(m);};V7S.kitchen=1;}
+document.addEventListener('click',e=>{if(sheetMode!=='kitchen')return;const b=e.target.closest('[data-kc],[data-ko]');if(!b||b.disabled)return;const solar=kitSrc==='solar';
+  if(b.dataset.kc){const r=COOK.find(x=>x.id===b.dataset.kc);if(!r||!hasAll(r.in)||kitFuel()<=0)return;take(r.in);useFuel();const o={...r.out};if(Math.random()<0.25){const k=Object.keys(o)[0];o[k]++;}give(o);stat('cooked');stat('cooked_'+r.id);floatAtPlayer('🍳 '+Object.entries(o).map(([k,n])=>`+${n} ${nm(k)}`).join(' '));}
+  else{const r=OVEN.find(x=>x.id===b.dataset.ko);if(!r||!hasAll(r.in))return;if(solar?!sunny():kitFuel()<=0)return;take(r.in);if(!solar)useFuel();give(r.out);stat('cooked');stat('baked');floatAtPlayer('🥖 '+Object.entries(r.out).map(([k,n])=>`+${n} ${nm(k)}`).join(' '));}
+  pendingSave=true;refresh();});
+function biodSim(dt){const B=S.biod;if(!B||!S.kit||B.fill<=0)return;B.t+=dt;if(B.t<120)return;B.t=0;B.fill--;S.kit.bio=Math.min(30,(S.kit.bio||0)+1);}
+{const _cu=catchUp;catchUp=function(sec){const r=_cu(sec);if(r!==null&&S.biod&&S.kit){const n=Math.min(S.biod.fill,Math.floor(sec/120));S.biod.fill-=n;S.kit.bio=Math.min(30,(S.kit.bio||0)+n);}return r;};}
+/* ----- entering buildings ----- */
+let INSIDE=null;
+function insideList(){const o=[];if(S.kit&&kitMesh)o.push({k:'kitchen',obj:S.kit,mesh:kitMesh,r:1.3,n:LG('la cuisine','the kitchen')});
+  if(S.met)for(const k in S.met.bld)if(metMeshes[k]&&MET[k])o.push({k:'met_'+k,met:k,obj:S.met.bld[k],mesh:metMeshes[k],r:1.0,n:MET[k].bld});
+  if(S.team&&S.team.home&&homeMesh)o.push({k:'team',obj:S.team.home,mesh:homeMesh,r:1.2,n:LG('le fare de l’équipe','the team’s fare')});return o;}
+function enterB(B){INSIDE=B;B.mesh.traverse(c=>{if(c.userData.roof||(c.isMesh&&new THREE.Box3().setFromObject(c).min.y>B.mesh.position.y+1.85)){c.userData.wasVis=c.visible;c.visible=false;c.userData.hid=1;}});
+  player.position.x=B.obj.x;player.position.z=B.obj.z;openSheet(null);stat('entered');actSig='';
+  if(!S.flags.insideTip){S.flags.insideTip=1;toast(LG('Tu es à l’intérieur ! Les activités du lieu sont en bas. Certaines se jouent avec un petit jeu d’adresse.','You are inside! The place’s activities are at the bottom. Some are played with a little skill game.'));}refresh();}
+function exitB(){const B=INSIDE;if(!B)return;B.mesh.traverse(c=>{if(c.userData.hid){c.visible=c.userData.wasVis!==false;c.userData.hid=0;}});INSIDE=null;const a=(B.obj.rot||0)+Math.PI;player.position.x=B.obj.x+Math.sin(a)*(B.r+1.6);player.position.z=B.obj.z+Math.cos(a)*(B.r+1.6);actSig='';refresh();}
+{const _w=walkable;walkable=function(x,z){if(INSIDE)return dist(x,z,INSIDE.obj.x,INSIDE.obj.z)<INSIDE.r;return _w(x,z);};}
+/* the little skill game: tap when the marker is in the green zone, 3 times */
+let MG=null;
+function miniGame(title,cb){if(MG)return;const el=document.createElement('div');el.id='mini';el.setAttribute('data-notr','');el.innerHTML=`<div class="minic"><b>${title}</b><div class="mbar"><span class="mz"></span><i></i></div><div class="small-note" id="mgTxt">${LG('Touche quand le repère est dans le vert (3 essais)','Tap when the marker is in the green (3 tries)')}</div><button class="big" id="mgGo">${LG('Maintenant !','Now!')}</button></div>`;document.body.appendChild(el);
+  const z0=0.3+Math.random()*0.4;el.querySelector('.mz').style.left=(z0*100-10)+'%';MG={el,t:0,try:0,hit:0,z0,cb,sp:0.9+Math.random()*0.5};}
+function updateMini(dt){if(!MG)return;MG.t+=dt*MG.sp;const p=(Math.sin(MG.t*2.6)+1)/2;MG.p=p;MG.el.querySelector('i').style.left=(p*100)+'%';}
+document.addEventListener('click',e=>{if(e.target.id!=='mgGo'||!MG)return;const ok=Math.abs(MG.p-MG.z0)<0.1;MG.try++;if(ok)MG.hit++;MG.sp+=0.25;const t=MG.el.querySelector('#mgTxt');t.textContent=(ok?'✓ ':'✗ ')+LG(`${MG.hit} réussi${MG.hit>1?'s':''} sur ${MG.try}`,`${MG.hit} of ${MG.try}`);
+  if(MG.try>=3){const g=MG;MG=null;setTimeout(()=>{g.el.remove();g.cb(g.hit);},500);}});
+function skillWord(s){return [LG('Pas facile… mais c’est fait.','Not easy… but it’s done.'),LG('Pas mal !','Not bad!'),LG('Bien joué !','Well done!'),LG('Parfait, gestes de maître !','Perfect, a master’s touch!')][s];}
+const ACTS={
+ pecheur:{n:LG('Réparer les filets','Mend the nets'),need:{rope:1},run:s=>{give({fish:1+s});MS().xp.pecheur=(MS().xp.pecheur||0)+5*s;return `+${1+s} ${nm('fish')}`;}},
+ jardinier:{n:LG('Rempoter les jeunes plants','Repot the seedlings'),need:{},run:s=>{const q=['bshoot','taroshoot','papseed','tcut'].filter(x=>ITEMS[x]);const k=q[Math.floor(Math.random()*q.length)];give({[k]:1+Math.floor(s/2)});MS().xp.jardinier=(MS().xp.jardinier||0)+5*s;return `+${1+Math.floor(s/2)} ${nm(k)}`;}},
+ charpentier:{n:LG('Raboter une planche','Plane a plank'),need:{log:1},run:s=>{give({plank:1+Math.ceil(s/1.5)});MS().xp.charpentier=(MS().xp.charpentier||0)+5*s;return `+${1+Math.ceil(s/1.5)} ${nm('plank')}`;}},
+ tisserand:{n:LG('Tresser un motif','Plait a pattern'),need:{frond:3},run:s=>{give({thatch:1+(s>=2?1:0),strips:s});stat('weave');return `+${1+(s>=2?1:0)} ${nm('thatch')}`;}},
+ eleveur:{n:LG('Brosser les animaux','Brush the animals'),need:{},run:s=>{(S.animals||[]).filter(a=>a.tamed).forEach(a=>{try{addLove(a,0.3*(s+1));}catch(e){}});return LG('Tes animaux ronronnent de bonheur','Your animals purr with joy');}},
+ guide:{n:LG('Préparer une visite contée','Prepare a story tour'),need:{tiare:1},run:s=>{MS().xp.guide=(MS().xp.guide||0)+8*s;earn(300*s,null,true);return `+${fmtXPF(300*s)}`;}},
+ mediateur:{n:LG('Préparer une réunion de quartier','Prepare a neighbourhood meeting'),need:{coconut:2},run:s=>{if(typeof trocIslands==='function'&&typeof addTrust==='function')trocIslands().forEach(q=>addTrust(q,s>=2?1:0));MS().xp.mediateur=(MS().xp.mediateur||0)+6*s;return LG('Chacun repart apaisé','Everyone leaves at peace');}},
+ mutoi:{n:LG('S’entraîner aux premiers secours','Practise first aid'),need:{},run:s=>{MS().xp.mutoi=(MS().xp.mutoi||0)+6*s;return LG('Tu es prêt à aider en cas de besoin','You are ready to help if needed');}},
+ soignant:{n:LG('Préparer un remède','Prepare a remedy'),need:{nono:1},run:s=>{give(ITEMS.tamanuoil&&s>=2?{tamanuoil:1}:{coconut:1});stat('care');return s>=2?`+1 ${nm('tamanuoil')}`:LG('un remède simple','a simple remedy');}},
+ veto:{n:LG('Soigner un oiseau blessé','Heal an injured bird'),need:{},run:s=>{stat('vetcare');if(s>=2)stat('vetcare');return LG('L’oiseau repart en volant','The bird flies off');}},
+ astronome:{n:LG('Lire la carte du ciel','Read the sky chart'),need:{},run:s=>{MS().xp.astronome=(MS().xp.astronome||0)+6*s;return s>=2?LG('Tu sais quand la mer sera calme demain','You know when the sea will be calm tomorrow'):LG('Les étoiles gardent quelques secrets','The stars keep some secrets');}},
+ technicien:{n:LG('Réparer un appareil','Repair an appliance'),need:{},run:s=>{earn(400*s,null,true);MS().xp.technicien=(MS().xp.technicien||0)+6*s;return `+${fmtXPF(400*s)}`;}},
+ enseignant:{n:LG('Préparer la leçon','Prepare the lesson'),need:{},run:s=>{MS().xp.enseignant=(MS().xp.enseignant||0)+8*s;return LG('La leçon sera passionnante','The lesson will be fascinating');}},
+ artificier:{n:LG('Assembler une fusée','Assemble a rocket'),need:{bamboo:1,oil:1},run:s=>{give({fusee:1+(s>=2?1:0)});return `+${1+(s>=2?1:0)} 🎆`;}},
+ cuisinier:{n:LG('Mijoter le plat du jour','Simmer the dish of the day'),need:{fish:1,coconut:1},run:s=>{give({iaota:1+(s>=2?1:0)});stat('cooked');return `+${1+(s>=2?1:0)} ${nm('iaota')}`;}}};
+function insideActs(A){const B=INSIDE;if(!B)return;A.push({label:LG('Sortir','Go out'),sub:LG('Quitter ','Leave ')+B.n,cls:'ghost',fn:exitB});
+  if(B.k==='kitchen'){A.push({label:LG('Cuisiner','Cook'),sub:LG('Gazinière et four','Gas stove and oven'),fn:()=>{kitSrc='stove';openSheet('kitchen');}});
+    if((S.inv.gaz||0)>0)A.push({label:LG('Brancher une bouteille de gaz','Connect a gas bottle'),sub:LG('+12 cuissons','+12 cookings'),fn:()=>{S.inv.gaz--;S.kit.gas=(S.kit.gas||0)+12;chopT=0.4;refresh();}});
+    if(hasAll({fish:1,lime:1,coconut:1}))A.push({label:LG('Préparer le poisson cru','Make poisson cru'),sub:LG('Petit jeu : couper au bon moment','Skill game: cut at the right moment'),fn:()=>miniGame(LG('Couper le poisson','Cut the fish'),s=>{take({fish:1,lime:1,coconut:1});give({iaota2:ITEMS.iaota2?1+(s>=2?1:0):0,iaota:ITEMS.iaota2?0:1});stat('cooked');toast(skillWord(s));refresh();})});return;}
+  if(B.k==='team'){const T=S.team;A.push(T.list.length&&metDayLeft('teammeal')?{label:LG('Partager un repas avec l’équipe','Share a meal with the team'),sub:LG('2 plats cuisinés · ton équipe est motivée pour 3 jours','2 cooked dishes · your team is motivated for 3 days'),off:!['grillfish','ctaro','ruru','iaota','poe','paincoco','poissonfour'].some(k=>(S.inv[k]||0)>=2),fn:()=>{const k=['grillfish','ctaro','ruru','iaota','poe','paincoco','poissonfour'].find(k=>(S.inv[k]||0)>=2);if(!k)return;take({[k]:2});T.list.forEach(p=>p.bonus=S.day+3);S.hunger=Math.min(100,S.hunger+25);MS().day.teammeal=S.day;toast(LG('Un bon repas ensemble : tout le monde rit et se sent bien.','A good meal together: everyone laughs and feels good.'));refresh();}}:{label:LG('Le fare de l’équipe','The team’s fare'),sub:T.list.length?LG('Repas partagé aujourd’hui','Meal shared today'):LG('Personne n’habite ici pour l’instant','Nobody lives here yet'),off:true});return;}
+  if(B.met){const k=B.met;metBldActs(k,A);const act=ACTS[k];if(act&&myMet()===k){const used=!metDayLeft(k+'_act');A.push(used?{label:act.n,sub:LG('Déjà fait aujourd’hui','Done today'),off:true}:{label:act.n,sub:(Object.keys(act.need).length?Object.entries(act.need).map(([q,n])=>`${n} ${nm(q)}`).join(', ')+' · ':'')+LG('petit jeu d’adresse','skill game'),off:!hasAll(act.need),
+      fn:()=>miniGame(act.n,s=>{if(!hasAll(act.need))return;take(act.need);const r=act.run(s);MS().day[k+'_act']=S.day;pendingSave=true;toast(skillWord(s)+' '+r);refresh();})});}}}
+{const _ia=islActions;islActions=function(A){if(INSIDE){insideActs(A);return;}_ia(A);if(S.away||S.boat||CRE.on)return;const px=player.position.x,pz=player.position.z;
+  for(const B of insideList())if(dist(px,pz,B.obj.x,B.obj.z)<B.r+1.8){A.push({label:LG('Entrer','Go in'),sub:B.n,fn:()=>enterB(B)});break;}
+  if(S.fsol&&dist(px,pz,S.fsol.x,S.fsol.z)<1.8)A.push({label:LG('Four solaire','Solar oven'),sub:sunny()?LG('Il fait beau : cuisson gratuite','Fine weather: free baking'):LG('Il faut du soleil','Needs sunshine'),off:!sunny(),fn:()=>{kitSrc='solar';openSheet('kitchen');}});
+  if(S.biod&&dist(px,pz,S.biod.x,S.biod.z)<2){const n=(S.inv.scraps||0)+Math.floor((S.inv.leaves||0)/2)+Math.floor((S.inv.frond||0)/3);A.push(n>0?{label:LG('Nourrir le biodigesteur','Feed the biodigester'),sub:LG(`Restes, feuilles mortes, palmes → biogaz (${S.biod.fill} en cours)`,`Scraps, dead leaves, fronds → biogas (${S.biod.fill} in progress)`),fn:()=>{let f=S.inv.scraps||0;S.inv.scraps=0;const l=Math.floor((S.inv.leaves||0)/2);S.inv.leaves=(S.inv.leaves||0)-l*2;const fr=Math.floor((S.inv.frond||0)/3);S.inv.frond=(S.inv.frond||0)-fr*3;S.biod.fill+=f+l+fr;stat('biofeed');chopT=0.4;floatAtPlayer('♻️ +'+(f+l+fr));refresh();}}:{label:LG('Biodigesteur','Biodigester'),sub:LG(`${S.biod.fill} en cours · ${(S.kit&&S.kit.bio)||0} biogaz prêts`,`${S.biod.fill} in progress · ${(S.kit&&S.kit.bio)||0} biogas ready`),off:true});}};}
+{const _cr=creEnter;creEnter=function(){if(INSIDE)exitB();_cr();};}
+/* ----- share and install ----- */
+const GAME_URL='https://brian-1844.github.io/fare-iti/';
+async function shareGame(){const text=LG('Viens construire ton fare sur un motu de Polynésie avec moi ! Un jeu d’entraide, de nature et de culture polynésienne.','Come and build your fare on a Polynesian motu with me! A game of mutual help, nature and Polynesian culture.');
+  const code=S.comm&&S.comm.code?LG(` Mon code ami : ${S.comm.code}`,` My friend code: ${S.comm.code}`):'';
+  try{if(navigator.share){await navigator.share({title:'Fare Iti',text:text+code,url:GAME_URL});stat('shared');return;}}catch(e){if(e&&e.name==='AbortError')return;}
+  try{await navigator.clipboard.writeText(text+code+' '+GAME_URL);toast(LG('Lien copié ! Colle-le dans un message à tes proches.','Link copied! Paste it in a message to people close to you.'));stat('shared');}catch(e){toast(GAME_URL);}}
+(function(){const row=document.querySelector('#menu .row');if(row){const b=document.createElement('button');b.className='big ghost';b.id='shareBtn';b.setAttribute('data-notr','');b.textContent='📤 '+LG('Partager le jeu','Share the game');b.onclick=shareGame;row.insertBefore(b,document.getElementById('menuInstallBtn')||null);}
+  const intro=document.querySelector('#intro .row');if(intro){const standalone=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+    if(!standalone){const i=document.createElement('button');i.className='big ghost';i.setAttribute('data-notr','');i.textContent='📲 '+LG('Installer (icône sur le téléphone)','Install (icon on your phone)');i.onclick=()=>{const m=document.getElementById('menuInstallBtn');if(m)m.click();};intro.appendChild(i);}
+    const s=document.createElement('button');s.className='big ghost';s.setAttribute('data-notr','');s.textContent='📤 '+LG('Partager','Share');s.onclick=shareGame;intro.appendChild(s);}
+  const mi=document.getElementById('menuInstallBtn');if(mi)mi.textContent='📲 '+LG('Installer sur mon téléphone (avec l’icône)','Install on my phone (with the icon)');})();
+/* guide topics */
+{const _g=GUIDE;GUIDE=()=>_g().concat([{k:'cuisine',ic:'🍳',t:LG('La cuisine et le gaz','The kitchen and gas'),b:LG('Construis la cuisine (fare tūtu) puis entre dedans : gazinière et four. Le gaz s’achète à la goélette ; le biodigesteur en fait gratuitement avec tes restes, feuilles et palmes. Le four solaire cuit sans rien brûler quand il fait beau.','Build the kitchen (fare tūtu) and go inside: gas stove and oven. Gas is bought from the goélette; the biodigester makes it for free from scraps, leaves and fronds. The solar oven bakes without burning anything in fine weather.')},
+  {k:'entrer',ic:'🚪',t:LG('Entrer dans les bâtiments','Going into buildings'),b:LG('Près de la cuisine, d’un bâtiment de métier ou du fare de l’équipe, touche « Entrer » : le toit se soulève et tu vois les activités du lieu. Certaines se jouent avec un petit jeu d’adresse : touche « Maintenant ! » quand le repère est dans le vert. « Sortir » pour repartir.','Near the kitchen, a trade building or the team’s fare, tap “Go in”: the roof lifts and you see the place’s activities. Some are played with a little skill game: tap “Now!” when the marker is in the green. “Go out” to leave.')},
+  {k:'partage',ic:'📲',t:LG('Partager et installer','Share and install'),b:LG('Menu › Partager le jeu : envoie le lien (avec ton code ami) à tes proches. Menu › Installer : l’icône Fare Iti apparaît sur l’écran de ton téléphone et le jeu marche même sans internet.','Menu › Share the game: send the link (with your friend code) to people close to you. Menu › Install: the Fare Iti icon appears on your phone’s screen and the game works even offline.')}]);}
+GUIDE_FOR.kitchen='cuisine';
+let biodT=0;
+{const _u=updateV38;updateV38=function(dt){_u(dt);updateMini(dt);biodT+=dt;if(biodT>=1){biodSim(biodT);biodT=0;}if(kitMesh&&kitMesh.userData.smoke){kitMesh.userData.smoke.material.opacity=sheetMode==='kitchen'&&kitSrc==='stove'?0.35:0;}};}
+ACH.push(['kitchen',()=>LG('Fare tūtu','Fare tūtu'),()=>LG('Cuisiner dans ta cuisine','Cook in your kitchen'),()=>(S.stats.baked||0)+(S.stats.kitchen||0)>=1],['biod',()=>LG('Rien ne se perd','Nothing is wasted'),()=>LG('Nourrir le biodigesteur','Feed the biodigester'),()=>(S.stats.biofeed||0)>=1],['shared',()=>LG('Fēti’i','Fēti’i'),()=>LG('Partager le jeu avec un proche','Share the game with someone close'),()=>(S.stats.shared||0)>=1]);
+const V58={OVEN,ACTS,miniGame,enterB,exitB,insideList,shareGame,get INSIDE(){return INSIDE;}};
+
+/* =====================================================================
+   v59: reshape your motu, protect the coast, honour the ocean.
+   - Recycle a building (creation mode › ♻️): it is taken apart and half of its
+     materials come back. Nothing is wasted.
+   - Uproot a plant or a young/grown tree to replant it elsewhere (keeps most
+     of its growth); dig out an old stump; pick a bouquet from a flower bed.
+   - Sea wall (creation mode › 🪨 Digue): rocks along the shore; during a
+     cyclone, the protected coast gets fewer washed-up trunks and litter, and
+     the canoe and pontoon behind it are sheltered.
+   - Title "Tiaʻi moana · guardian of the ocean": reach level 6 without ever
+     catching a fish while caring for the sea (litter, honu, coral).
+   ===================================================================== */
+/* ----- recycling buildings ----- */
+const RECY={fire:['fire',()=>{S.fire=null;fireMesh=null;}],coop:['coop',()=>{S.coop=null;coopMesh=null;},()=>!(S.animals||[]).some(a=>a.tamed&&a.type==='chicken')],
+  pen:['pen',()=>{S.pen=null;penMesh=null;},()=>!(S.animals||[]).some(a=>a.tamed&&(a.type==='pig'||a.type==='goat'))],stall:['stall',()=>{if(S.stall&&S.stall.stock)give(S.stall.stock);S.stall=null;stallMesh=null;}],
+  compost:['compost',()=>{if(S.compost){give({fert:S.compost.fert||0,scraps:S.compost.scraps||0});}S.compost=null;compostMesh=null;}],ahimaa:['ahimaa',()=>{S.ahimaa=null;ahimaaMesh=null;}],
+  gen:['gen',()=>{S.gen=null;genMesh=null;}],solarp:['solarp',()=>{S.solarp=null;solarMesh=null;}],still:['still',()=>{S.still=null;stillMesh=null;}],hydro:['hydro',()=>{if(S.hydro)give(S.hydro.out||{});S.hydro=null;hydroMesh=null;}],
+  staffhouse:['staffhouse',()=>{S.team.home=null;homeMesh=null;},()=>!TM().list.length],kitchen:['kitchen',()=>{S.kit=null;kitMesh=null;},()=>!INSIDE],biod:['biod',()=>{S.biod=null;biodMesh=null;}],fsol:['fsol',()=>{S.fsol=null;fsolMesh=null;}]};
+function recyInfo(it){if(!it)return null;if(it.id.startsWith('lamp'))return{rid:'lamp',lamp:true};if(it.id.startsWith('bed'))return{rid:'parterre',bed:true};if(it.id.startsWith('metbld_'))return{rid:'metbld',met:it.id.slice(7)};const R=RECY[it.id];return R?{rid:R[0],fn:R[1],ok:R[2]}:null;}
+function recyRefund(rid,lampType){const r=RECIPES.filter(x=>x.id===rid&&(x.place||x.special)).pop()||RECIPES.find(x=>x.id===rid);if(!r||!r.in)return{};const o={};for(const k in r.in){if(!ITEMS[k])continue;const n=Math.floor(r.in[k]/2);if(n>0)o[k]=n;}return o;}
+CRE.recy=null;
+{const _cb=creBar;creBar=function(){_cb();if(!creEl)return;const b=creEl.querySelector('.creb');if(!b)return;const it=CRE.sel&&creFind(CRE.sel),I=recyInfo(it);
+  if(it&&I){const t=document.createElement('button');t.className='big'+(CRE.recy===it.id?'':' ghost');t.dataset.cre='recy';t.textContent=CRE.recy===it.id?'♻️ '+LG('Confirmer ?','Confirm?'):'♻️ '+LG('Démonter','Take apart');b.appendChild(t);}};}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-cre="recy"]');if(!b||!CRE.on)return;e.stopImmediatePropagation();const it=creFind(CRE.sel),I=recyInfo(it);if(!it||!I)return;
+  if(CRE.recy!==it.id){CRE.recy=it.id;creBar();setTimeout(()=>{if(CRE.recy===it.id){CRE.recy=null;if(CRE.on)creBar();}},4000);return;}
+  if(I.ok&&!I.ok()){toast(it.id==='coop'||it.id==='pen'?LG('Tes animaux y vivent : on ne démonte pas leur maison.','Your animals live there: we don’t take their home apart.'):it.id==='staffhouse'?LG('Ton équipe y habite encore.','Your team still lives there.'):LG('Pas maintenant.','Not now.'));CRE.recy=null;creBar();return;}
+  const back=recyRefund(I.rid);if(it.mesh&&it.mesh.parent)it.mesh.parent.remove(it.mesh);
+  if(I.lamp){const i=S.lamps.indexOf(it.obj);if(i>=0)S.lamps.splice(i,1);if(it.obj.light&&it.obj.light.parent)it.obj.light.parent.remove(it.obj.light);}
+  else if(I.bed){const i=S.parterres.indexOf(it.obj);if(i>=0)S.parterres.splice(i,1);}
+  else if(I.met){delete MS().bld[I.met];delete metMeshes[I.met];}
+  else I.fn();
+  give(back);stat('recycled');CRE.recy=null;CRE.sel=null;pendingSave=true;
+  toast(LG(`${it.n} démonté. Tu récupères : `,`${it.n} taken apart. You get back: `)+(Object.entries(back).map(([k,n])=>`${n} ${nm(k)}`).join(', ')||LG('rien','nothing'))+LG('. Rien ne se perd !','. Nothing is wasted!'));creBar();refresh();},true);
+/* ----- uproot, transplant, stumps, bouquets ----- */
+S.transplant=S.transplant||{};
+const SEED_OF={};for(const k in SEEDS)if(!SEED_OF[SEEDS[k]])SEED_OF[SEEDS[k]]=k;
+function canDig(){return (S.inv.pelle||0)>0||(S.inv.oo||0)>0;}
+function uproot(o,isPalm){const kind=isPalm?'palm':o.type,seedK=SEED_OF[kind];if(!seedK)return;const keep=Math.max(S.transplant[kind]||0,(o.g||0)*0.8);
+  if(o.holder&&o.holder.parent)o.holder.parent.remove(o.holder);const arr=isPalm?S.palms:S.crops,i=arr.indexOf(o);if(i>=0)arr.splice(i,1);
+  give({[seedK]:1});S.transplant[kind]=keep;stat('uprooted');chopT=0.6;pendingSave=true;
+  toast(keep>0.15?LG(`Tu déterres ${nm(seedK)} avec sa motte de terre : replanté ailleurs, il gardera l’essentiel de sa croissance.`,`You dig up the ${nm(seedK)} with its root ball: replanted elsewhere it will keep most of its growth.`):LG(`Tu récupères ${nm(seedK)} pour le replanter ailleurs.`,`You take the ${nm(seedK)} back to replant it elsewhere.`));actSig='';refresh();}
+{const _pl=plant;plant=function(k,chk){const kind=SEEDS[k],nP=S.palms.length,nC=S.crops.length;_pl(k,chk);const keep=S.transplant[kind];if(!keep)return;const o=kind==='palm'?(S.palms.length>nP?S.palms[S.palms.length-1]:null):(S.crops.length>nC?S.crops[S.crops.length-1]:null);
+  if(o){o.g=Math.max(o.g,keep);delete S.transplant[kind];floatText(LG('Bien repris !','Took root well!'),_p.set(o.x,H(o.x,o.z)+1.4,o.z));pendingSave=true;}};}
+function destump(p){if(p.holder&&p.holder.parent)p.holder.parent.remove(p.holder);const i=S.palms.indexOf(p);if(i>=0)S.palms.splice(i,1);give({log:1});stat('destump');chopT=0.8;pendingSave=true;toast(LG('La vieille souche est sortie : la place est libre pour planter ou construire. +1 bûche.','The old stump is out: the space is free to plant or build. +1 log.'));actSig='';refresh();}
+{const _ia=islActions;islActions=function(A){_ia(A);if(INSIDE||S.away||S.boat||S.inCave||CRE.on)return;const px=player.position.x,pz=player.position.z;
+  let best=null,bd=1.7,isP=false;for(const c of S.crops){if(c.wild)continue;const d=dist(px,pz,c.x,c.z);if(d<bd&&SEED_OF[c.type]){bd=d;best=c;isP=false;}}
+  for(const p of S.palms){const d=dist(px,pz,p.x,p.z);if(d<bd){bd=d;best=p;isP=true;}}
+  if(best){if(isP&&best.state==='stump')A.push(canDig()?{label:LG('Dessoucher','Dig out the stump'),sub:LG('Libère la place · +1 bûche','Frees the space · +1 log'),cls:'alt',fn:()=>destump(best)}:{label:LG('Vieille souche','Old stump'),sub:LG('Il faut une pelle ou un ʻō pour la sortir','Needs a shovel or an ʻō to dig it out'),off:true});
+    else{const big=(best.g||0)>0.5;A.push(!big||canDig()?{label:LG('Déterrer pour replanter','Dig up to replant'),sub:(isP?LG('Cocotier','Palm'):nm(SEED_OF[best.type]))+' · '+LG('garde sa croissance','keeps its growth'),cls:'alt',fn:()=>uproot(best,isP)}:{label:LG('Déterrer pour replanter','Dig up to replant'),sub:LG('Un grand plant : il faut une pelle ou un ʻō','A big plant: needs a shovel or an ʻō'),off:true});}}
+  const bed=S.parterres.find(b=>dist(px,pz,b.x,b.z)<1.8);if(bed){A.push(bed.bq===S.day?{label:LG('Parterre fleuri','Flower bed'),sub:LG('Bouquet cueilli aujourd’hui · les fleurs repoussent','Bouquet picked today · the flowers grow back'),off:true}:{label:LG('Cueillir un bouquet','Pick a bouquet'),sub:LG('Quelques fleurs, le parterre reste beau','A few flowers, the bed stays pretty'),cls:'alt',fn:()=>{bed.bq=S.day;const o={tiare:1};if(ITEMS.bougain)o.bougain=1;if(ITEMS.taina)o.taina=1;give(o);stat('bouquets');chopT=0.4;floatAtPlayer('💐');pendingSave=true;refresh();}});}};}
+/* ----- sea wall ----- */
+S.walls=S.walls||[];const wallMats=[std(0x4a4f55,{flatShading:true}),std(0x5c6168,{flatShading:true}),std(0x3c4146,{flatShading:true})],wallGeo=new THREE.DodecahedronGeometry(0.42,0);
+function makeWall(W){const g=new THREE.Group(),L=dist(W.a.x,W.a.z,W.b.x,W.b.z),n=Math.max(2,Math.round(L/0.5)),r=mulberry32(W.seed||1);
+  for(let i=0;i<=n;i++){const t=i/n,x=W.a.x+(W.b.x-W.a.x)*t+(r()-0.5)*0.25,z=W.a.z+(W.b.z-W.a.z)*t+(r()-0.5)*0.25,h=H(x,z);for(let j=0;j<2;j++){const s=mesh(wallGeo,wallMats[Math.floor(r()*3)],x+(r()-0.5)*0.3,Math.max(h,-0.6)+0.15+j*0.35,z+(r()-0.5)*0.3,false);s.rotation.set(r()*3,r()*3,r()*3);s.scale.setScalar(0.8+r()*0.5);s.castShadow=!LOWQ;g.add(s);}}
+  scene.add(g);W.mesh=g;}
+S.walls.forEach(makeWall);
+function wallCheck(a,b){const L=dist(a.x,a.z,b.x,b.z);if(L<1.5||L>30)return LG('Entre 2 et 30 pas par morceau de digue','Between 2 and 30 steps per piece of sea wall');
+  for(let t=0;t<=1;t+=0.5/L){const h=H(a.x+(b.x-a.x)*t,a.z+(b.z-a.z)*t);if(h<-0.9)return LG('Trop profond : la digue se pose sur le rivage','Too deep: the sea wall goes on the shoreline');if(h>1.2)return LG('La digue se pose au bord de l’eau, pas dans les terres','The sea wall goes at the water’s edge, not inland');}
+  const need=Math.ceil(L);return (S.inv.stone||0)<need?LG(`Il faut ${need} pierres`,`You need ${need} stones`):null;}
+function wallCover(){const sec=new Array(36).fill(0);for(const W of S.walls){const L=dist(W.a.x,W.a.z,W.b.x,W.b.z);for(let t=0;t<=1;t+=0.5/Math.max(L,1)){const x=W.a.x+(W.b.x-W.a.x)*t,z=W.a.z+(W.b.z-W.a.z)*t;let a=Math.atan2(z,x);a=(a+Math.PI*2)%(Math.PI*2);sec[Math.floor(a/(Math.PI*2)*36)%36]=1;}}return sec;}
+function wallProtects(x,z){const sec=wallCover();let a=Math.atan2(z,x);a=(a+Math.PI*2)%(Math.PI*2);return !!sec[Math.floor(a/(Math.PI*2)*36)%36];}
+CRE.wallOn=false;CRE.wall=null;
+{const _cb=creBar;creBar=function(){_cb();if(!creEl||(S.level||1)<4)return;const b=creEl.querySelector('.creb');if(!b)return;const t=document.createElement('button');t.className='big'+(CRE.wallOn?'':' ghost');t.dataset.cre='wall';t.textContent='🪨 '+LG('Digue','Sea wall');b.appendChild(t);
+  if(CRE.wallOn){const s=creEl.querySelector('.cres');if(s)s.innerHTML=`🪨 <b>${LG('Digue de rochers','Rock sea wall')}</b> · ${LG('1 pierre par pas, au bord de l’eau','1 stone per step, at the water’s edge')} · ${LG('tu as','you have')} ${S.inv.stone||0} ${nm('stone')}<br>${LG(`Côte protégée : ${Math.round(wallCover().filter(Boolean).length/36*100)} %. Touche le départ puis l’arrivée ; touche une digue pour l’enlever.`,`Protected coast: ${Math.round(wallCover().filter(Boolean).length/36*100)}%. Tap the start then the end; tap a wall to remove it.`)}`;}};}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-cre="wall"]');if(b&&CRE.on){e.stopImmediatePropagation();CRE.wallOn=!CRE.wallOn;CRE.wall=null;CRE.pathOn=false;CRE.cabOn=false;CRE.sel=null;creBar();}
+  if(e.target.closest('[data-cre="path"],[data-cre="cable"]')&&CRE.on)CRE.wallOn=false;},true);
+(function(){const el=renderer.domElement,rc=new THREE.Raycaster(),nd=new THREE.Vector2();let st=null;
+  window.addEventListener('pointerdown',e=>{if(CRE.on&&CRE.wallOn&&e.target===el)st={x:e.clientX,y:e.clientY};},true);
+  window.addEventListener('pointerup',e=>{if(!CRE.on||!CRE.wallOn||!st||e.target!==el)return;const mv=Math.hypot(e.clientX-st.x,e.clientY-st.y);st=null;if(mv>12)return;e.stopImmediatePropagation();
+    nd.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);rc.setFromCamera(nd,camera);const o=rc.ray.origin,d=rc.ray.direction;let g=null;for(let s=0;s<220;s+=0.3){const x=o.x+d.x*s,y=o.y+d.y*s,z=o.z+d.z*s;if(y<=Math.max(H(x,z),-0.2)){g={x,z};break;}}if(!g)return;
+    if(!CRE.wall){const hit=S.walls.find(W=>pathDist(g.x,g.z,W)<0.8);if(hit){scene.remove(hit.mesh);S.walls.splice(S.walls.indexOf(hit),1);const back=Math.floor(Math.ceil(dist(hit.a.x,hit.a.z,hit.b.x,hit.b.z))/2);give({stone:back});toast(LG(`Digue enlevée (+${back} pierres).`,`Sea wall removed (+${back} stones).`));pendingSave=true;creBar();return;}
+      CRE.wall={x:g.x,z:g.z};creRing(g.x,g.z,0.3,true);CRE.ringT=99;creBar();return;}
+    const a=CRE.wall,why=wallCheck(a,g);if(why){toast(why);creRing(g.x,g.z,0.3,false);return;}const W={a,b:{x:g.x,z:g.z},seed:Math.floor(Math.random()*1e6)};take({stone:Math.ceil(dist(a.x,a.z,g.x,g.z))});S.walls.push(W);makeWall(W);stat('walls');CRE.wall={x:g.x,z:g.z};creRing(g.x,g.z,0.3,true);CRE.ringT=99;pendingSave=true;creBar();},true);})();
+{const _ce=creExit;creExit=function(){CRE.wallOn=false;CRE.wall=null;CRE.recy=null;_ce();};}
+{const _ch=cycHit;cycHit=function(){const nd=(S.cycDebris||[]).length,nl=S.litter.length,canoeSafe0=S.canoeSafe,pf=S.pflot&&S.pflot.broken;
+  if(S.canoe&&!S.canoeSafe&&wallProtects(S.canoe.x,S.canoe.z))S.canoeSafe=true;const r=_ch.apply(this,arguments);S.canoeSafe=canoeSafe0;
+  let saved=0;for(let i=(S.cycDebris||[]).length-1;i>=nd;i--){const d=S.cycDebris[i];if(wallProtects(d.x,d.z)){if(d.mesh)scene.remove(d.mesh);S.cycDebris.splice(i,1);saved++;}}
+  for(let i=S.litter.length-1;i>=nl;i--){const l=S.litter[i];if(wallProtects(l.x,l.z)){if(l.mesh)scene.remove(l.mesh);S.litter.splice(i,1);saved++;}}
+  if(S.pflot&&S.pflot.broken&&!pf&&wallProtects(S.pflot.x||0,S.pflot.z||0)){S.pflot.broken=false;saved++;}
+  if(saved)setTimeout(()=>toast(LG(`Ta digue a tenu ! Elle a arrêté les vagues : ${saved} dégât${saved>1?'s':''} évité${saved>1?'s':''} sur la côte protégée.`,`Your sea wall held! It stopped the waves: ${saved} damage${saved>1?'s':''} avoided on the protected coast.`)),2500);return r;};}
+/* ----- title: guardian of the ocean ----- */
+function oceanGuard(){return (S.level||1)>=6&&!(S.stats.fish>0)&&!(S.stats.deepfish>0)&&(S.stats.litter||0)>=30&&((S.stats.honufree||0)+(S.stats.released||0))>=2&&(S.stats.reefcoral||0)>=5;}
+function titles(){const t=[];if(S.flags.oceanTitle)t.push('🌊 '+LG('Tiaʻi moana · Gardien de l’océan','Tiaʻi moana · Guardian of the ocean'));if(S.met&&S.met.k&&metLv(S.met.k)>=10)t.push(MET[S.met.k].ic+' '+LG('Maître ','Master ')+MET[S.met.k].n());return t;}
+let titleT=5;
+function titleCheck(){if(!S.flags.oceanTitle&&oceanGuard()){S.flags.oceanTitle=S.day;stat('oceanTitle');
+  toast(LG('🌊 Nouveau titre : Tiaʻi moana, Gardien de l’océan ! Tu n’as jamais pris un poisson et tu prends soin de la mer. Le lagon t’en remercie.','🌊 New title: Tiaʻi moana, Guardian of the ocean! You never took a fish and you care for the sea. The lagoon thanks you.'));
+  if(S.lagoon)S.lagoon.h=Math.min(100,(S.lagoon.h||60)+10);manuSay(LG('Les honu nagent autour de ton motu sans aucune peur. Elles savent qu’ici, on les protège.','The honu swim around your motu without any fear. They know they are protected here.'),8);}
+  if(S.flags.oceanTitle&&(S.stats.fish>0)&&!S.flags.oceanTitleKept){S.flags.oceanTitleKept=1;}
+  const ms=document.getElementById('menuStats');if(ms&&!$('#menu').hidden){const T=titles();let el=document.getElementById('menuTitles');if(!el){el=document.createElement('div');el.id='menuTitles';el.className='small-note';el.setAttribute('data-notr','');ms.after(el);}el.textContent=T.length?LG('Titres : ','Titles: ')+T.join(' · '):'';}}
+{const _u=updateV38;updateV38=function(dt){_u(dt);titleT-=dt;if(titleT>0)return;titleT=8;titleCheck();};}
+{const _g=GUIDE;GUIDE=()=>_g().concat([{k:'recycler',ic:'♻️',t:LG('Recycler, déplanter, dessoucher','Recycle, uproot, clear stumps'),b:LG('En mode création, choisis un bâtiment puis « Démonter » : tu récupères la moitié des matériaux. Près d’une plante ou d’un arbre, « Déterrer pour replanter » : replanté ailleurs, il garde sa croissance (les grands plants demandent une pelle ou un ʻō). « Dessoucher » sort une vieille souche. Sur un parterre, cueille un bouquet chaque jour.','In creation mode, pick a building then “Take apart”: you get half the materials back. Near a plant or a tree, “Dig up to replant”: replanted elsewhere it keeps its growth (big plants need a shovel or an ʻō). “Dig out the stump” removes an old stump. On a flower bed, pick a bouquet every day.')},
+  {k:'digue',ic:'🪨',t:LG('La digue contre les vagues','The sea wall against the waves'),b:LG('En mode création (dès le niveau 4), « Digue » : pose des rochers au bord de l’eau (1 pierre par pas). Pendant un cyclone, la côte protégée reçoit moins de troncs et de déchets, et le vaʻa ou le ponton derrière la digue sont à l’abri. Le pourcentage de côte protégée s’affiche.','In creation mode (from level 4), “Sea wall”: lay rocks at the water’s edge (1 stone per step). During a cyclone, the protected coast gets fewer trunks and less litter, and the vaʻa or pontoon behind the wall are sheltered. The share of protected coast is shown.')},
+  {k:'titres',ic:'🌊',t:LG('Les titres','Titles'),b:LG('Tiaʻi moana, Gardien de l’océan : atteins le niveau 6 sans jamais pêcher un poisson, en ramassant au moins 30 déchets, en sauvant 2 honu ou poissons et en replantant 5 coraux. Maître d’un métier : niveau 10 dans ton métier. Tes titres s’affichent dans le menu.','Tiaʻi moana, Guardian of the ocean: reach level 6 without ever catching a fish, picking up at least 30 pieces of litter, saving 2 honu or fish and replanting 5 corals. Master of a trade: level 10 in your trade. Your titles show in the menu.')}]);}
+ACH.push(['recycled',()=>LG('Rien ne se perd','Nothing is wasted'),()=>LG('Démonter un bâtiment pour le recycler','Take a building apart to recycle it'),()=>(S.stats.recycled||0)>=1],
+  ['uprooted',()=>LG('Nouvelle place','A new place'),()=>LG('Déterrer une plante pour la replanter','Dig up a plant to replant it'),()=>(S.stats.uprooted||0)>=1],
+  ['walls',()=>LG('Rempart contre la houle','Bulwark against the swell'),()=>LG('Construire une digue de rochers','Build a rock sea wall'),()=>(S.stats.walls||0)>=1],
+  ['oceanTitle',()=>LG('Tiaʻi moana','Tiaʻi moana'),()=>LG('Devenir Gardien de l’océan','Become Guardian of the ocean'),()=>!!S.flags.oceanTitle]);
+const V59={H,wallCheck,titleCheck,RECY,recyRefund,uproot,destump,wallCover,wallProtects,makeWall,oceanGuard,titles};
+
+/* =====================================================================
+   v60: Raiatea and Mount Temehani. A new island to sail to (level 12,
+   with a sail). Mama Hina, a storyteller, tells the popular legend of the
+   tiare ʻapetahi. At the foot of the mountain, five carved stones make a
+   puzzle: touch them in the order of the legend to open the path to the
+   plateau, where the rare ʻapetahi opens at dawn (look, never pick: it grows
+   nowhere else in the world). New plant: motoʻi (ylang-ylang), new recipes:
+   motoʻi monoʻi and a motoʻi crown; a special pāreu as a reward.
+   Raiatea lives at x≈1000, z≈0 (H() sends x>700 there).
+   ===================================================================== */
+const RAI={x:1000,z:0},RAI_R=52;
+function raiRm(th){return 44+4*Math.sin(3*th)+3*Math.sin(5*th+1)+2*Math.cos(2*th);}
+const RAIP={land:{x:0,z:46.6},canoe:{x:0,z:54},hina:{x:-5,z:40},fare:{x:-9,z:37},stones:{x:3,z:27,r:3.2},gate:{x:6,z:17},flower:{x:8,z:-6},motoi:{x:-15,z:31}};
+function raiH(lx,lz){const r=Math.hypot(lx,lz),th=Math.atan2(lx,lz),dr=raiRm(th)-r;let h;
+  if(dr<0){const o=-dr;h=o<18?Math.max(-1.5,dr*0.22):-1.5-Math.min(2.5,(o-18)*0.6);}
+  else if(dr<4)h=dr*0.15;else h=0.6+(dr-4)*0.05;
+  const m=16*Math.exp(-((lx-8)**2+(lz+6)**2)/(2*13*13));h+=Math.min(m,11.2)+(m>11.2?(m-11.2)*0.08:0);
+  h+=0.35*Math.sin(lx*0.21)*Math.cos(lz*0.17)*smooth(4,14,dr);return h;}
+{const _H60=H;H=function(x,z){if(x>700)return raiH(x-RAI.x,z-RAI.z);return _H60(x,z);};}
+function raiWalkable(x,z){const lx=x-RAI.x,lz=z-RAI.z,r=Math.hypot(lx,lz);if(r>raiRm(Math.atan2(lx,lz))+16)return false;const h=raiH(lx,lz);if(h<-0.5||h>15)return false;
+  if(!S.flags.raiGate&&h>6.5)return false;return true;}
+let raiGroup=null,raiDepth=null;const raiFX={hina:null,stones:[],flower:null,gateRope:null};
+const RAI_SYM=['🌊','🐟','🐢','⭐','🌺'],RAI_ORDER=[0,1,2,3,4];let raiSeq=[];
+function symTex(s){const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');g.fillStyle='rgba(0,0,0,0)';g.fillRect(0,0,128,128);g.font='84px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(s,64,70);const t=new THREE.CanvasTexture(c);return t;}
+function buildRaiatea(){if(raiGroup)return;const G=new THREE.Group();G.position.set(RAI.x,0,RAI.z);scene.add(G);raiGroup=G;const r=mulberry32(6161);
+  const N=LOWQ?110:160,geo=new THREE.PlaneGeometry(200,200,N,N);geo.rotateX(-Math.PI/2);const pos=geo.attributes.position,cols=[],cc=new THREE.Color(),rock=new THREE.Color(0.32,0.30,0.26);
+  for(let i=0;i<pos.count;i++){const x=pos.getX(i),z=pos.getZ(i),h=raiH(x,z);pos.setY(i,h);const sl=Math.abs(raiH(x+0.8,z)-raiH(x-0.8,z))+Math.abs(raiH(x,z+0.8)-raiH(x,z-0.8));
+    if(h<0.25&&h>-0.6)cc.setRGB(0.93,0.87,0.70);else if(h<=-0.6)cc.setRGB(0.80,0.75,0.60);else if(h>10.9)cc.setRGB(0.42,0.52,0.30);else{cc.setRGB(0.30,0.56,0.22);if(sl>1.8)cc.lerp(rock,smooth(1.8,3.6,sl));cc.offsetHSL(0,0,Math.sin(x*0.7)*Math.cos(z*0.6)*0.03);}
+    cc.convertSRGBToLinear();cols.push(cc.r,cc.g,cc.b);}
+  geo.setAttribute('color',new THREE.Float32BufferAttribute(cols,3));geo.computeVertexNormals();
+  const tm=new THREE.MeshToonMaterial({vertexColors:true,gradientMap:TOON_RAMP,map:groundDetail()});tm.__noAO=1;toonify(tm,{noAO:true});const terr=new THREE.Mesh(geo,tm);terr.receiveShadow=true;G.add(terr);
+  {const S2=256,c=document.createElement('canvas');c.width=c.height=S2;const g=c.getContext('2d'),img=g.createImageData(S2,S2);
+    for(let j=0;j<S2;j++)for(let i=0;i<S2;i++){const x=-110+(i+0.5)/S2*220,z=-110+(j+0.5)/S2*220,dd=clamp(-raiH(x,z)/4,0,1),k=(j*S2+i)*4;img.data[k]=img.data[k+1]=img.data[k+2]=dd*255;img.data[k+3]=255;}
+    g.putImageData(img,0,0);raiDepth=new THREE.CanvasTexture(c);raiDepth.flipY=false;raiDepth.minFilter=THREE.LinearFilter;}
+  {const crown=new THREE.IcosahedronGeometry(1,1),n=LOWQ?380:560,inst=new THREE.InstancedMesh(crown,std(0xffffff,{roughness:1}),n),m4=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler(),s=new THREE.Vector3(),pp=new THREE.Vector3(),col=new THREE.Color();let k=0,t=0;
+    while(k<n&&t++<n*30){const x=(r()-0.5)*200,z=(r()-0.5)*200,h=raiH(x,z);if(h<2||h>10.5||Math.hypot(x-RAIP.stones.x,z-RAIP.stones.z)<7||Math.hypot(x-RAIP.hina.x,z-RAIP.hina.z)<9)continue;const sc=1.3+r()*1.8;e.set(0,r()*6,0);q.setFromEuler(e);s.set(sc,sc*0.85,sc);pp.set(x,h+sc*0.6,z);m4.compose(pp,q,s);inst.setMatrixAt(k,m4);col.setHSL(0.27+r()*0.07,0.45+r()*0.2,0.15+r()*0.12);col.convertSRGBToLinear();inst.setColorAt(k,col);k++;}
+    inst.count=k;inst.castShadow=!LOWQ;G.add(inst);}
+  for(let i=0;i<(LOWQ?16:26);i++){let x,z,h,t=0;do{const a=r()*Math.PI*2,d=raiRm(a)-1.5-r()*4;x=Math.sin(a)*d;z=Math.cos(a)*d;h=raiH(x,z);}while((h<0.2||h>1.6)&&t++<40);const p=makePalm(Math.floor(r()*1e6));p.group.position.set(x,h-0.05,z);G.add(p.group);}
+  /* Mama Hina's fare */
+  {const f=new THREE.Group(),P=RAIP.fare;for(const[x,z]of[[-1.4,-1],[1.4,-1],[-1.4,1],[1.4,1]])f.add(cyl(0.08,2,MAT.post,x,1,z,6));const rf=mesh(new THREE.ConeGeometry(2.3,1.2,4),MAT.thatch||std(0xc9a46a),0,2.5,0);rf.rotation.y=Math.PI/4;f.add(rf);f.add(box(2.8,0.12,2.2,MAT.plank||MAT.wood,0,0.06,0));f.position.set(P.x,raiH(P.x,P.z),P.z);G.add(f);}
+  /* the five carved stones */
+  RAI_SYM.forEach((sy,i)=>{const a=-Math.PI/2+i/5*Math.PI*2,P=RAIP.stones,x=P.x+Math.cos(a)*P.r,z=P.z+Math.sin(a)*P.r,h=raiH(x,z),st=new THREE.Group();
+    const rock=mesh(new THREE.DodecahedronGeometry(0.55,0),std(0x5c6168,{flatShading:true}),0,0.6,0);rock.scale.set(0.8,1.4,0.6);st.add(rock);
+    const glyph=new THREE.Sprite(new THREE.SpriteMaterial({map:symTex(sy),transparent:true,depthWrite:false}));glyph.position.set(0,1.75,0);glyph.scale.setScalar(0.8);st.add(glyph);
+    const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:typeof glowTex!=='undefined'?glowTex:null,color:0x7fe0c0,transparent:true,opacity:0,depthWrite:false}));glow.position.set(0,0.9,0);glow.scale.setScalar(2.2);st.add(glow);
+    st.position.set(x,h,z);G.add(st);raiFX.stones.push({g:st,glow,x:RAI.x+x,z:RAI.z+z,i});});
+  /* the rope across the mountain path, lifted when the puzzle is solved */
+  {const P=RAIP.gate,h=raiH(P.x,P.z),g=new THREE.Group();g.add(cyl(0.07,1.2,MAT.post,-1.6,0.6,0,5));g.add(cyl(0.07,1.2,MAT.post,1.6,0.6,0,5));const rp=cyl(0.03,3.2,std(0xc9a46a),0,1.0,0,4);rp.rotation.z=Math.PI/2;g.add(rp);g.userData.rope=rp;g.position.set(P.x,h,P.z);G.add(g);raiFX.gateRope=g;}
+  /* the tiare ʻapetahi on the plateau: five petals on one side, like an open hand */
+  {const P=RAIP.flower,h=raiH(P.x,P.z),g=new THREE.Group();g.add(cyl(0.04,0.8,std(0x3f7d34),0,0.4,0,5));for(let i=0;i<5;i++){const l=mesh(new THREE.SphereGeometry(0.2,8,6),std(0x3f8a3a),Math.cos(i*1.3)*0.25,0.3+i*0.08,Math.sin(i*1.3)*0.25,false);l.scale.set(1,0.3,0.6);g.add(l);}
+    const fl=new THREE.Group();fl.position.set(0,0.85,0);for(let i=0;i<5;i++){const p=mesh(new THREE.SphereGeometry(0.12,8,6),std(0xffffff,{emissive:0xffffff,emissiveIntensity:0.15}),0,0,0,false);p.scale.set(0.5,0.12,1.3);p.position.set(Math.cos(-0.9+i*0.45)*0.16,0,Math.sin(-0.9+i*0.45)*0.16);p.rotation.y=-(-0.9+i*0.45);fl.add(p);}
+    g.add(fl);g.userData.fl=fl;g.position.set(P.x,h,P.z);G.add(g);raiFX.flower=g;}
+  /* motoʻi trees by the village */
+  for(let i=0;i<3;i++){const P=RAIP.motoi,x=P.x+i*2.4,z=P.z+(i%2)*1.5,h=raiH(x,z),t=makeTiare(9000+i);t.group.scale.setScalar(1.6);t.group.traverse(o=>{if(o.isMesh&&o.material&&o.material.color&&o.material.color.getHex()>0xdddddd){o.material=o.material.clone();o.material.color.setHex(0xf2d34a);}});t.group.position.set(x,h,z);G.add(t.group);}
+  raiFX.hina=makePerson(4242);raiFX.hina.group.position.set(RAI.x+RAIP.hina.x,raiH(RAIP.hina.x,RAIP.hina.z),RAI.z+RAIP.hina.z);scene.add(raiFX.hina.group);
+  raiSetVisible(!!(S.away&&S.away.k==='raiatea'));raiGateUpdate();}
+function raiSetVisible(on){if(!raiGroup)return;raiGroup.visible=on;if(raiFX.hina)raiFX.hina.group.visible=on;}
+function raiGateUpdate(){if(raiFX.gateRope)raiFX.gateRope.userData.rope.visible=!S.flags.raiGate;}
+{const _pw=placeWater;placeWater=function(k){if(k!=='raiatea')return _pw(k);waterU.uOff.value.set(RAI.x,RAI.z);water.position.x=RAI.x;water.position.z=RAI.z;clouds.position.set(RAI.x,0,RAI.z);waterU.uDepth.value=raiDepth;waterU.uScale.value=110;waterU.uR.value=RAI_R;waterU.uRing.value=1;waterU.uAway.value=0;};}
+PLACES.raiatea={n:()=>'Raiatea',t:()=>LG('Le mont Temehani au sommet plat, la fleur ʻapetahi qui ne pousse nulle part ailleurs, les arbres à motoʻi et les légendes de Mama Hina.','Flat-topped Mount Temehani, the ʻapetahi flower that grows nowhere else, motoʻi trees and Mama Hina’s legends.')};
+{const _st=sailTo;sailTo=function(k){if(k!=='raiatea'){raiSetVisible(false);return _st(k);}
+  if(stormy()){toast(LG('Trop de houle pour traverser aujourd’hui.','The swell is too big to cross today.'));return;}if(typeof cycloneBlocks==='function'&&cycloneBlocks())return;
+  islFade(()=>{const prev=S.away;buildRaiatea();const home=prev?prev.home:(S.boat||!S.canoe?{x:player.position.x,z:player.position.z,rot:player.rotation.y}:{x:S.canoe.x,z:S.canoe.z,rot:S.canoe.rot||0});
+    S.away={k,home};const C=RAI,P=RAIP;S.canoe={x:C.x+P.canoe.x,z:C.z+P.canoe.z,rot:Math.PI};S.boat=false;fishing=null;fishLine.visible=bobber.visible=false;
+    player.position.set(C.x+P.land.x,0,C.z+P.land.z);player.rotation.y=Math.PI;cam.yaw=player.rotation.y+Math.PI;manu.pos.copy(player.position).add(new THREE.Vector3(0,3,0));
+    islSetVisible(false);mooSetVisible(false);if(typeof huaSetVisible==='function')huaSetVisible(false);raiSetVisible(true);placeWater(k);S.tod=Math.min(0.95,S.tod+0.1);
+    const first=!S.flags.isl_raiatea_seen;S.flags.isl_raiatea_seen=1;S.flags.islRaiatea=1;stat('voyages');
+    toast(first?LG('Après une longue traversée, Raiatea se dresse devant toi, avec le mont Temehani au sommet tout plat. Ia ora na !','After a long crossing, Raiatea rises before you, with flat-topped Mount Temehani. Ia ora na!'):LG('Te revoilà à Raiatea.','Back on Raiatea.'));
+    if(first)setTimeout(()=>manuSay(LG('La dame devant le fare, c’est Mama Hina. Elle connaît toutes les histoires du Temehani !','The lady by the fare is Mama Hina. She knows all the stories of Temehani!'),7),2200);pendingSave=true;actSig='';refresh();});};}
+{const _sh=sailHome;sailHome=function(){raiSetVisible(false);return _sh();};}
+{const _bo=v17BoatActions;v17BoatActions=function(A){_bo(A);const a=A.find(x=>x.sub&&/Huahine/.test(x.sub)&&x.fn);if(a)a.sub+=' · Raiatea';};}
+{const _w=walkable;walkable=function(x,z){if(S.away&&S.away.k==='raiatea'&&!S.inCave)return raiWalkable(x,z);return _w(x,z);};}
+{const _o=obstacles;obstacles=function(){if(S.away&&S.away.k==='raiatea'){if(S.boat)return[];const o=[[RAI.x+RAIP.hina.x,RAI.z+RAIP.hina.z,0.6],[RAI.x+RAIP.fare.x,RAI.z+RAIP.fare.z,1.7]];raiFX.stones.forEach(s=>o.push([s.x,s.z,0.55]));return o;}return _o();};}
+/* the legend (popular version, told without gods) */
+const RAI_LEG=()=>LG('On raconte qu’autrefois, à Raiatea, une jeune fille de haut rang aimait un jeune pêcheur. Sa famille refusa ce mariage. Chaque matin, elle montait sur le Temehani pour regarder la mer où il pêchait. Un jour, épuisée de chagrin, elle s’endormit pour toujours sur le plateau. Le lendemain, à l’endroit où reposait sa main, une fleur blanche était née : cinq pétales d’un seul côté, comme une main ouverte. Depuis, l’ʻapetahi s’ouvre à l’aube, avec un petit craquement, comme des doigts qui se déplient vers la mer.',
+  'They say that long ago on Raiatea a young woman of high rank loved a young fisherman. Her family refused the marriage. Every morning she climbed Temehani to watch the sea where he fished. One day, worn out by sorrow, she fell asleep forever on the plateau. The next day, where her hand had rested, a white flower had appeared: five petals on one side only, like an open hand. Since then the ʻapetahi opens at dawn with a soft crackle, like fingers unfolding towards the sea.');
+const RAI_RIDDLE=()=>LG('« Pour monter voir la fleur, suis le chemin du pêcheur : il partit sur la vague, attrapa le poisson, suivit la tortue jusqu’au large, se guida à l’étoile pour rentrer… et trouva la fleur. »','“To climb up to the flower, follow the fisherman’s path: he set off on the wave, caught the fish, followed the turtle out to sea, steered home by the star… and found the flower.”');
+/* new species: motoʻi (ylang-ylang) */
+Object.assign(ITEMS,{motoi:{n:LG('Fleurs de motoʻi','Motoʻi flowers'),t:LG('ylang-ylang au parfum puissant · pour le monoʻi','strongly scented ylang-ylang · for monoʻi'),cat:'mat'},motoicut:{n:LG('Bouture de motoʻi','Motoʻi cutting'),t:LG('ylang-ylang de Raiatea · à planter au motu','Raiatea ylang-ylang · plant it on your motu'),cat:'plant'},
+  monoimotoi:{n:LG('Monoʻi au motoʻi','Motoʻi monoʻi'),t:LG('le parfum de Raiatea','the scent of Raiatea'),cat:'craft'},heimotoi:{n:LG('Couronne de motoʻi','Motoʻi crown'),t:LG('pour accueillir les invités','to welcome guests'),cat:'craft'},
+  pareuapetahi:{n:LG('Pāreu ʻapetahi','ʻApetahi pāreu'),t:LG('motif de la fleur du Temehani · offert par Mama Hina','Temehani flower pattern · a gift from Mama Hina'),cat:'craft'}});
+Object.assign(PRICES,{motoi:120,motoicut:300,monoimotoi:3200,heimotoi:1500,pareuapetahi:9000});
+for(const k of['motoi','motoicut','monoimotoi','heimotoi','pareuapetahi']){if(!ORDER.includes(k))ORDER.push(k);if(!ICON[k])ICON[k]=k==='motoicut'?ICON.tcut:k==='motoi'?ICON.tiare:k==='monoimotoi'?ICON.monoi:k==='heimotoi'?(ICON.heipua||ICON.tiare):(ICON.pareu||ICON.tiare);}
+CROPS.motoi={n:'motoʻi',grow:90,regrow:50,yield:{motoi:3},shoot:'motoicut',shootCd:150,place:'low'};SEEDS.motoicut='motoi';SEED_OF.motoi='motoicut';
+{const _m=makeCropObj0;makeCropObj0=function(c){if(c.type!=='motoi')return _m(c);const o=makeTiare(c.seed);o.group.scale.multiplyScalar(1.25);o.group.traverse(q=>{if(q.isMesh&&q.material&&q.material.color&&q.material.color.getHex()>0xdddddd){q.material=q.material.clone();q.material.color.setHex(0xf2d34a);}});return o;};}
+RECIPES.push({id:'monoimotoi',lv:12,n:LG('Préparer un monoʻi au motoʻi','Make motoʻi monoʻi'),t:LG('recette de Mama Hina · le parfum de Raiatea','Mama Hina’s recipe · the scent of Raiatea'),in:{oil:1,motoi:4},out:{monoimotoi:1},cat:'crafts',secret:'unlock_raiMonoi'},
+  {id:'heimotoi',lv:12,n:LG('Tresser une couronne de motoʻi','Plait a motoʻi crown'),t:LG('pour accueillir tes clients comme à Raiatea','to welcome your guests as on Raiatea'),in:{motoi:3,frond:1},out:{heimotoi:1},cat:'crafts',secret:'unlock_raiMonoi'});
+/* actions on Raiatea */
+function raiNear(P,d){return dist(player.position.x,player.position.z,RAI.x+P.x,RAI.z+P.z)<d;}
+function raiActions(A){
+  if(raiNear(RAIP.hina,2.6)){A.push({label:LG('Écouter Mama Hina','Listen to Mama Hina'),sub:LG('La légende de la fleur ʻapetahi','The legend of the ʻapetahi flower'),fn:()=>{S.flags.raiLeg=1;stat('legends');openSheet('railegend');}});
+    if(S.flags.raiLeg&&!S.flags.raiGate)A.push({label:LG('Demander le chemin du Temehani','Ask the way up Temehani'),sub:LG('Mama Hina te donne une énigme','Mama Hina gives you a riddle'),fn:()=>{S.flags.raiRiddle=1;manuSay(RAI_RIDDLE(),12);}});
+    if(S.flags.raiFlower&&!S.flags.raiGift)A.push({label:LG('Raconter ce que tu as vu','Tell what you saw'),sub:LG('L’ʻapetahi ouverte au lever du soleil','The ʻapetahi open at sunrise'),fn:()=>{S.flags.raiGift=1;S.flags.unlock_raiMonoi=1;give({pareuapetahi:1,motoicut:2});stat('raiGift');toast(LG('Mama Hina a les larmes aux yeux : « Tu l’as regardée sans la toucher. C’est comme ça qu’on la garde vivante. » Elle t’offre un pāreu ʻapetahi, deux boutures de motoʻi et sa recette de monoʻi au motoʻi.','Mama Hina has tears in her eyes: “You looked at it without touching it. That’s how we keep it alive.” She gives you an ʻapetahi pāreu, two motoʻi cuttings and her motoʻi monoʻi recipe.'));refresh();}});
+    return;}
+  for(const s of raiFX.stones)if(dist(player.position.x,player.position.z,s.x,s.z)<1.6&&!S.flags.raiGate){A.push({label:LG(`Toucher la pierre ${RAI_SYM[s.i]}`,`Touch the stone ${RAI_SYM[s.i]}`),sub:S.flags.raiRiddle?LG('Suis le chemin du pêcheur','Follow the fisherman’s path'):LG('Une pierre gravée, ancienne et lisse','An old, smooth carved stone'),fn:()=>raiTouch(s)});return;}
+  if(raiNear(RAIP.gate,2.2)&&!S.flags.raiGate){A.push({label:LG('Le chemin du Temehani','The Temehani path'),sub:LG('Une corde barre le chemin. Mama Hina sait comment passer.','A rope bars the way. Mama Hina knows how to pass.'),off:true});return;}
+  if(raiNear(RAIP.flower,2.4)){const dawn=S.tod>0.2&&S.tod<0.34;A.push(dawn?{label:LG('Regarder l’ʻapetahi s’ouvrir','Watch the ʻapetahi open'),sub:LG('Regarde seulement : elle ne pousse nulle part ailleurs','Only look: it grows nowhere else'),fn:()=>{const first=!S.flags.raiFlower;S.flags.raiFlower=1;stat('apetahi');toast(first?LG('Dans la lumière de l’aube, les cinq pétales se déplient d’un seul côté, avec un tout petit craquement. Tu ne la cueilles pas : tu la dessines dans ton carnet. Va le raconter à Mama Hina.','In the dawn light the five petals unfold on one side, with a tiny crackle. You don’t pick it: you sketch it in your notebook. Go and tell Mama Hina.'):LG('L’ʻapetahi s’ouvre encore une fois devant toi. Quel privilège.','The ʻapetahi opens before you once again. What a privilege.'));refresh();}}
+      :{label:LG('Tiare ʻapetahi','Tiare ʻapetahi'),sub:LG('Fermée… elle ne s’ouvre qu’au lever du soleil. Ne la cueille jamais.','Closed… it only opens at sunrise. Never pick it.'),off:true});return;}
+  if(raiNear(RAIP.motoi,4)){A.push(S.flags.raiMotoiDay===S.day?{label:LG('Arbres à motoʻi','Motoʻi trees'),sub:LG('Tu as déjà cueilli aujourd’hui','You already picked today'),off:true}:{label:LG('Cueillir des fleurs de motoʻi','Pick motoʻi flowers'),sub:LG('Mama Hina t’y autorise : quelques fleurs, l’arbre en garde','Mama Hina allows it: a few flowers, the tree keeps plenty'),fn:()=>{S.flags.raiMotoiDay=S.day;give({motoi:4});chopT=0.4;floatAtPlayer('+4 '+nm('motoi'));refresh();}});}}
+function raiTouch(s){if(S.flags.raiGate)return;raiSeq.push(s.i);s.glow.material.opacity=0.9;floatText(RAI_SYM[s.i],_p.set(s.x,raiH(s.x-RAI.x,s.z-RAI.z)+2.2,s.z));
+  const ok=raiSeq.every((v,i)=>v===RAI_ORDER[i]);if(!ok){raiSeq=[];raiFX.stones.forEach(t=>t.glow.material.opacity=0);toast(LG('Les pierres s’éteignent… Ce n’est pas le chemin du pêcheur. Réessaie depuis le début.','The stones go dark… That’s not the fisherman’s path. Try again from the start.'));return;}
+  if(raiSeq.length===RAI_ORDER.length){S.flags.raiGate=1;stat('puzzle');raiGateUpdate();toast(LG('Les cinq pierres brillent ensemble ! La corde tombe : le chemin du Temehani est ouvert. Monte au plateau… et reviens à l’aube.','All five stones glow together! The rope falls: the Temehani path is open. Climb to the plateau… and come back at dawn.'));
+    setTimeout(()=>raiFX.stones.forEach(t=>t.glow.material.opacity=0.35),2500);pendingSave=true;}}
+function raiLegendSheet(){$('#sheetTitle').textContent=LG('La légende de l’ʻapetahi','The legend of the ʻapetahi');
+  return `<p class="small-note">${LG('Racontée par Mama Hina · d’après une légende populaire de Raiatea','Told by Mama Hina · after a popular legend of Raiatea')}</p><p>${RAI_LEG()}</p>
+    <div class="afcard"><div class="afname">🌺 Tiare ʻapetahi</div><div class="small-note"><i>Apetahia raiateensis</i></div><p>${LG('Elle ne pousse que sur le plateau du Temehani, nulle part ailleurs au monde. Elle est très rare et protégée : on ne la cueille jamais, on ne la déplace jamais. On la regarde, et on la laisse vivre.','It grows only on the Temehani plateau, nowhere else in the world. It is very rare and protected: never picked, never moved. We look at it, and let it live.')}</p></div>`;}
+{const _s=v7Sheet;v7Sheet=function(m){if(m==='railegend')return raiLegendSheet();return _s(m);};V7S.railegend=1;}
+{const _ia=islActions;islActions=function(A){if(S.away&&S.away.k==='raiatea'){if(S.boat||INSIDE)return;raiActions(A);return;}_ia(A);};}
+{const _pc=plantCheck;plantCheck=function(kind){if(S.away&&S.away.k==='raiatea')return{ok:false,why:LG('Garde tes plants pour ton motu','Keep your plants for your motu')};return _pc(kind);};}
+{const _am=askManu;askManu=function(){if(S.away&&S.away.k==='raiatea'){manuSay(!S.flags.raiLeg?LG('Va parler à Mama Hina, devant son fare.','Go and talk to Mama Hina, in front of her fare.'):!S.flags.raiGate?(S.flags.raiRiddle?LG('Les cinq pierres gravées, au pied de la montagne… Dans quel ordre le pêcheur a-t-il vécu son voyage ?','The five carved stones at the foot of the mountain… In what order did the fisherman live his journey?'):LG('Demande à Mama Hina le chemin du Temehani.','Ask Mama Hina the way up Temehani.')):!S.flags.raiFlower?LG('Monte au plateau et attends le lever du soleil.','Climb to the plateau and wait for sunrise.'):!S.flags.raiGift?LG('Retourne voir Mama Hina !','Go back to see Mama Hina!'):LG('Plante tes boutures de motoʻi au motu, et prépare le monoʻi de Mama Hina.','Plant your motoʻi cuttings on the motu, and make Mama Hina’s monoʻi.'),8);return;}return _am();};}
+{const _u=updateV38;updateV38=function(dt){_u(dt);if(!raiGroup||!S.away||S.away.k!=='raiatea')return;const t=performance.now()/1000;
+  if(raiFX.flower){const dawn=S.tod>0.2&&S.tod<0.34,fl=raiFX.flower.userData.fl,target=dawn?1:0.25;fl.scale.x+=(target-fl.scale.x)*Math.min(1,dt);fl.scale.z=fl.scale.x;}
+  if(raiFX.hina){const h=raiFX.hina;h.group.rotation.y=Math.atan2(player.position.x-h.group.position.x,player.position.z-h.group.position.z);}
+  raiFX.stones.forEach(s=>{s.g.children[1].position.y=1.75+Math.sin(t*1.5+s.i)*0.05;});};}
+if(S.away&&S.away.k==='raiatea'){buildRaiatea();raiSetVisible(true);placeWater('raiatea');}
+{const _g=GUIDE;GUIDE=()=>_g().concat([{k:'raiatea',ic:'🏝️',t:LG('Raiatea et le Temehani','Raiatea and Temehani'),b:LG('Au niveau 12, avec une voile, navigue jusqu’à Raiatea. Écoute la légende de Mama Hina, résous l’énigme des cinq pierres gravées pour ouvrir le chemin, puis monte au plateau à l’aube voir la fleur ʻapetahi (regarder, jamais cueillir). En retour : boutures de motoʻi et recette du monoʻi au motoʻi.','At level 12, with a sail, sail to Raiatea. Listen to Mama Hina’s legend, solve the riddle of the five carved stones to open the path, then climb to the plateau at dawn to see the ʻapetahi flower (look, never pick). In return: motoʻi cuttings and the motoʻi monoʻi recipe.')}]);}
+ACH.push(['raiatea',()=>LG('Ia ora na Raiatea','Ia ora na Raiatea'),()=>LG('Naviguer jusqu’à Raiatea','Sail to Raiatea'),()=>!!S.flags.islRaiatea],
+  ['puzzle',()=>LG('Le chemin du pêcheur','The fisherman’s path'),()=>LG('Résoudre l’énigme des cinq pierres','Solve the riddle of the five stones'),()=>!!S.flags.raiGate],
+  ['apetahi',()=>LG('Regarder sans cueillir','Look without picking'),()=>LG('Voir l’ʻapetahi s’ouvrir à l’aube','See the ʻapetahi open at dawn'),()=>!!S.flags.raiFlower]);
+const V60={RAI,RAIP,raiH,raiWalkable,buildRaiatea,raiTouch,stones:raiFX.stones,get seq(){return raiSeq;}};
+
+/* =====================================================================
+   v61: the sailing phase. Choosing an island (or the way home) now starts
+   a real crossing on the open ocean: the vaʻa sails by itself, you steer
+   with ◀ ▶ (or the joystick) and keep the guide star ahead of the bow, using
+   the star compass. By day and at the end, the old navigators’ clues appear:
+   a still cloud above the island, seabirds flying to land, drifting
+   coconuts. You can always skip. Sail badly for too long and the vaʻa hits a
+   hidden reef: you wash up on your motu with a broken vaʻa to repair.
+   The open ocean lives at x≈0, z≈-3000 (far from every island).
+   ===================================================================== */
+const VOYZ={x:0,z:-3000};
+const VOY_DEST={tahiti:{a:3.5,star:'Taʻurua',n:()=>'Tahiti Nui'},moorea:{a:3.95,star:'Ana-muri',n:()=>'Moorea'},huahine:{a:4.9,star:'Matariʻi',n:()=>'Huahine'},raiatea:{a:5.0,star:'Ana-varu',n:()=>'Raiatea'},
+  borabora:{a:5.15,star:'Fetūʻura',n:()=>'Bora Bora'},home:{a:0.4,star:'Fetū iti',n:()=>LG('ton motu','your motu')}};
+let VOY=null;
+function voyLen(){return 420*(metHas('astronome',2)?0.85:1)*(metHas('astronome',10)?0.85:1);}
+function startVoyage(dest){if(stormy()){toast(LG('Trop de houle pour traverser aujourd’hui.','The swell is too big to cross today.'));return;}if(typeof cycloneBlocks==='function'&&cycloneBlocks())return;
+  const D=VOY_DEST[dest]||VOY_DEST.home,prev=S.away,home=prev&&prev.home?prev.home:(S.boat||!S.canoe?{x:player.position.x,z:player.position.z,rot:player.rotation.y}:{x:S.canoe.x,z:S.canoe.z,rot:S.canoe.rot||0});
+  islFade(()=>{S.away={k:'voyage',home,dest,prev};const a=D.a;VOY={dest,a,dir:{x:Math.sin(a),z:Math.cos(a)},yaw:a+(Math.random()-0.5)*0.8,t:0,prog:0,risk:0,warn:0,tip:0,L:voyLen(),cues:{}};
+    player.position.set(VOYZ.x,0,VOYZ.z);S.boat=true;S.canoe={x:VOYZ.x,z:VOYZ.z,rot:VOY.yaw};player.rotation.y=VOY.yaw;cam.yaw=VOY.yaw+Math.PI;manu.pos.copy(player.position).add(new THREE.Vector3(0,3,0));
+    islSetVisible(false);mooSetVisible(false);if(typeof huaSetVisible==='function')huaSetVisible(false);if(typeof raiSetVisible==='function')raiSetVisible(false);
+    waterU.uAway.value=1;waterU.uOff.value.set(VOYZ.x,VOYZ.z);water.position.x=VOYZ.x;water.position.z=VOYZ.z;clouds.position.set(VOYZ.x,0,VOYZ.z);
+    if(S.tod<0.78&&S.tod>0.22)S.tod=0.82;openSheet(null);voyHud(true);voyCues(true);stat('crossings');
+    manuSay(LG(`Cap sur ${D.n()} ! Garde l’étoile ${D.star} juste devant la proue. Le vaʻa avance tout seul : tourne avec ◀ ▶.`,`Course for ${D.n()}! Keep the star ${D.star} just ahead of the bow. The vaʻa sails by itself: steer with ◀ ▶.`),8);pendingSave=true;actSig='';refresh();});}
+function endVoyage(how){const v=VOY;if(!v)return;VOY=null;voyHud(false);voyCues(false);const A=S.away;
+  if(how==='wreck'){shipwreck(A&&A.home);return;}
+  if(v.dest==='home'){S.away={k:'voyage',home:A&&A.home};_sailHome61();}else{S.away=A;_sailTo61(v.dest);}
+  if(how==='arrive'){stat('voyageNav');if(v.risk<0.25)stat('voyageClean');}}
+function shipwreck(home){islFade(()=>{S.away=null;islSetVisible(false);islWater(false);const h=home||{x:TOUR_DOCK.x,z:TOUR_DOCK.z,rot:0};
+  let sx=h.x,sz=h.z;const r=Math.hypot(sx,sz)||1;for(let k=0;k<60&&H(sx,sz)<0.3;k++){sx-=sx/r*0.6;sz-=sz/r*0.6;}
+  S.canoe={x:h.x*0.98,z:h.z*0.98,rot:h.rot||0};S.canoeBroken=true;S.boat=false;fishing=null;player.position.set(sx,0,sz);manu.pos.copy(player.position).add(new THREE.Vector3(0,3,0));
+  S.hunger=Math.max(0,S.hunger-15);S.tod=0.26;stat('shipwreck');pendingSave=true;actSig='';
+  toast(LG('Crac ! Le vaʻa a heurté un récif caché dans la nuit… Les courants t’ont ramené, épuisé, sur la plage de ton motu. Le vaʻa est abîmé : il faudra le réparer (3 planches, 2 cordes).','Crack! The vaʻa hit a hidden reef in the night… The currents carried you, worn out, back to your motu’s beach. The vaʻa is damaged: it needs repairing (3 planks, 2 ropes).'));
+  setTimeout(()=>manuSay(LG('On est sains et saufs, c’est l’essentiel. La prochaine fois, on garde bien l’étoile devant la proue !','We’re safe and sound, that’s what matters. Next time, we keep the star right ahead of the bow!'),8),2600);refresh();});}
+const _sailTo61=sailTo,_sailHome61=sailHome;
+sailTo=function(k){if(VOY_DEST[k]&&!(S.away&&S.away.k==='voyage'))return startVoyage(k);return _sailTo61(k);};
+sailHome=function(){if(S.away&&S.away.k!=='voyage'&&!VOY)return startVoyage('home');return _sailHome61();};
+{const _so=seaOK;seaOK=function(x,z){if(VOY)return true;return _so(x,z);};}
+{const _ia=islActions;islActions=function(A){if(VOY){A.push({label:LG('Arriver directement','Skip to arrival'),sub:LG('Passer la traversée','Skip the crossing'),cls:'ghost',fn:()=>endVoyage('skip')});return;}_ia(A);};}
+{const _bo=v17BoatActions;v17BoatActions=function(A){if(VOY)return;_bo(A);};}
+/* HUD: star compass, steering buttons, progress */
+let voyEl=null;const VOYB={l:0,r:0};
+function voyHud(on){document.body.classList.toggle('voyaging',!!on);if(!on){if(voyEl)voyEl.hidden=true;return;}if(!voyEl){voyEl=document.createElement('div');voyEl.id='voyHud';voyEl.setAttribute('data-notr','');
+  voyEl.innerHTML=`<canvas id="kapehu" width="220" height="220"></canvas><div class="vinfo"><b id="vDest"></b><div class="vbar"><span id="vProg"></span></div><div class="vbar risk"><span id="vRisk"></span></div><div class="small-note" id="vTxt"></div><button class="chip" id="vSkip">${LG('Arriver directement','Skip to arrival')}</button></div>
+    <div class="vsteer"><button id="vL">◀</button><button id="vR">▶</button></div>`;document.body.appendChild(voyEl);voyEl.querySelector('#vSkip').onclick=()=>endVoyage('skip');
+  for(const[id,k]of[['vL','l'],['vR','r']]){const b=voyEl.querySelector('#'+id);const dn=e=>{e.preventDefault();VOYB[k]=1;},up=()=>{VOYB[k]=0;};b.addEventListener('pointerdown',dn);b.addEventListener('pointerup',up);b.addEventListener('pointerleave',up);b.addEventListener('pointercancel',up);}}
+  voyEl.hidden=false;}
+function angSigned(a,b){let d=a-b;while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;return d;}
+function drawKapehu(err){const c=document.getElementById('kapehu');if(!c)return;const g=c.getContext('2d'),W=c.width,R0=W/2-8;g.clearRect(0,0,W,W);g.save();g.translate(W/2,W/2);
+  g.fillStyle='rgba(14,40,74,.78)';g.beginPath();g.arc(0,0,R0,0,Math.PI*2);g.fill();g.strokeStyle='rgba(255,255,255,.5)';g.lineWidth=2;g.stroke();
+  for(let i=0;i<32;i++){const a=i/32*Math.PI*2-VOY.yaw,l=i%8===0?14:i%4===0?9:5;g.strokeStyle=i%8===0?'#ffd27a':'rgba(255,255,255,.55)';g.beginPath();g.moveTo(Math.sin(a)*(R0-l),-Math.cos(a)*(R0-l));g.lineTo(Math.sin(a)*R0,-Math.cos(a)*R0);g.stroke();}
+  const precise=myMet()==='astronome'&&S.inv.kapehu>0,sa=-err;g.fillStyle='#fff6c8';g.shadowColor='#fff';g.shadowBlur=12;g.beginPath();g.arc(Math.sin(sa)*(R0-24),-Math.cos(sa)*(R0-24),7,0,Math.PI*2);g.fill();g.shadowBlur=0;
+  g.fillStyle='#de4634';g.beginPath();g.moveTo(0,-R0+30);g.lineTo(9,-R0+52);g.lineTo(-9,-R0+52);g.closePath();g.fill();
+  g.fillStyle='#f6ecd8';g.font='bold 15px sans-serif';g.textAlign='center';g.fillText(precise?`${Math.round(Math.abs(err)*180/Math.PI)}°`:Math.abs(err)<0.12?'✓':err>0?'→':'←',0,8);g.restore();}
+/* cues: guide star, still cloud, birds, drifting coconuts */
+const VC={star:null,cloud:null,birds:[],nuts:[]};
+function voyCues(on){if(!VC.star){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:typeof glowTex!=='undefined'?glowTex:null,color:0xfff6c8,transparent:true,depthWrite:false,fog:false}));s.scale.setScalar(26);scene.add(s);VC.star=s;
+    const cl=new THREE.Group();for(let i=0;i<6;i++){const m=mesh(new THREE.SphereGeometry(9+Math.random()*5,8,6),new THREE.MeshBasicMaterial({color:0xf2f4f6,transparent:true,opacity:0.85,fog:false}),(i-2.5)*9,Math.random()*4,(Math.random()-0.5)*8,false);cl.add(m);}scene.add(cl);VC.cloud=cl;
+    for(let i=0;i<4;i++){const b=makeBird();scene.add(b.g);b.g.scale.setScalar(1.4);VC.birds.push(b);}
+    for(let i=0;i<5;i++){const n=mesh(new THREE.SphereGeometry(0.28,8,6),std(0x7a5530),0,0,0,false);scene.add(n);VC.nuts.push(n);}}
+  VC.star.visible=on;VC.cloud.visible=false;VC.birds.forEach(b=>b.g.visible=false);VC.nuts.forEach(n=>n.visible=false);}
+function updateVoyage(dt){if(!VOY)return;const v=VOY,t=performance.now()/1000;v.t+=dt;
+  const usingJoy=Math.hypot(joyV.x,joyV.y)>0.1||!!(keys.w||keys.s||keys.a||keys.d||keys.arrowup||keys.arrowdown||keys.arrowleft||keys.arrowright);if(VOYB.l)v.yaw+=dt*0.9;if(VOYB.r)v.yaw-=dt*0.9;if(usingJoy)v.yaw=player.rotation.y;
+  if(!usingJoy){const sp=(S.sail?9:7)*(stormy()?0.5:1)*dt;player.position.x+=Math.sin(v.yaw)*sp;player.position.z+=Math.cos(v.yaw)*sp;player.rotation.y=v.yaw;cam.yaw+=angSigned(v.yaw+Math.PI,cam.yaw)*Math.min(1,dt*1.5);}
+  const dx=player.position.x-VOYZ.x,dz=player.position.z-VOYZ.z;v.prog=Math.max(0,dx*v.dir.x+dz*v.dir.z);const lat=dx*v.dir.z-dz*v.dir.x;
+  const e=angSigned(v.yaw,v.a+Math.atan2(-lat,v.L-v.prog)*0.6);
+  /* risk grows when far off course or drifting sideways, heals when on course */
+  const off=Math.abs(e)>0.6||Math.abs(lat)>90;v.risk=clamp(v.risk+(off?dt/40:-dt/60),0,1);
+  if(v.risk>0.5&&v.warn<1){v.warn=1;manuSay(LG('Attention, on s’éloigne de la route ! Ramène l’étoile devant la proue, il y a des récifs cachés par ici.','Careful, we’re drifting off course! Bring the star back ahead of the bow, there are hidden reefs around here.'),7);}
+  if(v.risk>0.8&&v.warn<2){v.warn=2;manuSay(LG('J’entends des vagues qui cassent… Vite, reprends le cap !','I can hear waves breaking… Quick, get back on course!'),6);}
+  if(v.risk>=1){endVoyage('wreck');return;}
+  if(v.risk<0.3&&v.warn>0&&!off)v.warn=0;
+  /* guide star low over the horizon in the true direction of the island */
+  const P=player.position;VC.star.position.set(P.x+Math.sin(v.a+Math.atan2(-lat,v.L-v.prog))*480,40,P.z+Math.cos(v.a+Math.atan2(-lat,v.L-v.prog))*480);VC.star.material.opacity=isNight()?1:0.35;
+  const p=v.prog/v.L,T={x:VOYZ.x+v.dir.x*v.L,z:VOYZ.z+v.dir.z*v.L};
+  if(p>0.5){VC.cloud.visible=true;VC.cloud.position.set(T.x,55,T.z);if(!v.cues.cloud){v.cues.cloud=1;manuSay(LG('Regarde ce nuage qui ne bouge pas, là-bas : il y a une île dessous !','See that cloud that doesn’t move, over there: there’s an island under it!'),7);}}
+  if(p>0.68){VC.birds.forEach((b,i)=>{b.g.visible=true;const k=(t*0.08+i*0.25)%1,x=P.x+(T.x-P.x)*k+Math.sin(t+i)*3,z=P.z+(T.z-P.z)*k+Math.cos(t+i)*3;b.g.position.set(x,9+Math.sin(t*2+i)*1.5,z);b.g.rotation.y=Math.atan2(T.x-P.x,T.z-P.z);const f=Math.sin(t*9+i)*0.6;b.ws[0].rotation.z=f;b.ws[1].rotation.z=-f;});
+    if(!v.cues.birds){v.cues.birds=1;manuSay(LG('Les ʻitatae rentrent vers la terre pour la nuit… suis-les !','The ʻitatae are flying home to land for the night… follow them!'),7);}}
+  if(p>0.82){VC.nuts.forEach((n,i)=>{n.visible=true;if(!n.userData.set||dist(n.position.x,n.position.z,P.x,P.z)>60){const a=v.yaw+(Math.random()-0.5)*1.2,d=15+Math.random()*25;n.position.set(P.x+Math.sin(a)*d,0.05,P.z+Math.cos(a)*d);n.userData.set=1;}n.position.y=0.05+Math.sin(t*1.6+i)*0.06;});
+    if(!v.cues.nuts){v.cues.nuts=1;manuSay(LG('Des cocos qui flottent : la terre est tout près !','Floating coconuts: land is very close!'),6);}}
+  if(v.t>8&&v.tip<1){v.tip=1;manuSay(LG('Sens la houle sous la coque : elle arrive toujours du même côté. Si elle change, c’est qu’on dévie.','Feel the swell under the hull: it always comes from the same side. If it changes, we’re drifting.'),8);}
+  if(v.prog>=v.L){endVoyage('arrive');return;}
+  /* HUD */
+  const err2=angSigned(Math.atan2(VC.star.position.x-P.x,VC.star.position.z-P.z),v.yaw);drawKapehu(err2);
+  const D=VOY_DEST[v.dest];$('#vDest').textContent=`⛵ ${D.n()} · ${LG('étoile','star')} ${D.star}`;$('#vProg').style.width=Math.min(100,p*100)+'%';$('#vRisk').style.width=(v.risk*100)+'%';
+  $('#vTxt').textContent=Math.abs(err2)<0.15?LG('Bon cap ! L’étoile est devant la proue.','Good course! The star is ahead of the bow.'):err2>0?LG('L’étoile est à gauche : tourne à gauche ◀','The star is to the left: turn left ◀'):LG('L’étoile est à droite : tourne à droite ▶','The star is to the right: turn right ▶');}
+{const _u=updateV38;updateV38=function(dt){_u(dt);updateVoyage(dt);};}
+{const _g=GUIDE;GUIDE=()=>_g().concat([{k:'navigation',ic:'⭐',t:LG('Naviguer aux étoiles','Navigating by the stars'),b:LG('Quand tu pars vers une île, la traversée commence en pleine mer. Le vaʻa avance seul : tourne avec ◀ ▶ (ou les flèches) pour garder l’étoile guide devant la proue, comme sur le compas d’étoiles. Indices des anciens : un nuage immobile au-dessus de l’île, les oiseaux qui rentrent vers la terre, des cocos qui flottent. Si tu t’écartes trop longtemps (barre rouge), le vaʻa heurte un récif caché : tu échoues sur ton motu, le vaʻa à réparer. « Arriver directement » passe la traversée.','When you leave for an island, the crossing starts on the open sea. The vaʻa sails by itself: steer with ◀ ▶ (or the arrow keys) to keep the guide star ahead of the bow, as shown on the star compass. The elders’ clues: a still cloud above the island, birds flying home to land, floating coconuts. If you drift off course too long (red bar), the vaʻa hits a hidden reef: you wash up on your motu with the vaʻa to repair. “Skip to arrival” skips the crossing.')}]);}
+GUIDE_FOR.voyage='navigation';
+ACH.push(['voyageNav',()=>LG('Navigateur des étoiles','Star navigator'),()=>LG('Trouver une île en suivant les étoiles','Find an island by following the stars'),()=>(S.stats.voyageNav||0)>=1],
+  ['voyageClean',()=>LG('Cap parfait','Perfect course'),()=>LG('Traverser sans jamais t’écarter de la route','Cross without ever drifting off course'),()=>(S.stats.voyageClean||0)>=1]);
+const V61={startVoyage,endVoyage,get VOY(){return VOY;},VOYB,VOY_DEST,shipwreck};
+
+/* =====================================================================
+   v62: fēti'i, the extended family.
+   - Inhabitants (from level 14): build family houses (fare utuafare). When
+     your motu is welcoming enough (healthy lagoon, flowers, paths, clean
+     water, sun energy, a well-rated guesthouse), a family asks to settle.
+     Each family brings a skill and a small daily help, sometimes asks for
+     something simple; meeting their wish makes them happier. No penalties.
+   - Hoa rahi: talk to the inhabitants every day; at friendship 10 they become
+     your hoa rahi (close friends), help twice as much and give a gift.
+   - Faʻaʻamu (from level 16, once a family lives here): the Polynesian
+     tradition of welcoming someone into the household. Mama Tetua, an elder
+     alone since a cyclone, or Heimana, a young adult who wants to learn your
+     trade, comes to live in your fare.
+   ===================================================================== */
+const FAM_POOL=[['Teriitahi',['Moana','Hiro','Vaiana']],['Tauotaha',['Tamatea','Hinatea']],['Mahinui',['Raimana','Mareva','Tiare','Teiki']],['Tehei',['Manutea','Poema']],['Amaru',['Heiarii','Tumata','Vaitiare']],['Faatauira',['Ariitea','Hina']]];
+const FAM_SKILL={peche:{ic:'🎣',n:()=>LG('pêcheurs','fishers'),give:()=>({fish:2})},jardin:{ic:'🌱',n:()=>LG('jardiniers','gardeners'),give:()=>({banana:2,taro:1})},
+  artisan:{ic:'🧺',n:()=>LG('artisans','craftspeople'),give:()=>({thatch:1,rope:1})},chant:{ic:'🎶',n:()=>LG('chanteurs et musiciens','singers and musicians'),give:()=>({})},
+  cuisine:{ic:'🍲',n:()=>LG('cuisiniers','cooks'),give:()=>({poe:1})},batir:{ic:'🪚',n:()=>LG('bâtisseurs','builders'),give:()=>({plank:1})}};
+const FAM_SK_KEYS=Object.keys(FAM_SKILL);
+function FO(){if(!S.folk)S.folk={houses:[],fams:[],req:null,day:S.day,used:[],adopt:null,adoptAsk:null,choice:null,chDay:-99,calm:0};return S.folk;}
+function welcomeParts(){const L=S.lagoon?S.lagoon.h||0:60;return[[LG('lagon en bonne santé','healthy lagoon'),L>=60],[LG('des fleurs (parterre)','flowers (a flower bed)'),(S.parterres||[]).length>0],[LG('des chemins','paths'),(S.paths||[]).length>=2],
+  [LG('de l’eau propre (distillateur ou citerne)','clean water (still or tank)'),!!S.still||!!(S.met&&S.met.bld&&S.met.bld.technicien)],[LG('l’énergie du soleil','solar energy'),!!S.solarp],[LG('une pension appréciée (3,5★)','a well-liked guesthouse (3.5★)'),typeof v10Rating==='function'&&v10Rating()>=3.5]];}
+function welcomeScore(){return welcomeParts().filter(p=>p[1]).length;}
+function needScore(){return 3+FO().fams.length;}
+RECIPES.push({id:'famhouse',lv:14,n:LG('Construire un fare pour une famille','Build a fare for a family'),t:LG('fare utuafare · une famille pourra venir s’installer sur ton motu (4 au plus)','fare utuafare · a family can come and settle on your motu (4 at most)'),in:{log:8,plank:14,thatch:8,stone:6},place:'famhouse',cat:'build'});
+const famMeshes=new Map();
+function placeFamHouse(Hh){const old=famMeshes.get(Hh);if(old)scene.remove(old);const g=new THREE.Group(),r=mulberry32(Hh.seed||7),wall=std([0xf2e3c4,0xe9d2a8,0xf6ecd8][Math.floor(r()*3)]),trim=std([0x2c7fb8,0xde4634,0x55a83a,0xf2c94c][Math.floor(r()*4)]);
+  g.add(box(3.6,0.35,3,MAT.basalt2||MAT.post,0,0.17,0));g.add(box(3.2,1.7,2.6,wall,0,1.2,0));g.add(box(0.9,1.3,0.06,trim,0,1.0,1.32));g.add(box(0.7,0.6,0.06,trim,-1.1,1.4,1.32));g.add(box(0.7,0.6,0.06,trim,1.1,1.4,1.32));
+  const roof=mesh(new THREE.ConeGeometry(2.9,1.5,4),MAT.thatch||std(0xc9a46a),0,2.8,0);roof.rotation.y=Math.PI/4;roof.scale.set(1,1,0.88);roof.userData.roof=1;g.add(roof);
+  g.add(box(3.6,0.08,1,MAT.plank||MAT.wood,0,0.38,1.9));g.position.set(Hh.x,H(Hh.x,Hh.z),Hh.z);g.rotation.y=Hh.rot||0;scene.add(g);famMeshes.set(Hh,g);}
+FO().houses.forEach(placeFamHouse);
+{const _pc=v10PlaceCheck;v10PlaceCheck=function(w){if(w!=='famhouse')return _pc(w);if(FO().houses.length>=4)return{ok:false,why:LG('Ton motu accueille déjà 4 familles : gardons de la place pour la nature !','Your motu already welcomes 4 families: let’s keep room for nature!')};
+  const{x,z}=ahead(3),h=H(x,z);if(h<0.35||h>4)return{ok:false,why:LG('Trouve un terrain plat et sec','Find flat, dry ground')};if(occupied(x,z,2.6))return{ok:false,why:LG('Trop près de quelque chose','Too close to something')};return{ok:true,x,z};};}
+{const _pl=v10Place;v10Place=function(w,c){if(w!=='famhouse')return _pl(w,c);const Hh={x:c.x,z:c.z,rot:player.rotation.y+Math.PI,seed:Math.floor(Math.random()*1e6),fam:null};FO().houses.push(Hh);placeFamHouse(Hh);stat('famhouse');
+  toast(LG('Le fare est prêt à accueillir une famille. Quand ton motu sera assez accueillant, quelqu’un viendra demander à s’installer.','The fare is ready to welcome a family. When your motu is welcoming enough, someone will come and ask to settle.'));return true;};}
+{const _oc=v10Occupied;v10Occupied=function(x,z,d){return _oc(x,z,d)||FO().houses.some(h=>dist(h.x,h.z,x,z)<d+2.2);};}
+{const _ob=v10Obstacles;v10Obstacles=function(l){_ob(l);for(const h of FO().houses)l.push([h.x,h.z,2]);};}
+{const _ci=creItems;creItems=function(){const o=_ci();FO().houses.forEach((h,i)=>{const m=famMeshes.get(h);if(m)o.push({id:'famh'+i,ic:'🏡',n:LG(`Fare de famille ${i+1}`,`Family fare ${i+1}`),obj:h,mesh:m,r:2.2});});return o;};}
+{const _ri=recyInfo;recyInfo=function(it){if(it&&it.id.startsWith('famh')){const h=it.obj;return{rid:'famhouse',ok:()=>h.fam==null,fn:()=>{const F=FO();F.houses.splice(F.houses.indexOf(h),1);famMeshes.delete(h);}};}return _ri(it);};}
+/* the people */
+const folkBodies=new Map();
+function famHouse(f){return FO().houses[f.house];}
+function folkPeople(){const out=[];const F=FO();F.fams.forEach((f,fi)=>f.members.forEach((m,mi)=>out.push({key:'f'+fi+'_'+mi,m,f,home:famHouse(f)})));if(F.adopt)out.push({key:'adopt',m:F.adopt,f:null,home:{x:SITE.x+2,z:SITE.z+3}});return out;}
+function updateFolk(dt,t){const live=new Set();const night=isNight();
+  for(const p of folkPeople()){live.add(p.key);if(!p.home)continue;let b=folkBodies.get(p.key);if(!b){b=makePerson(p.m.seed);b.group.position.set(p.home.x+1.5,H(p.home.x,p.home.z),p.home.z+2);scene.add(b.group);b.tg=null;b.wait=0;folkBodies.set(p.key,b);}
+    b.group.visible=!S.away&&!S.inCave&&!night;if(!b.group.visible)continue;b.wait-=dt;
+    if(!b.tg||b.wait<=0&&dist(b.group.position.x,b.group.position.z,b.tg.x,b.tg.z)<0.4){for(let k=0;k<8;k++){const a=Math.random()*6.28,d=1.5+Math.random()*5,x=p.home.x+Math.cos(a)*d,z=p.home.z+Math.sin(a)*d,h=H(x,z);if(h>0.3&&h<4&&!nearSite(x,z,0.5)){b.tg={x,z};break;}}b.wait=4+Math.random()*6;}
+    if(b.tg){const g=b.group.position,dx=b.tg.x-g.x,dz=b.tg.z-g.z,d=Math.hypot(dx,dz);if(d>0.3){const sp=1.3*pathSpeed(g.x,g.z)*dt;g.x+=dx/d*sp;g.z+=dz/d*sp;b.group.rotation.y=Math.atan2(dx,dz);const sw=Math.sin(t*7+p.m.seed)*0.55;b.legs[0].rotation.x=sw;b.legs[1].rotation.x=-sw;}else{b.legs[0].rotation.x=b.legs[1].rotation.x=0;}g.y=npcY(g.x,g.z);}}
+  for(const[k,b]of folkBodies)if(!live.has(k)){scene.remove(b.group);folkBodies.delete(k);}}
+/* the balance: inhabitants give, but they also cost */
+const FAM_COST={food:2,water:1,lagoon:0.3};
+function foodPick(n){const c=Object.keys(S.inv).filter(k=>S.inv[k]>0&&ITEMS[k]&&ITEMS[k].food&&ITEMS[k].food<40).sort((a,b)=>ITEMS[a].food-ITEMS[b].food);const o={};for(const k of c){while(n>0&&S.inv[k]-(o[k]||0)>0){o[k]=(o[k]||0)+1;n--;}if(!n)break;}return n?null:o;}
+function upkeep(){const F=FO();if(!F.fams.length)return;let short=[];const Lg=L();
+  for(const f of [...F.fams]){const fd=foodPick(FAM_COST.food);if(fd)take(fd);const wOk=(S.inv.water||0)>=FAM_COST.water;if(wOk)take({water:FAM_COST.water});Lg.h=Math.max(0,(Lg.h||60)-FAM_COST.lagoon*(S.still?0.5:1));
+    if(fd&&wOk){f.joy=Math.min(10,(f.joy||3)+0.5);f.low=0;}else{f.joy=Math.max(0,(f.joy||3)-2);short.push(f.name);if(f.joy<=0)f.low=(f.low||0)+1;}
+    if((f.low||0)>=3)famLeave(f);}
+  if(short.length)toast(LG(`Les familles ${short.join(', ')} ont manqué de nourriture ou d’eau aujourd’hui (2 repas et 1 eau par famille et par jour).`,`The ${short.join(', ')} families went short of food or water today (2 meals and 1 water per family per day).`));}
+function famLeave(f){const F=FO(),i=F.fams.indexOf(f);if(i<0)return;const h=F.houses[f.house];F.fams.splice(i,1);F.houses.forEach(x=>{if(x.fam==null)return;if(x===h)x.fam=null;else if(x.fam>i)x.fam--;});
+  toast(LG(`La famille ${f.name} part rejoindre des cousins à Tahiti. Pas de rancune : ils te souhaitent bonne route. Leur fare est libre.`,`The ${f.name} family leaves to join cousins in Tahiti. No hard feelings: they wish you well. Their fare is free.`));pendingSave=true;}
+function setChoice(c){const F=FO();if(c==='calm'&&F.fams.length){toast(LG('Des familles vivent ici : on ne les met pas dehors ! Le motu tranquille, c’est avant leur arrivée.','Families live here: we don’t send them away! The quiet motu is a choice made before they arrive.'));return;}
+  if(F.choice&&S.day-F.chDay<7){toast(LG(`Tu pourras changer d’avis dans ${7-(S.day-F.chDay)} jour(s).`,`You can change your mind in ${7-(S.day-F.chDay)} day(s).`));return;}F.choice=c;F.chDay=S.day;if(c==='calm'){F.req=null;}
+  toast(c==='calm'?LG('🌿 Motu tranquille : la nature garde toute la place. Le lagon guérit plus vite et tes animaux te font davantage confiance.','🌿 Quiet motu: nature keeps all the room. The lagoon heals faster and your animals trust you more.'):LG('🏡 Motu ouvert : les familles pourront demander à s’installer. Elles aident, mais il faudra les nourrir.','🏡 Open motu: families may ask to settle. They help, but you’ll need to feed them.'));pendingSave=true;renderSheet();}
+/* daily life: help, wishes, arrivals, faʻaʻamu */
+const FWISH=[{k:'coco',t:()=>LG('aimerait quelques cocos pour le goûter des enfants','would like a few coconuts for the children’s snack'),need:{coconut:4}},{k:'fish',t:()=>LG('aimerait du poisson pour le dîner du dimanche','would like some fish for Sunday dinner'),need:{fish:3}},
+  {k:'path',t:()=>LG('rêve d’un chemin jusqu’à sa maison','dreams of a path up to their house'),check:f=>{const h=famHouse(f);return (S.paths||[]).some(P=>pathDist(h.x,h.z,P)<3.5);}},
+  {k:'flower',t:()=>LG('aimerait des fleurs près de sa maison','would like flowers near their house'),check:f=>{const h=famHouse(f);return (S.parterres||[]).some(b=>dist(b.x,b.z,h.x,h.z)<9);}},
+  {k:'light',t:()=>LG('aimerait un lampadaire pour rentrer le soir','would like a street lamp to get home at night'),check:f=>{const h=famHouse(f);return (S.lamps||[]).some(l=>dist(l.x,l.z,h.x,h.z)<8);}},
+  {k:'water',t:()=>LG('aimerait de l’eau douce','would like some fresh water'),need:{water:2}}];
+function famDay(){const F=FO();if(F.day===S.day)return;F.day=S.day;if(S.away)return;const got={};
+  for(const f of F.fams){const twice=(f.fr||0)>=10?2:1,sk=FAM_SKILL[f.skill];const g=sk.give();for(const k in g)got[k]=(got[k]||0)+g[k]*twice;if(f.skill==='batir'&&typeof workBusy==='function'&&workBusy()){S.work.end-=Math.round((S.work.end-Date.now())*0.1*twice);}
+    if(!f.wish&&Math.random()<0.34){const w=FWISH[Math.floor(Math.random()*FWISH.length)];if(!(w.check&&w.check(f)))f.wish=w.k;}}
+  upkeep();if(F.choice==='calm'){F.calm=(F.calm||0)+1;const Lg=L();Lg.h=Math.min(100,(Lg.h||60)+0.4);(S.animals||[]).filter(x=>x.tamed).forEach(x=>{try{addLove(x,0.3);}catch(e){}});if(F.calm>=10)stat('calm10');}
+  for(const k in got)if(!ITEMS[k])delete got[k];if(Object.keys(got).length){give(got);toast(LG('Tes voisins t’apportent un petit quelque chose : ','Your neighbours bring you a little something: ')+Object.entries(got).map(([k,n])=>`${n} ${nm(k)}`).join(', '));}
+  if(F.adopt){const a=F.adopt;if(a.kind==='elder'){(S.animals||[]).filter(x=>x.tamed).forEach(x=>{try{addLove(x,0.5);}catch(e){}});if(Math.random()<0.5)give({tiare:2});}else{if(S.met&&S.met.k){S.met.xp[S.met.k]=(S.met.xp[S.met.k]||0)+15;}let n=0;for(const c of S.crops){if(n>=2)break;if(!c.wild&&c.g>=1&&!(c.cd>0)&&CROPS[c.type]){give(CROPS[c.type].yield);c.cd=CROPS[c.type].regrow;n++;}}}}
+  const free=F.houses.findIndex(h=>h.fam==null);if(free>=0&&!F.req&&F.choice==='village'&&(S.level||1)>=14&&welcomeScore()>=needScore()&&F.fams.length<4){const pool=FAM_POOL.filter(p=>!F.used.includes(p[0]));if(pool.length){const p=pool[Math.floor(Math.random()*pool.length)];
+    F.req={name:p[0],members:p[1].map((n,i)=>({n,seed:Math.floor(Math.random()*1e9)})),skill:FAM_SK_KEYS[Math.floor(Math.random()*FAM_SK_KEYS.length)],house:free};
+    toast(LG(`🏡 La famille ${p[0]} a entendu parler de ton motu accueillant. Elle aimerait venir s’installer ! (Menu › Fēti’i)`,`🏡 The ${p[0]} family has heard about your welcoming motu. They would like to come and settle! (Menu › Fēti’i)`));}}
+  if(!F.adopt&&!F.adoptAsk&&!F.adoptNo&&(S.level||1)>=16&&F.fams.length>=1&&S.stage>=5&&Math.random()<0.35){F.adoptAsk=1;toast(LG('💛 Quelqu’un aimerait être accueilli dans ton foyer, selon la tradition du faʻaʻamu. (Menu › Fēti’i)','💛 Someone would like to be welcomed into your household, in the faʻaʻamu tradition. (Menu › Fēti’i)'));}
+  pendingSave=true;}
+function famAccept(){const F=FO(),r=F.req;if(!r)return;const h=F.houses[r.house];if(!h||h.fam!=null){F.req=null;return;}const f={name:r.name,members:r.members,skill:r.skill,house:r.house,joy:3,fr:0,talk:-1,since:S.day};F.fams.push(f);h.fam=F.fams.length-1;F.used.push(r.name);F.req=null;stat('families');
+  toast(LG(`Maeva i te fēti’i ${f.name} ! Ils s’installent dans leur fare. Ce sont des ${FAM_SKILL[f.skill].n()} : ils t’aideront un peu chaque jour.`,`Welcome to the ${f.name} family! They settle into their fare. They are ${FAM_SKILL[f.skill].n()}: they will help you a little every day.`));
+  manuSay(LG('Ton motu devient un vrai petit village. Passe leur dire bonjour !','Your motu is becoming a real little village. Go and say hello!'),7);pendingSave=true;renderSheet();refresh();}
+const ADOPT={elder:{n:'Mama Tetua',t:()=>LG('Une grand-mère seule depuis que le cyclone a emporté sa maison. Elle connaît les chants, les plantes et les animaux : elle veillera sur eux et racontera des histoires le soir.','A grandmother alone since a cyclone took her house. She knows the songs, the plants and the animals: she will look after them and tell stories in the evening.'),seed:31337},
+  young:{n:'Heimana',t:()=>LG('Un jeune adulte des îles qui veut apprendre un métier. Il t’aidera au jardin et fera progresser ton métier en l’apprenant avec toi.','A young adult from the islands who wants to learn a trade. He’ll help in the garden and make your trade progress by learning it with you.'),seed:27182}};
+function adoptAccept(kind){const F=FO();if(F.adopt||!ADOPT[kind])return;F.adopt={kind,n:ADOPT[kind].n,seed:ADOPT[kind].seed,since:S.day,fr:0,talk:-1};F.adoptAsk=null;stat('faaamu');
+  toast(LG(`${ADOPT[kind].n} entre dans ton foyer. Selon la tradition du faʻaʻamu, il ou elle fait maintenant partie de ta famille. Māuruuru !`,`${ADOPT[kind].n} joins your household. In the faʻaʻamu tradition, they are now part of your family. Māuruuru!`));pendingSave=true;renderSheet();refresh();}
+const TALK=[LG('« Ia ora na ! Tu as vu, les tiare ont fleuri ce matin. »','“Ia ora na! Did you see, the tiare bloomed this morning.”'),LG('« Les enfants ont trouvé une honu sur la plage, on l’a laissée tranquille. »','“The children found a honu on the beach, we left it in peace.”'),LG('« Merci pour le chemin, c’est plus facile avec les courses ! »','“Thanks for the path, it’s easier with the shopping!”'),
+  LG('« Ce soir on chante devant la maison, viens si tu veux. »','“Tonight we’re singing in front of the house, come if you like.”'),LG('« Ton lagon est plus beau chaque année. »','“Your lagoon gets more beautiful every year.”'),LG('« Si tu as besoin d’aide, tu sais où nous trouver. »','“If you need help, you know where to find us.”')];
+function talkTo(f,who){if(f.talk===S.day){toast(LG(`${who} a déjà bien discuté avec toi aujourd’hui.`,`${who} already had a good chat with you today.`));return;}f.talk=S.day;const b0=f.fr||0;f.fr=Math.min(10,b0+1);stat('talks');
+  toast(`${who} : ${TALK[Math.floor(Math.random()*TALK.length)]}`);if(b0<10&&f.fr>=10){stat('hoarahi');give({pareu:ITEMS.pareu?1:0,tiare:3});setTimeout(()=>toast(LG(`💛 ${who} est maintenant ton hoa rahi, ton ami proche ! Il ou elle t’offre un cadeau et t’aidera deux fois plus.`,`💛 ${who} is now your hoa rahi, a close friend! They give you a gift and will help twice as much.`)),1800);}pendingSave=true;refresh();}
+function famWishDo(f){const w=FWISH.find(x=>x.k===f.wish);if(!w)return;if(w.need){if(!hasAll(w.need))return;take(w.need);}else if(!w.check(f))return;f.wish=null;f.joy=Math.min(10,(f.joy||3)+2);f.fr=Math.min(10,(f.fr||0)+2);stat('wishes_f');
+  give({tiare:2});toast(LG(`La famille ${f.name} est ravie ! Māuruuru roa ! (+2 tiare en retour)`,`The ${f.name} family is delighted! Māuruuru roa! (+2 tiare in return)`));pendingSave=true;renderSheet();refresh();}
+{const _ia=islActions;islActions=function(A){_ia(A);if(INSIDE||S.away||S.boat||S.inCave||CRE.on)return;const px=player.position.x,pz=player.position.z;
+  for(const p of folkPeople()){const b=folkBodies.get(p.key);if(!b||!b.group.visible)continue;if(dist(px,pz,b.group.position.x,b.group.position.z)<1.8){const f=p.f||FO().adopt,who=p.m.n,fam=p.f?LG(` (famille ${p.f.name})`,` (${p.f.name} family)`):'';
+    A.push({label:LG(`Parler avec ${who}`,`Talk with ${who}`),sub:LG(`Amitié ${f.fr||0}/10${fam}`,`Friendship ${f.fr||0}/10${fam}`),fn:()=>talkTo(f,who)});
+    if(p.f&&p.f.wish){const w=FWISH.find(x=>x.k===p.f.wish);if(w)A.push({label:LG('Leur souhait','Their wish'),sub:w.t()+(w.need?' · '+Object.entries(w.need).map(([k,n])=>`${n} ${nm(k)}`).join(', '):''),off:w.need?!hasAll(w.need):!w.check(p.f),fn:()=>famWishDo(p.f)});}break;}}};}
+function fetiiSheet(){$('#sheetTitle').textContent=LG('Fēti’i · la grande famille','Fēti’i · the extended family');const F=FO(),parts=welcomeParts(),sc=welcomeScore();
+  let h=`<p class="small-note">${LG('Ici, la famille, c’est tous ceux qu’on accueille et qui s’entraident. Construis des fare pour des familles : quand ton motu est assez accueillant, elles viennent s’installer.','Here, family means everyone we welcome and who help each other. Build fares for families: when your motu is welcoming enough, they come and settle.')}</p>`;
+  if((S.level||1)<14)return h+`<p class="why">${LG('À partir du niveau 14.','From level 14.')}</p>`;
+  const C=FO().choice;h+=`<div class="afcard"><div class="afname">⚖️ ${LG('Ton choix','Your choice')}</div>
+    <div class="recipe"><div class="rinfo"><div class="name">🏡 ${LG('Motu ouvert (village)','Open motu (village)')}</div><div class="tah">${LG('+ aide quotidienne, savoir-faire, amis, pension mieux notée · − chaque famille mange 2 repas et boit 1 eau par jour, et pèse un peu sur le lagon','+ daily help, skills, friends, better-rated guesthouse · − each family eats 2 meals and drinks 1 water a day, and puts a little pressure on the lagoon')}</div></div><button data-fe="ch:village" ${C==='village'?'disabled':''}>${C==='village'?'✓':LG('Choisir','Choose')}</button></div>
+    <div class="recipe"><div class="rinfo"><div class="name">🌿 ${LG('Motu tranquille','Quiet motu')}</div><div class="tah">${LG('+ le lagon guérit plus vite, les animaux te font plus confiance, rien à nourrir · − pas d’aide ni d’amis habitants','+ the lagoon heals faster, animals trust you more, nobody to feed · − no help and no inhabitant friends')}</div></div><button data-fe="ch:calm" ${C==='calm'?'disabled':''}>${C==='calm'?'✓':LG('Choisir','Choose')}</button></div>
+    <div class="small-note">${LG('Tu peux changer d’avis tous les 7 jours (motu tranquille seulement sans habitants).','You can change your mind every 7 days (quiet motu only with no inhabitants).')}</div></div>`;
+  if(C!=='village')return h;
+  h+=`<div class="afcard"><div class="afname">🌺 ${LG('Ton motu est-il accueillant ?','Is your motu welcoming?')} ${sc}/${needScore()}</div>${parts.map(([n,ok])=>`<div class="small-note">${ok?'✓':'○'} ${n}</div>`).join('')}<div class="small-note">${LG(`Fare pour les familles : ${F.houses.length}/4 · libres : ${F.houses.filter(x=>x.fam==null).length}`,`Family fares: ${F.houses.length}/4 · free: ${F.houses.filter(x=>x.fam==null).length}`)}</div></div>`;
+  if(F.req)h+=`<div class="afcard"><div class="afname">🏡 ${LG(`La famille ${F.req.name} demande à s’installer`,`The ${F.req.name} family asks to settle`)}</div><p>${F.req.members.map(m=>m.n).join(', ')} · ${FAM_SKILL[F.req.skill].ic} ${FAM_SKILL[F.req.skill].n()}</p><p class="small-note">${LG('Coût par jour : 2 repas, 1 eau. Si elles manquent trop longtemps, elles partiront gentiment.','Cost per day: 2 meals, 1 water. If they go short too long, they will leave kindly.')}</p><div class="row"><button class="big" data-fe="accept">${LG('Les accueillir','Welcome them')}</button><button class="big ghost" data-fe="later">${LG('Pas maintenant','Not now')}</button></div></div>`;
+  if(F.adoptAsk&&!F.adopt){h+=`<div class="afcard"><div class="afname">💛 Faʻaʻamu</div><p class="small-note">${LG('Dans la tradition polynésienne, on peut accueillir quelqu’un dans son foyer et en faire sa famille. Deux personnes aimeraient vivre avec toi ; tu peux en accueillir une, ou aucune.','In Polynesian tradition you can welcome someone into your household and make them family. Two people would like to live with you; you can welcome one, or none.')}</p>
+    ${Object.entries(ADOPT).map(([k,a])=>`<div class="recipe"><div class="rinfo"><div class="name">${a.n}</div><div class="tah">${a.t()}</div></div><button data-fe="adopt:${k}">${LG('Accueillir','Welcome')}</button></div>`).join('')}<div class="row"><button class="big ghost" data-fe="noadopt">${LG('Pas pour l’instant','Not for now')}</button></div></div>`;}
+  if(F.adopt)h+=`<div class="afcard"><div class="afname">💛 ${F.adopt.n} · ${LG('ta famille faʻaʻamu','your faʻaʻamu family')}</div><div class="small-note">${LG(`Amitié ${F.adopt.fr||0}/10 · vit dans ton fare`,`Friendship ${F.adopt.fr||0}/10 · lives in your fare`)}</div></div>`;
+  for(const f of F.fams)h+=`<div class="afcard"><div class="afname">🏡 ${LG('Famille','Family')} ${f.name} <small>· ${FAM_SKILL[f.skill].ic} ${FAM_SKILL[f.skill].n()}</small></div><div class="small-note">${f.members.map(m=>m.n).join(', ')} · ${LG('amitié','friendship')} ${f.fr||0}/10${(f.fr||0)>=10?' · 💛 hoa rahi':''} · ${LG('bonheur','happiness')} ${'❤️'.repeat(Math.max(1,Math.round((f.joy||3)/2)))}</div>${f.wish?`<div class="why">${LG('Souhait','Wish')} : ${FWISH.find(w=>w.k===f.wish).t()}</div>`:''}</div>`;
+  return h;}
+document.addEventListener('click',e=>{if(sheetMode!=='fetii')return;const b=e.target.closest('[data-fe]');if(!b)return;const v=b.dataset.fe,F=FO();
+  if(v==='accept')famAccept();else if(v==='later'){F.req=null;pendingSave=true;renderSheet();}else if(v==='noadopt'){F.adoptAsk=null;F.adoptNo=S.day;pendingSave=true;renderSheet();}else if(v.startsWith('ch:'))setChoice(v.slice(3));else if(v.startsWith('adopt:'))adoptAccept(v.slice(6));});
+{const _s=v7Sheet;v7Sheet=function(m){if(m==='fetii')return fetiiSheet();return _s(m);};V7S.fetii=1;}
+(function(){const row=document.querySelector('#menu .row');if(!row)return;const b=document.createElement('button');b.className='big ghost';b.id='fetiiBtn';b.setAttribute('data-notr','');b.textContent='🏡 '+LG('Fēti’i · la grande famille','Fēti’i · the extended family');b.onclick=()=>{$('#menu').hidden=true;openSheet('fetii');};
+  const ref=document.getElementById('teamBtn');row.insertBefore(b,ref?ref.nextSibling:null);})();
+{const _r=v10Rating;v10Rating=function(){const F=FO();return _r()+F.fams.filter(f=>f.skill==='chant').length*0.1+(F.choice==='calm'?0.15:0);};}
+{const _mm=mapMarks;mapMarks=function(){const o=_mm();FO().houses.forEach((h,i)=>o.push({k:'famh'+i,ic:'🏡',n:h.fam!=null?LG(`Famille ${FO().fams[h.fam].name}`,`${FO().fams[h.fam].name} family`):LG('Fare libre','Free fare'),x:h.x,z:h.z}));return o;};}
+{const _g=GUIDE;GUIDE=()=>_g().concat([{k:'fetii',ic:'🏡',t:LG('Fēti’i : habitants, hoa rahi, faʻaʻamu','Fēti’i: inhabitants, hoa rahi, faʻaʻamu'),b:LG('Dès le niveau 14, choisis : motu ouvert (village) ou motu tranquille. Ouvert : construis des fare pour des familles (4 au plus). Quand ton motu est accueillant (lagon sain, fleurs, chemins, eau propre, soleil, pension appréciée), une famille demande à s’installer. Chaque famille aide un peu chaque jour mais mange 2 repas et boit 1 eau par jour et a parfois un souhait simple. Parle aux habitants chaque jour : à 10 d’amitié, ils deviennent tes hoa rahi. Au niveau 16, selon la tradition du faʻaʻamu, tu peux accueillir quelqu’un dans ton foyer.','From level 14, choose: open motu (village) or quiet motu. Open: build fares for families (4 at most). When your motu is welcoming (healthy lagoon, flowers, paths, clean water, sun, a liked guesthouse), a family asks to settle. Each family helps a little every day but eats 2 meals and drinks 1 water a day and sometimes has a simple wish. Talk to the inhabitants every day: at friendship 10 they become your hoa rahi. At level 16, in the faʻaʻamu tradition, you can welcome someone into your household.')}]);}
+GUIDE_FOR.fetii='fetii';
+let famT=4;
+{const _u=updateV38;updateV38=function(dt){_u(dt);updateFolk(dt,performance.now()/1000);famT-=dt;if(famT<=0){famT=4;famDay();}};}
+ACH.push(['families',()=>LG('Un petit village','A little village'),()=>LG('Accueillir une famille sur ton motu','Welcome a family to your motu'),()=>(S.stats.families||0)>=1],
+  ['hoarahi',()=>'Hoa rahi',()=>LG('Devenir l’ami proche d’un habitant','Become an inhabitant’s close friend'),()=>(S.stats.hoarahi||0)>=1],
+  ['calm10',()=>LG('Motu tranquille','Quiet motu'),()=>LG('Garder ton motu à la nature pendant 10 jours','Keep your motu for nature for 10 days'),()=>(S.stats.calm10||0)>=1],
+  ['faaamu',()=>'Faʻaʻamu',()=>LG('Accueillir quelqu’un dans ton foyer','Welcome someone into your household'),()=>(S.stats.faaamu||0)>=1]);
+const V62={FO,setChoice,upkeep,famLeave,welcomeScore,welcomeParts,famDay,famAccept,adoptAccept,talkTo,placeFamHouse};
+
+/* =====================================================================
+   v63: look and feel, at no frame cost (only colours and numbers change).
+   - golden hour: the low sun still lights the island warmly;
+   - night: cool blue moonlight instead of a dull green;
+   - steadier shadows when the sun is low (no stripes on the ground).
+   ===================================================================== */
+const G63={warm:new THREE.Color('#ffd0a0'),blue:new THREE.Color('#4466ff'),gnd:new THREE.Color('#101c3c'),org:new THREE.Color('#ff9a4a'),moon:new THREE.Color('#a9c4ff')};
+sun.shadow.normalBias=0.06;moon.color.copy(G63.moon);
+function grade63(){if(S.inCave||INSIDE||(S.away&&S.away.k==='voyage')){renderer.toneMappingExposure=1.05;tint63(0);return;}
+  const elev=Math.sin((S.tod-0.25)*Math.PI*2),cl=S.weather.c||0,clear=1-0.8*cl,day=smooth(-0.12,0.18,elev),night=1-day,gold=smooth(-0.08,0.04,elev)*(1-smooth(0.12,0.34,elev))*clear;
+  if(gold>0.01){sun.intensity=Math.max(sun.intensity,0.95*gold);sun.color.lerp(G63.org,0.45*gold);hemi.intensity+=0.06*gold;hemi.color.lerp(G63.warm,0.5*gold);}
+  if(night>0.01){hemi.color.lerp(G63.blue,0.92*night);hemi.groundColor.lerp(G63.gnd,0.9*night);hemi.intensity+=0.04*night;moon.intensity*=1+0.5*night;}
+  if(sun.position.y<9)sun.position.y=9;
+  renderer.toneMappingExposure=1.05+0.03*gold+0.02*night;tint63(night*0.26*(1-0.5*cl));}
+const TINT63=document.createElement('div');TINT63.id='tint63';$('#scene').appendChild(TINT63);let tint63v=-1;
+function tint63(v){v=Math.round(v*40)/40;if(v===tint63v)return;tint63v=v;TINT63.style.opacity=v;TINT63.style.display=v>0?'block':'none';}
 /* =========================================================
    Main loop
    ========================================================= */
@@ -8019,7 +8702,7 @@ function tick(){
   if(S.stage>=5)stageGroups[4].visible=interior<0.5;
   MAT.plank.opacity=1-interior*0.78;MAT.plank.depthWrite=interior<0.3;
   /* camera */
-  const dist0=CRE.on?CRE.d:cam.dist*(1-interior*0.35),pitch=CRE.on?1.05:cam.pitch+(1.05-cam.pitch)*interior*0.8;
+  const dist0=CRE.on?CRE.d:INSIDE?4.6:cam.dist*(1-interior*0.35),pitch=CRE.on?1.05:INSIDE?0.72:cam.pitch+(1.05-cam.pitch)*interior*0.8;
   const cp=Math.cos(pitch),tx=CRE.on?CRE.x:player.position.x,ty=CRE.on?Math.max(H(CRE.x,CRE.z),0)+1:player.position.y+1.3,tz=CRE.on?CRE.z:player.position.z;
   const dC=S.inCave?Math.min(dist0,3.6):dist0;let camX=tx+Math.sin(cam.yaw)*dC*cp,camZ=tz+Math.cos(cam.yaw)*dC*cp;let camY=ty+Math.sin(pitch)*dC;
   if(S.inCave&&S.caveKind!=='sea'){camX=clamp(camX,CAVE.x-1.9,CAVE.x+1.9);camZ=clamp(camZ,CAVE.z-6.4,CAVE.z+6.6);}
@@ -8096,6 +8779,7 @@ function tick(){
   uiT+=dt;if(uiT>0.12){uiT=0;actions=computeActions();renderActions();renderWx();if(Math.round(S.hunger)!==lastHungerShown)renderTop();}
   levelT+=dt;if(levelT>1){levelT=0;if(!paused)checkLevel();}
   saveT+=dt;if(saveT>4||(pendingSave&&saveT>1)){saveT=0;pendingSave=false;save();}
+  grade63();
   renderer.render(scene,camera);requestAnimationFrame(tick);
 }
 lastWxLabel=wxLabel()[1];
@@ -8103,6 +8787,6 @@ renderTop();renderGoal();renderWx();
 actions=computeActions();renderActions();
 addEventListener('pagehide',()=>{if(!wiping)save();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&!wiping)save();});
-if(location.hash==='#debug')window.__fare={v44:V44,v45:V45,v46:V46,v47:V47,v48:V48,v49:V49,v50:V50,v51:V51,v52:V52,v54:V54,v55:V55,v56:V56,scene,renderer,bushes,save,camera,expe:{EXPE,expeSend,expeReturn,expeCost},fr:{finishWork,workDur,timeMul,aLevel,addLove,askName,openAnimal,startTutorial,showStory,gearHave,GEAR},clouds:{nimbo,alto,cbs,capCloud,cloudName},prep:{prepActions,lightning,LIT,surge,cycHit:()=>cycHit()},storm:{startWaterspout,launchRedStar,startTornado,TOR,torMesh},stars:{starShower,launchMagic,updateMagic,updateShower,MAGIC,SHOWER,STAR_SONG},gold:{updateGolden,launchBolide,BOL,farIsl,cirrus,GHU,CLU,bungSpot,placeBungalow,onBung,makeWish},hua:{HUA,HUAP,HUAP_LAKE,huaH,buildHuahine,fx:huaFX,huaFixTrap,huaFeed,huaHint,makeNahe},fl:{makeTiare,makeHibiscus,makeParterre,flower,MAT,mesh,THREE},sun:{uvIndex,inShade,get sunT(){return S.sunT}},vis:{VISITORS,get meshes(){return visMeshes}},cyc:{scheduleCyclone,cycPhase,cycT,cycHit,pflotSpot,dive,onPflot,SPECIES,discover},moo:{MOO,MOOP,MOOP_SB,mooH,sailTo,crow,get fx(){return mooFX}},isl:{ISL,ISLP,sailToTahiti,sailHome,buildIsland,offerFlower,greetMoo,islH,get falls(){return islFalls},get moo(){return islMoo},get blow(){return islBlow}},v22:{dailyGen,updateDaily,checkAch,ACH,photoMode,savePhoto,AMB,get AC(){return AC;}},stageGroups,gStages,applyPaint,build,v21:{month,startHatch,get hatch(){return hatch;},EVENTS,calendarDay},v18:{hinaPereSong,ERUPT},v17:{enterSea,leaveSea,seaRespect,seaSong,DIVE_AT,freeHonu,spawnTangled,plantCoral},v16:{enterCave,leaveCave,crownSectors,mountainSong,CAVE_FRONT,MTN},v15:{summonButterflies,SWARM},v14:{lightSpots,lightsC:()=>lightsC,BFLY:()=>BFLY,GECKOS:()=>GECKOS,flowersC:()=>flowersC},v13:{summonMermaid,mer:()=>mermaid,playSong,SONGS},v10:{spawnCrop,spawnLamp,v10Sim,v10Place,checkMilestones,lampActs,genActs,lampClick,makeV10Crop},v9:{v9Place,v9DoSpecial,pfarmActs,portActs,helipadActs,hiveActs,PONTON_C,tillCheck,till,S_fields:()=>S.fields,plantField,graft,harvestPearls,rollPearl,PFARM_AT,PORT_AT,startHeli,HELI,flowersNear,treat,canSellHere,pearlClick},v8:{FLY,startFly,stopFly,RINGS,TOUR_STOPS,startTour,board,TOUR_DOCK,computeActions,placeCanoeMesh},v7:{openLook,startExc,whales,smartHint,buildPlayer,clock,cam},S,give,refresh,checkLevel,player,openSheet,doCraft,simStep,v6:{startTornado,TOR,launchShooter,flocks,honus,crabs}};
+if(location.hash==='#debug')window.__fare={v44:V44,v45:V45,v46:V46,v47:V47,v48:V48,v49:V49,v50:V50,v51:V51,v52:V52,v54:V54,v55:V55,v56:V56,v57:V57,v58:V58,v59:V59,v60:V60,v61:V61,v62:V62,scene,renderer,bushes,save,camera,expe:{EXPE,expeSend,expeReturn,expeCost},fr:{finishWork,workDur,timeMul,aLevel,addLove,askName,openAnimal,startTutorial,showStory,gearHave,GEAR},clouds:{nimbo,alto,cbs,capCloud,cloudName},prep:{prepActions,lightning,LIT,surge,cycHit:()=>cycHit()},storm:{startWaterspout,launchRedStar,startTornado,TOR,torMesh},stars:{starShower,launchMagic,updateMagic,updateShower,MAGIC,SHOWER,STAR_SONG},gold:{updateGolden,launchBolide,BOL,farIsl,cirrus,GHU,CLU,bungSpot,placeBungalow,onBung,makeWish},hua:{HUA,HUAP,HUAP_LAKE,huaH,buildHuahine,fx:huaFX,huaFixTrap,huaFeed,huaHint,makeNahe},fl:{makeTiare,makeHibiscus,makeParterre,flower,MAT,mesh,THREE},sun:{uvIndex,inShade,get sunT(){return S.sunT}},vis:{VISITORS,get meshes(){return visMeshes}},cyc:{scheduleCyclone,cycPhase,cycT,cycHit,pflotSpot,dive,onPflot,SPECIES,discover},moo:{MOO,MOOP,MOOP_SB,mooH,sailTo,crow,get fx(){return mooFX}},isl:{ISL,ISLP,sailToTahiti,sailHome,buildIsland,offerFlower,greetMoo,islH,get falls(){return islFalls},get moo(){return islMoo},get blow(){return islBlow}},v22:{dailyGen,updateDaily,checkAch,ACH,photoMode,savePhoto,AMB,get AC(){return AC;}},stageGroups,gStages,applyPaint,build,v21:{month,startHatch,get hatch(){return hatch;},EVENTS,calendarDay},v18:{hinaPereSong,ERUPT},v17:{enterSea,leaveSea,seaRespect,seaSong,DIVE_AT,freeHonu,spawnTangled,plantCoral},v16:{enterCave,leaveCave,crownSectors,mountainSong,CAVE_FRONT,MTN},v15:{summonButterflies,SWARM},v14:{lightSpots,lightsC:()=>lightsC,BFLY:()=>BFLY,GECKOS:()=>GECKOS,flowersC:()=>flowersC},v13:{summonMermaid,mer:()=>mermaid,playSong,SONGS},v10:{spawnCrop,spawnLamp,v10Sim,v10Place,checkMilestones,lampActs,genActs,lampClick,makeV10Crop},v9:{v9Place,v9DoSpecial,pfarmActs,portActs,helipadActs,hiveActs,PONTON_C,tillCheck,till,S_fields:()=>S.fields,plantField,graft,harvestPearls,rollPearl,PFARM_AT,PORT_AT,startHeli,HELI,flowersNear,treat,canSellHere,pearlClick},v8:{FLY,startFly,stopFly,RINGS,TOUR_STOPS,startTour,board,TOUR_DOCK,computeActions,placeCanoeMesh},v7:{openLook,startExc,whales,smartHint,buildPlayer,clock,cam},S,give,refresh,checkLevel,player,openSheet,doCraft,simStep,v6:{startTornado,TOR,launchShooter,flocks,honus,crabs}};
 requestAnimationFrame(tick);
 })();

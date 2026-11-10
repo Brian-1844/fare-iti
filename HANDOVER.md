@@ -3,12 +3,40 @@
 Upload this whole folder (or `fare-iti.zip`) at the start of the next session and say: "Continue Fare Iti from HANDOVER.md".
 
 ## State
-- Version: **v56** (`sw.js` VERSION `fare-iti-v56`). Live on GitHub Pages: https://brian-1844.github.io/fare-iti/ once these files are uploaded. Preview artifact: https://claude.ai/artifact/9Ec7YmhELs6LGAw9bGC6dM
+- Version: **v63** (`sw.js` VERSION `fare-iti-v63`). Live on GitHub Pages: https://brian-1844.github.io/fare-iti/ once these files are uploaded. Preview artifact: https://claude.ai/artifact/9Ec7YmhELs6LGAw9bGC6dM
 - Stack: plain HTML/CSS/JS, three.js r128 (`lib/three.min.js`), no build step. `game.js` = everything (blocks appended before the `Main loop` marker), `data.js` = base data, `fr.js` = French strings (built from English), `lang.js` = language, welcome, PWA install/updates, scroll helpers.
 - Bilingual pattern: new text uses `LG(fr,en)`; containers with `data-notr` are not auto-translated.
 - Override pattern: `const _f0=f; f=function(...){...; return _f0(...)}`.
 - Debug: open `index.html#debug` → `window.__fare` (S, give, openSheet, fr.*, expe.*, …).
 - Save: `localStorage['fare-iti-v3']`.
+
+## Done in v63 · Look and feel at no frame cost
+`grade63()` is called just before `renderer.render` in `tick`: golden hour (low sun keeps lighting, orange sun, warm hemi), night (blue hemi + `#tint63` CSS layer over the canvas, opacity changed only in 1/40 steps), sun kept ≥9 high + `normalBias` 0.06 to stop shadow stripes at sunset. Skipped in caves, interiors and voyages. Pause menu is now a 2-column grid (CSS only). No new meshes, lights or shader passes.
+Design ideas not done yet (each costs a little): soft blob shadow under characters in eco mode, foam line on the shore, vertex-colour variation on sand, collapsing the goal panel by default on phones, icon tiles instead of emoji in the menu.
+
+## Done in v62 · Fēti'i (inhabitants, hoa rahi, faʻaʻamu)
+Marriage was set aside (Brian agreed): instead the extended-family system. `S.folk={houses,fams,req,day,used,adopt,adoptAsk,adoptNo,choice,chDay,calm}` via `FO()`.
+- **Choice** (Brian: "population or not, a balance"): `setChoice('village'|'calm')`, changeable every 7 days; "calm" only with no inhabitants. Village: families can ask to settle. Calm: lagoon +0.4/day, tamed animals +love, guesthouse rating +0.15, achievement `calm10`.
+- **Cost** `FAM_COST` {food 2 (cheapest food items, `foodPick`), water 1, lagoon −0.3 (halved with a still)} per family per day in `upkeep()`. Short → joy −2; joy 0 for 3 days → `famLeave(f)` (leaves kindly for cousins in Tahiti, fare freed).
+- **Gain**: recipe `famhouse` (lv14, max 4, place 'famhouse'); arrival request when `welcomeScore()>=needScore()` (=3+families) and choice is village; `FAM_SKILL` daily gifts (doubled at hoa rahi, builders shorten S.work); wishes `FWISH` (coco, fish, path, flower, light, water) → `famWishDo`; `talkTo` once a day, friendship 10 = hoa rahi + gift; singers +0.1 rating.
+- **Faʻaʻamu** (lv16, ≥1 family, stage≥5): `ADOPT` elder Mama Tetua (animal love, tiare) or young Heimana (trade XP, harvests 2 crops) → `adoptAccept(kind)`.
+- UI: sheet `fetii` (menu button `fetiiBtn`), islActions "Parler avec X"/"Leur souhait", map markers, guide topic, creation-mode items `famh{i}` (recycle only when empty). Walking people in `updateFolk` (hidden at night). Debug `__fare.v62`.
+- Ideas next: inhabitants come to a shared village assembly, children who grow up, family fēti'i visits from other islands.
+
+## Done in v61
+Sailing phase: `sailTo`/`sailHome` now call `startVoyage(dest)`; `S.away={k:'voyage',home,dest,prev}` while at sea at `VOYZ` (0,-3000); `VOY` {yaw, prog, risk, L}; `endVoyage('arrive'|'skip'|'wreck')` then calls the previous `sailTo`/`sailHome`; `shipwreck()` sets `S.canoeBroken`. HUD `#voyHud` (canvas kapehu, ◀ ▶), body class `voyaging` hides actions/goal. `VOY_DEST` holds bearings and star names (add Bora Bora there when the island is built: key `borabora` already present). Debug `__fare.v61`.
+Pending question to Brian (2026-11-09): marriage at very high level, “a marriage of equals, and also divorce”. See the reply in the chat; not built yet.
+
+## Done in v59–v60
+- v59: recycling `RECY`/`recyInfo` in creation mode (refund half of the recipe inputs), `uproot()` with `S.transplant[kind]` growth kept by the `plant` wrapper, `destump()`, bouquets (`bed.bq`), sea walls `S.walls` (`wallCover()` 36 coast sectors, `wallProtects()`, applied after `cycHit`), title `S.flags.oceanTitle` (`oceanGuard()`, `titles()`). Debug `__fare.v59`.
+- v60: Raiatea at x≈1000 (H wrapper routes x>700 to `raiH`), `RAIP` landmarks, NPC Mama Hina, puzzle `raiTouch` (order 🌊🐟🐢⭐🌺, flag `raiGate`), flower `raiFlower`, gift `raiGift` (unlocks `unlock_raiMonoi` recipes), crop `motoi` (tiare model tinted yellow), sheet `railegend`. Planting is blocked on Raiatea. Debug `__fare.v60`.
+- Ideas Brian asked for next on islands: more legends, special items, recipes, plants and puzzles; Raiatea is the first “puzzle island”, the pattern can be reused.
+
+## Done in v58
+Kitchen `S.kit` {gas, bio}, `S.biod` {fill}, `S.fsol`; `OVEN` recipes; sheet `kitchen` (`kitSrc` stove/solar). Cook trade `cuisinier`. Merged trades via `MET_ALIAS` (meteo→astronome, plombier→technicien; `MET.meteo/plombier.hidden`, save migration). Entering buildings: `INSIDE`, `enterB/exitB`, roof parts hidden (`userData.roof` or above 1.85 m), camera close (patched camera line), `walkable` limited inside; activities `ACTS` + `miniGame()` skill game. Share `shareGame()` (GAME_URL = GitHub Pages), install button on the start screen. Debug `__fare.v58`.
+
+## Done in v57
+Guide: `GUIDE()` topics, `GUIDE_FOR` maps a sheet mode to a topic, `openGuide(topic)`, sheet `guide`, “?” button `#sheetHelp` in the sheet head, H key. Add a topic there whenever a new system is added.
 
 ## Done in v55–v56
 - Performance audit (2026-11-09, low quality, phone viewport): ~200 draw calls, ~130k triangles, 1,450 meshes (830 visible), 395 shadow casters, 7 lights (4 point lights computed even at 0 intensity), 365 materials, 109 sprites. JS per frame is small (~3% of a frame on desktop); the cost is on the GPU: shadow pass, pixel count, lights, transparent sprites.
@@ -64,6 +92,8 @@ Intro story (no gods), name + clearly sexed character, 5 gear slots with unlocka
 The game promotes friendship, mutual help, respect for others and for nature, taking care of nature and of people, cultivating relationships, free win-win trade (never winner/loser, never "us against them"), everyone united in the same wish for prosperity, all equal before the law.
 
 ## Start the next session with
+v62 done. Next candidates: Bora Bora (coral-garden puzzle, manta rays watched without feeding, pearl necklace; check real legends; `VOY_DEST.borabora` exists), playtest of fēti'i balance (costs may need tuning), then trade between players / shared village.
+
 Items 1–3 of the old list (trade, lagoon/rāhui, charter) are done in v44. Next: check anonymous sign-ins are on, test the friends' vaʻa on GitHub Pages with 2 phones, Brian's feedback on v46–v51 (and maybe earlier island levels), then item 5–7.
 
 ## To do next (Brian's requests, in his order)
